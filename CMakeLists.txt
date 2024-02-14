@@ -67,46 +67,14 @@ set(CMAKE_CXX_FLAGS_RELEASE
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-# Externally provided libraries
-FetchContent_Declare(googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG main)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/cmake_deps)
 
-option(RICCATI_BUILD_TESTING "Build the tests for Riccati" ON)
-set(EIGEN_BUILD_TESTING OFF)
-set(EIGEN_BUILD_DOC OFF)
-set(EIGEN_BUILD_PKGCONFIG OFF)
-FetchContent_Declare(
-  Eigen
-  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-  GIT_TAG 3.4.0)
-# note: To disable eigen tests,
-# you should put this code in a add_subdirectory to avoid to change
-# BUILD_TESTING for your own project too since variables are directory
-# scoped
-
-# Only needed for testing
-if (RICCATI_BUILD_TESTING)
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_STATIC_RUNTIME ON)
-set(BOOST_ENABLE_CMAKE ON)
-FetchContent_Declare(
-  boost
-  URL https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz
-)
-
-FetchContent_GetProperties(boost)
-if(NOT boost_POPULATED)
-  FetchContent_Populate(boost)
-  set(boost_INCLUDE_DIR ${boost_SOURCE_DIR})
-endif()
-FetchContent_MakeAvailable(Eigen googletest)
-endif()
+set(RICCATI_BUILD_TESTING ${BUILD_TESTING} BOOL "Build the tests for the library")
 
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-  add_compile_options(
-    -DNO_FPRINTF_OUTPUT
-    -Wall)
+    add_compile_options(
+      -DNO_FPRINTF_OUTPUT
+      -Wall)
 endif()
 
 set(riccati_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -118,40 +86,4 @@ target_include_directories(riccati PUBLIC INTERFACE
   ${riccati_INCLUDE_DIR}
 )
 
-
-# Define a function to simplify adding grouped tests
-function(add_gtest_grouped_test test_directory)
-  # Create a test target name based on the directory
-  file(RELATIVE_PATH TEST_DIRECTORY_RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${test_directory})
-  string(REPLACE "/" "_" TEST_TARGET_NAME ${TEST_DIRECTORY_RELATIVE})
-
-  # Collect all .cpp files in the directory
-  file(GLOB TEST_SOURCES "${TEST_DIRECTORY_RELATIVE}/*.cpp")
-  if(TEST_SOURCES)
-    message("STATUS" "Adding grouped test: ${TEST_TARGET_NAME}")
-    # Add an executable for the grouped tests
-    add_executable(${TEST_TARGET_NAME} ${TEST_SOURCES})
-    # Add include directories, link libraries, and register tests as before
-    target_include_directories(${TEST_TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests ${boost_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/tests/riccati)
-    target_link_libraries(${TEST_TARGET_NAME} gtest_main riccati Eigen3::Eigen)
-    add_test(NAME ${TEST_TARGET_NAME} COMMAND ${TEST_TARGET_NAME})
-  endif()
-  foreach(TEST_SOURCE ${TEST_SOURCES})
-    get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE) # Extract the filename without extension
-    set(INDIVIDUAL_TEST_TARGET_NAME ${TEST_NAME}) # Create a unique target name
-
-    # Add an executable for the individual test
-    add_executable(${INDIVIDUAL_TEST_TARGET_NAME} ${TEST_SOURCE})
-
-    # Add include directories, link libraries, and register the individual test
-    target_include_directories(${INDIVIDUAL_TEST_TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests ${CMAKE_CURRENT_SOURCE_DIR}/riccati ${boost_INCLUDE_DIR})
-    target_link_libraries(${INDIVIDUAL_TEST_TARGET_NAME} gtest_main riccati Eigen3::Eigen)
-    add_test(NAME ${INDIVIDUAL_TEST_TARGET_NAME} COMMAND ${INDIVIDUAL_TEST_TARGET_NAME})
-  endforeach()
-endfunction()
-message(STATUS "Building tests: ${RICCATI_BUILD_TESTING}")
-enable_testing()
-if (RICCATI_BUILD_TESTING)
-  add_gtest_grouped_test(${CMAKE_CURRENT_SOURCE_DIR}/tests/riccati_test)
-endif()
-message(STATUS "Building tests: DONE")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)

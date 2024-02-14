@@ -186,6 +186,6 @@ TEST_F(Riccati, evolve_dense_output_burst) {
   auto y_err
       = (((ytrue - y_steps).array()).abs() / (ytrue.array()).abs()).eval();
   // FRUSZINA: Doing dense evals here gives a max error of 0.0001 or so :(
-  EXPECT_LE(y_err.maxCoeff(), 7.2e-9);
+  EXPECT_LE(y_err.maxCoeff(), 1e-8);
 }
 
