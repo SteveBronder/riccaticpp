@@ -10,7 +10,9 @@
 
 ## About
 
-`riccati` is a `Python` package for solving ODEs of the form
+This package is a C++ port of the [riccati](https://github.com/fruzsinaagocs/riccati) python package.
+
+`riccati` is a `C++` package for solving ODEs of the form
 
 $$ u''(t) + 2\gamma(t)u'(t) + \omega^2(t)u(t) = 0,$$
 
@@ -19,7 +21,7 @@ on some solution interval $t \in [t_0, t_1]$, and with initial conditions $u(t_0
 `riccati` uses the adaptive Riccati defect correction method -- it switches
 between using nonoscillatory (spectral Chebyshev) and a specialised oscillatory
 solver (Riccati defect correction) to propagate the numerical solution based on
-its behaviour. For more details on the algorithm, please see [Attribution](https://github.com/fruzsinaagocs/riccati/blob/master/README.md#Attribution).
+its behaviour. For more details on the algorithm, please see [Attribution](https://github.com/stevebronder/riccaticpp/blob/master/README.md#Attribution).
 
 ## Documentation
 
@@ -50,9 +52,9 @@ If you find this code useful in your research, please cite
 
 ## License
 
-Copyright 2022-2023 The Simons Foundation, Inc.
+Copyright 2024 The Simons Foundation, Inc.
 
-**riccati** is free software available under the Apache License 2.0, for
+**riccati** is free software available under the BSD 3.0, for
 details see the [LICENSE](https://github.com/fruzsinaagocs/riccati/blob/master/LICENSE).
 
 ## Building Tests
