@@ -60,10 +60,12 @@ set(CMAKE_CXX_FLAGS_DEBUG
     CACHE STRING "Flags used by the C++ compiler during Debug builds."
     FORCE)
 
-set(CMAKE_CXX_FLAGS_RELEASE
-    "-O3 -march=native -mtune=native -DRICCATI_DEBUG=false"
-    CACHE STRING "Flags used by the C++ compiler during Release builds."
-    FORCE)
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  set(CMAKE_CXX_FLAGS_RELEASE
+      "-O3 -march=native -mtune=native -DRICCATI_DEBUG=false"
+      CACHE STRING "Flags used by the C++ compiler during Release builds."
+      FORCE)
+endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
