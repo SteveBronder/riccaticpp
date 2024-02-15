@@ -2,6 +2,7 @@
 #define INCLUDE_RICCATI_MEMORY_ARENA_ALLOC_HPP
 
 #include <riccati/macros.hpp>
+#include <riccati/utils.hpp>
 #include <Eigen/Dense>
 #include <stdint.h>
 #include <cstdlib>

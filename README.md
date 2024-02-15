@@ -63,9 +63,9 @@ From the top level directory you can build and call the tests with the following
 
 ```bash
 # DEBUG build types enable 0g, ggdb3, and pretty printing helper functions in utils
-cmake -S . -DCMAKE_BUILD_TYPE=RELEASE  -DRICCATI_BUILD_TESTING=ON -DBUILD_TESTING=OFF
-cd build
-make tests_riccati_test && ./tests_riccati_test
+cmake -S . -B "build" -DCMAKE_BUILD_TYPE=RELEASE  -DBUILD_TESTING=ON
+cd build/tests
+make -j4 riccati_test && ctest
 ```
 
 ## Including

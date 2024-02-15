@@ -331,9 +331,9 @@ template <typename Vec1, typename Vec2, typename Allocator>
 inline auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
   const auto r = s.size();
   const auto q = t.size();
-  auto V = to_arena(alloc,
+  auto V = eval(alloc,
                     matrix_t<typename std::decay_t<Vec1>::Scalar>::Ones(r, r));
-  auto R = to_arena(alloc,
+  auto R = eval(alloc,
                     matrix_t<typename std::decay_t<Vec1>::Scalar>::Ones(q, r));
   for (std::size_t i = 1; i < static_cast<std::size_t>(r); ++i) {
     V.col(i).array() = V.col(i - 1).array() * s.array();
@@ -394,25 +394,25 @@ inline auto spectral_chebyshev(SolverInfo&& info, Scalar x0, Scalar h,
   using complex_t = std::complex<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   auto x_scaled
-      = to_arena(alloc, riccati::scale(info.chebyshev_[niter].second, x0, h));
+      = eval(alloc, riccati::scale(info.chebyshev_[niter].second, x0, h));
   auto&& D = info.Dn(niter);
   auto ws = info.omega_fun_(x_scaled);
   auto gs = info.gamma_fun_(x_scaled);
-  auto D2 = to_arena(
+  auto D2 = eval(
       alloc, (4.0 / (h * h) * (D * D) + 4.0 / h * (gs.asDiagonal() * D)));
   D2 += (ws.array().square()).matrix().asDiagonal();
   const auto n = std::round(info.ns_[niter]);
-  auto D2ic = to_arena(alloc, matrix_t<complex_t>::Zero(n + 3, n + 1));
+  auto D2ic = eval(alloc, matrix_t<complex_t>::Zero(n + 3, n + 1));
   D2ic.topRows(n + 1) = D2;
   D2ic.row(n + 1) = 2.0 / h * D.row(D.rows() - 1);
-  auto ic = to_arena(alloc, vectorc_t::Zero(n + 1));
+  auto ic = eval(alloc, vectorc_t::Zero(n + 1));
   ic.coeffRef(n) = complex_t{1.0, 0.0};
   D2ic.row(n + 2) = ic;
-  auto rhs = to_arena(alloc, vectorc_t::Zero(n + 3));
+  auto rhs = eval(alloc, vectorc_t::Zero(n + 3));
   rhs.coeffRef(n + 1) = dy0;
   rhs.coeffRef(n + 2) = y0;
-  auto y1 = to_arena(alloc, D2ic.colPivHouseholderQr().solve(rhs));
-  auto dy1 = to_arena(alloc, 2.0 / h * (D * y1));
+  auto y1 = eval(alloc, D2ic.colPivHouseholderQr().solve(rhs));
+  auto dy1 = eval(alloc, 2.0 / h * (D * y1));
 
   return std::make_tuple(std::move(y1), std::move(dy1), std::move(x_scaled));
 }

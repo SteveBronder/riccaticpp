@@ -74,7 +74,7 @@ inline auto eval(T&& x) {
 
 template <typename T, Eigen::Index R, Eigen::Index C>
 inline Eigen::Matrix<T, R, C> eval(Eigen::Matrix<T, R, C>&& x) {
-  return x;
+  return std::move(x);
 }
 
 template <typename T, Eigen::Index R, Eigen::Index C>
@@ -89,7 +89,7 @@ inline const auto& eval(const Eigen::Matrix<T, R, C>& x) {
 
 template <typename T, Eigen::Index R, Eigen::Index C>
 inline Eigen::Array<T, R, C> eval(Eigen::Array<T, R, C>&& x) {
-  return x;
+  return std::move(x);
 }
 
 template <typename T, Eigen::Index R, Eigen::Index C>

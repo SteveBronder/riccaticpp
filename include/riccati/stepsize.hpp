@@ -63,14 +63,14 @@ template <typename SolverInfo, typename FloatingPoint, typename Allocator>
 inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                 FloatingPoint h, FloatingPoint epsilon_h,
                                 Allocator&& alloc) {
-  auto t = to_arena(alloc, riccati::scale(info.xp_interp(), x0, h));
-  auto s = to_arena(alloc, riccati::scale(info.xp(), x0, h));
+  auto t = eval(alloc, riccati::scale(info.xp_interp(), x0, h));
+  auto s = eval(alloc, riccati::scale(info.xp(), x0, h));
   // TODO: Use a memory arena for these
   auto ws = info.omega_fun_(s).eval();
   auto gs = info.gamma_fun_(s).eval();
-  auto omega_analytic = to_arena(alloc, info.omega_fun_(t));
+  auto omega_analytic = eval(alloc, info.omega_fun_(t));
   auto omega_estimate = info.L() * ws;
-  auto gamma_analytic = to_arena(alloc, info.gamma_fun_(t));
+  auto gamma_analytic = eval(alloc, info.gamma_fun_(t));
   auto gamma_estimate = info.L() * gs;
   FloatingPoint max_omega_err
       = (((omega_estimate - omega_analytic).array() / omega_analytic.array())
@@ -83,7 +83,7 @@ inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
   FloatingPoint max_err = std::max(max_omega_err, max_gamma_err);
   if (max_err <= epsilon_h) {
     if (info.p_ != info.n_) {
-      auto xn_scaled = to_arena(alloc, riccati::scale(info.xn(), x0, h));
+      auto xn_scaled = eval(alloc, riccati::scale(info.xn(), x0, h));
       ws = info.omega_fun_(xn_scaled);
       gs = info.gamma_fun_(xn_scaled);
     }

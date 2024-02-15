@@ -58,10 +58,10 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
   using complex_t = std::complex<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   auto xi_scaled
-      = to_arena(alloc, scale(info.xn().array(), xi, init_stepsize).matrix());
+      = eval(alloc, scale(info.xn().array(), xi, init_stepsize).matrix());
   // Frequency and friction functions evaluated at n+1 Chebyshev nodes
-  auto omega_n = to_arena(alloc, info.omega_fun_(xi_scaled));
-  auto gamma_n = to_arena(alloc, info.gamma_fun_(xi_scaled));
+  auto omega_n = eval(alloc, info.omega_fun_(xi_scaled));
+  auto gamma_n = eval(alloc, info.gamma_fun_(xi_scaled));
   vectorc_t yeval;
   // TODO: Add this check to regular evolve
   if (sign * (xi + init_stepsize) > sign * xf) {
@@ -87,11 +87,11 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
           = get_slice(x_eval, sign * xi, sign * (xi + init_stepsize));
       if (dense_size != 0) {
         auto x_eval_map = x_eval.segment(dense_start, dense_size);
-        auto x_eval_scaled = to_arena(
+        auto x_eval_scaled = eval(
             alloc,
             (2.0 / init_stepsize * (x_eval_map.array() - xi) - 1.0).matrix());
         auto Linterp = interpolate(info.xn(), x_eval_scaled, alloc);
-        auto fdense = to_arena(
+        auto fdense = eval(
             alloc, (Linterp * std::get<5>(osc_ret)).array().exp().matrix());
         yeval = std::get<6>(osc_ret).first * fdense
                 + std::get<6>(osc_ret).second * fdense.conjugate();
@@ -415,15 +415,15 @@ inline auto evolve(SolverInfo &&info, Scalar xi, Scalar xf,
         auto y_eval_map
             = Eigen::Map<vectorc_t>(yeval.data() + dense_start, dense_size);
         if (steptype) {
-          auto x_eval_scaled = to_arena(
+          auto x_eval_scaled = eval(
               alloc,
               (2.0 / h * (x_eval_map.array() - xcurrent) - 1.0).matrix());
           auto Linterp = interpolate(info.xn(), x_eval_scaled, alloc);
-          auto fdense = to_arena(alloc, (Linterp * un).array().exp().matrix());
+          auto fdense = eval(alloc, (Linterp * un).array().exp().matrix());
           y_eval_map
               = a_pair.first * fdense + a_pair.second * fdense.conjugate();
         } else {
-          auto xc_scaled = to_arena(
+          auto xc_scaled = eval(
               alloc, scale(info.chebyshev_[1].second, xcurrent, h).matrix());
           auto Linterp = interpolate(xc_scaled, x_eval_map, alloc);
           y_eval_map = Linterp * y_eval;
