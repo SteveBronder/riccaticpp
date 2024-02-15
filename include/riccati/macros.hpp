@@ -3,41 +3,41 @@
 
 namespace riccati {
 
-#ifdef __GNUC__ // 1
+#ifdef __GNUC__
 
 /**
  * If statements predicate tagged with this attribute are expected to
  * be true most of the time. This effects inlining decisions.
  */
-#ifndef likely // 2
+#ifndef likely
 #define likely(x) __builtin_expect(!!(x), 1)
-#endif // 2
+#endif
 
-#ifndef unlikely // 2
+#ifndef unlikely
 #define unlikely(x) __builtin_expect(!!(x), 0)
-#endif // 2
+#endif
 
-#ifdef __has_attribute // 2
-#if __has_attribute(noinline) && __has_attribute(cold) // 3
-#ifndef RICCATI_COLD_PATH // 4
+#ifdef __has_attribute
+#if __has_attribute(noinline) && __has_attribute(cold)
+#ifndef RICCATI_COLD_PATH
 /**
  * Functions tagged with this attribute are not inlined and moved
  *  to a cold branch to tell the CPU to not attempt to pre-fetch
  *  the associated function.
  */
 #define RICCATI_COLD_PATH __attribute__((noinline, cold))
-#endif // 4
-#endif // 3
-#endif // 2
+#endif
+#endif
+#endif
 
-#ifndef RICCATI_COLD_PATH // 2
+#ifndef RICCATI_COLD_PATH
 #define RICCATI_COLD_PATH
-#endif // 2
-#ifndef RICCATI_NO_INLINE // 2
+#endif
+#ifndef RICCATI_NO_INLINE
 #define RICCATI_NO_INLINE __attribute__((noinline))
-#endif // 2
+#endif
 
-#ifndef RICCATI_ALWAYS_INLINE // 2
+#ifndef RICCATI_ALWAYS_INLINE
 #define RICCATI_ALWAYS_INLINE __attribute__((always_inline)) inline
 #endif
 
@@ -54,7 +54,7 @@ namespace riccati {
 #define unlikely(x) (x)
 #define RICCATI_COLD_PATH
 #define RICCATI_NO_INLINE
-#define RICCATI_ALWAYS_INLINE
+#define RICCATI_ALWAYS_INLINE inline
 #define RICCATI_PURE
 #endif
 
