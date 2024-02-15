@@ -29,7 +29,6 @@ namespace riccati {
 #endif
 #ifndef RICCATI_COLD_PATH
 #define RICCATI_COLD_PATH
-#endif
 
 #ifndef RICCATI_NO_INLINE
 #define RICCATI_NO_INLINE __attribute__((noinline))
@@ -46,6 +45,17 @@ namespace riccati {
 #ifndef RICCATI_PURE
 #define RICCATI_PURE __attribute__((pure))
 #endif
+
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
+#define RICCATI_COLD_PATH
+#define RICCATI_NO_INLINE
+#define RICCATI_ALWAYS_INLINE
+#define RICCATI_PURE
+#endif
+
+
 
 }  // namespace riccati
 
