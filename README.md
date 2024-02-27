@@ -63,9 +63,25 @@ From the top level directory you can build and call the tests with the following
 
 ```bash
 # DEBUG build types enable 0g, ggdb3, and pretty printing helper functions in utils
-cmake -S . -B "build" -DCMAKE_BUILD_TYPE=RELEASE  -DBUILD_TESTING=ON
+cmake -S . -B "build" -DCMAKE_BUILD_TYPE=RELEASE  -DRICCATI_BUILD_TESTING=ON
 cd build/tests
 make -j4 riccati_test && ctest
 ```
 
 ## Including
+
+`riccaticpp` is a header only library and so any project can include it just by copy/pasting in the include folder. For cmake based projects
+
+```cmake
+include(FetchContent)
+
+FetchContent_Declare(
+  riccaticpp
+  https://github.com/SteveBronder/riccaticpp
+  master # Use a specific version or commit
+)
+FetchContent_MakeAvailable(riccaticpp)
+
+# For your target
+target_link_libraries(target_name riccati)
+```

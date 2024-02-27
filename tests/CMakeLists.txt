@@ -1,18 +1,18 @@
+set(BUILD_TESTING ${RICCATI_BUILD_TESTING})
+
 if (BUILD_TESTING)
 # Only needed for testing
-if (RICCATI_BUILD_TESTING)
-  set(Boost_USE_STATIC_LIBS ON)
-  set(Boost_USE_STATIC_RUNTIME ON)
-  set(BOOST_ENABLE_CMAKE ON)
-  FetchContent_Declare(
-    boost
-    URL https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz
-  )
-  FetchContent_Declare(googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG main)
-  FetchContent_MakeAvailable(googletest boost)
-endif()
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_RUNTIME ON)
+set(BOOST_ENABLE_CMAKE ON)
+FetchContent_Declare(
+  boost
+  URL https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz
+)
+FetchContent_Declare(googletest
+GIT_REPOSITORY https://github.com/google/googletest.git
+GIT_TAG main)
+FetchContent_MakeAvailable(googletest boost)
 
 # Define a function to simplify adding grouped tests
 function(add_gtest_grouped_test test_directory)

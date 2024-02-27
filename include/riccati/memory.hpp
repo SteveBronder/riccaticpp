@@ -23,7 +23,6 @@ namespace internal {
  * @tparam Alignment Number of bytes of alignment required.
  * @tparam T Type of object to which pointer points.
  * @param ptr Pointer to test.
- * @param bytes_aligned Number of bytes of alignment required.
  * @return <code>true</code> if pointer is aligned.
  * @tparam Type of object to which pointer points.
  */

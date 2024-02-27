@@ -1,5 +1,5 @@
-#ifndef INCLUDE_riccati_STEPSIZE_HPP
-#define INCLUDE_riccati_STEPSIZE_HPP
+#ifndef INCLUDE_RICCATI_STEPSIZE_HPP
+#define INCLUDE_RICCATI_STEPSIZE_HPP
 
 #include <riccati/utils.hpp>
 
@@ -7,7 +7,7 @@ namespace riccati {
 /**
  * Chooses the stepsize for spectral Chebyshev steps, based on the variation
  * of 1/w, the approximate timescale over which the solution changes. If over
- *  the suggested interval h 1/w changes by a fraction of $\pm epsilon_h$
+ *  the suggested interval h 1/w changes by a fraction of  \f[\pm epsilon_h\f]
  * or more, the interval is halved, otherwise it's accepted.
  *
  *  @tparam SolverInfo A riccati solver like object
@@ -53,9 +53,10 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
  * interpolation matrices and node positions.
  * @param x0 float - The current value of the independent variable.
  * @param h float - The initial estimate of the step size.
- * @param epsh float - Tolerance parameter defining the maximum relative error
+ * @param epsilon_h float - Tolerance parameter defining the maximum relative error
  * allowed in the Chebyshev interpolation of `w(x)` and `g(x)` over the proposed
  * step.
+ * @param alloc An allocator for the Eigen objects.
  * @return float - The refined step size over which the Chebyshev interpolation
  * of `w(x)` and `g(x)` satisfies the relative error tolerance `epsh`.
  */

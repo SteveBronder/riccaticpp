@@ -1,5 +1,5 @@
-#ifndef INCLUDE_riccati_EVOLVE_HPP
-#define INCLUDE_riccati_EVOLVE_HPP
+#ifndef INCLUDE_RICCATI_EVOLVE_HPP
+#define INCLUDE_RICCATI_EVOLVE_HPP
 
 #include <riccati/chebyshev.hpp>
 #include <riccati/step.hpp>
@@ -25,10 +25,6 @@ namespace riccati {
  * @tparam Scalar Numeric scalar type, typically float or double.
  * @tparam Vec Type of the vector for dense output values, should match Scalar
  * type.
- *
- * @tparam SolverInfo Type of the solver info object containing differentiation
- * matrices, etc.
- * @tparam Scalar Numeric scalar type, typically float or double.
  * @tparam Vec Type of the vector for dense output values.
  * @tparam Allocator Type of the allocator for the arena memory pool.
  * @param[in] info SolverInfo object containing necessary information for the
@@ -41,11 +37,23 @@ namespace riccati {
  * Chebyshev type steps.
  * @param[in] epsilon_h Relative tolerance for choosing the stepsize of Riccati
  * steps.
+ * @param[in] init_stepsize Stepsize for the integration
  * @param[in] x_eval List of x-values where the solution is to be interpolated
  * (dense output) and returned.
- * @param alloc Allocator for the memory pool.
+ * @param[in,out] alloc Allocator for the memory pool.
  * @param[in] hard_stop If true, forces the solver to have a potentially smaller
  * last stepsize to stop exactly at xf.
+ * @returns A tuple containing the following elements:
+ * 0. `bool`: A boolean flag indicating whether the step was successfully taken.
+ * 1. `Scalar`: The next x-value after the integration step, indicating the new position in the integration domain.
+ * 2. `Scalar`: The suggested next stepsize for further integration steps based on the current step's data.
+ * 3. `std::tuple`: The result from the @ref riccati::osc_step function which includes various internal states and calculations specific to the current step.
+ * 4. @ref Eigen::Matrix<std::complex<Scalar>, -1, 1>: A vector containing the interpolated solution at the specified `x_eval` points. This represents the dense output for the current step.
+ * 5. `Eigen::Index`: The starting index in the `x_eval` array corresponding to the first point in the current step's dense output.
+ * 6. `Eigen::Index`: The number of points in the `x_eval` array that are covered by the current step's dense output.
+ *
+ * @note Tuple element 4 vector contains the interpolated values of the differential equation's solution at the points specified by the `x_eval` input parameter.
+ * These values are calculated using the dense output methodology and are meant for high-accuracy interpolation between the standard discrete steps of the solver.
  */
 template <typename SolverInfo, typename Scalar, typename Vec,
           typename Allocator>
@@ -130,10 +138,6 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
  * @tparam Scalar Numeric scalar type, typically float or double.
  * @tparam Vec Type of the vector for dense output values, should match Scalar
  * type.
- *
- * @tparam SolverInfo Type of the solver info object containing differentiation
- * matrices, etc.
- * @tparam Scalar Numeric scalar type, typically float or double.
  * @tparam Vec Type of the vector for dense output values.
  * @tparam Allocator Type of the allocator for the arena memory pool.
  * @param[in] info SolverInfo object containing necessary information for the
@@ -146,11 +150,23 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
  * Chebyshev type steps.
  * @param[in] epsilon_h Relative tolerance for choosing the stepsize of Riccati
  * steps.
+ * @param[in] init_stepsize Stepsize for the integration
  * @param[in] x_eval List of x-values where the solution is to be interpolated
  * (dense output) and returned.
- * @param alloc Allocator for the memory pool.
+ * @param[in,out] alloc Allocator for the memory pool.
  * @param[in] hard_stop If true, forces the solver to have a potentially smaller
  * last stepsize to stop exactly at xf.
+ * @returns A tuple containing the following elements:
+ * 0. `bool`: A boolean flag indicating whether the step was successfully taken.
+ * 1. `Scalar`: The next x-value after the integration step, indicating the new position in the integration domain.
+ * 2. `Scalar`: The suggested next stepsize for further integration steps based on the current step's data.
+ * 3. `std::tuple`: The result from the @ref riccati::nonosc_step function which includes various internal states and calculations specific to the current step.
+ * 4. @ref Eigen::Matrix<std::complex<Scalar>, -1, 1>: A vector containing the interpolated solution at the specified `x_eval` points. This represents the dense output for the current step.
+ * 5. `Eigen::Index`: The starting index in the `x_eval` array corresponding to the first point in the current step's dense output.
+ * 6. `Eigen::Index`: The number of points in the `x_eval` array that are covered by the current step's dense output.
+ *
+ * @note Tuple element 4 vector contains the interpolated values of the differential equation's solution at the points specified by the `x_eval` input parameter.
+ * These values are calculated using the dense output methodology and are meant for high-accuracy interpolation between the standard discrete steps of the solver.
  */
 template <typename SolverInfo, typename Scalar, typename Vec,
           typename Allocator>
@@ -237,25 +253,31 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
  * Chebyshev type steps.
  * @param[in] epsilon_h Relative tolerance for choosing the stepsize of Riccati
  * steps.
+ * @param[in] init_stepsize initial stepsize for the integration
  * @param[in] x_eval List of x-values where the solution is to be interpolated
  * (dense output) and returned.
  * @param alloc Allocator for the memory pool.
  * @param[in] hard_stop If true, forces the solver to have a potentially smaller
  * last stepsize to stop exactly at xf.
- *
- * @return Tuple containing:
- *         - Vector of x-values at internal steps of the solver (xs).
- *         - Vector of y-values of the dependent variable at internal steps
- * (ys).
- *         - Vector of derivatives of the dependent variable at internal steps
- * (dys).
- *         - Vector indicating the success of each step (1 for success, 0 for
- * failure).
- *         - Vector of complex phases accumulated during each successful Riccati
- * step (phases).
- *         - Vector indicating the types of successful steps taken (1 for
- * Riccati, 0 for Chebyshev).
- *         - Vector of interpolated values of the solution at x_eval (yeval).
+ * @return A tuple containing multiple elements representing the results of the ODE solving process:
+ * 0. std::vector<Scalar>: A vector containing the x-values at which the solution was evaluated or interpolated.
+ *   These values correspond to the points in the interval [xi, xf] and include the points specified in x_eval
+ *   if dense output was requested.
+ * 1. std::vector<std::complex<Scalar>>: A vector of complex numbers representing the solution y(x) of the differential
+ *   equation at each x-value from the corresponding vector of x-values.
+ * 2. std::vector<std::complex<Scalar>>: A vector of complex numbers representing the derivative of the solution, y'(x),
+ *   at each x-value from the corresponding vector of x-values.
+ * 3. std::vector<int>: A vector indicating the success status of the solver at each step. Each element corresponds to a
+ *   step in the solver process, where a value of 1 indicates success, and 0 indicates failure.
+ * 4. std::vector<int>: A vector indicating the type of step taken at each point in the solution process. Each element
+ *   corresponds to a step in the solver process, where a value of 1 indicates an oscillatory step and 0 indicates a
+ *   non-oscillatory step.
+ * 5. std::vector<Scalar>: A vector containing the phase angle at each step of the solution process if relevant. This
+ *   is especially applicable for oscillatory solutions and may not be used for all types of differential equations.
+ * 6. @ref Eigen::Matrix<std::complex<Scalar>, -1, 1>: A vector containing the interpolated solution at the specified `x_eval`
+ * The function returns these vectors encapsulated in a standard tuple, providing comprehensive information about the
+ * solution process, including where the solution was evaluated, the values and derivatives of the solution at those
+ * points, success status of each step, type of each step, and phase angles where applicable.
  */
 template <typename SolverInfo, typename Scalar, typename Vec,
           typename Allocator>

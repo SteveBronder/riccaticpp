@@ -1,5 +1,5 @@
-#ifndef INCLUDE_riccati_SOLVER_HPP
-#define INCLUDE_riccati_SOLVER_HPP
+#ifndef INCLUDE_RICCATI_SOLVER_HPP
+#define INCLUDE_RICCATI_SOLVER_HPP
 
 #include <riccati/arena_matrix.hpp>
 #include <riccati/memory.hpp>
@@ -57,10 +57,10 @@ class SolverInfo {
    * the value of the independent variable at the start of the current step and
    * `h` is the current stepsize. The in-between points :math:`\\tilde{x}_p` are
    * defined by
-   * $$
+   * \f[
    * \\tilde{x}_p = \cos\left( \\frac{(2k + 1)\pi}{2p} \\right), \quad k = 0, 1,
    * \ldots p-1.
-   * $$
+   * \f]
    */
   vectord_t xp_interp_;
 

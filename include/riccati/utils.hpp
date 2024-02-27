@@ -1,5 +1,5 @@
-#ifndef INCLUDE_riccati_UTILS_HPP
-#define INCLUDE_riccati_UTILS_HPP
+#ifndef INCLUDE_RICCATI_UTILS_HPP
+#define INCLUDE_RICCATI_UTILS_HPP
 
 #include <Eigen/Dense>
 #include <type_traits>

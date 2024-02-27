@@ -1,5 +1,5 @@
-#ifndef INCLUDE_riccati_STEP_HPP
-#define INCLUDE_riccati_STEP_HPP
+#ifndef INCLUDE_RICCATI_STEP_HPP
+#define INCLUDE_RICCATI_STEP_HPP
 
 #include <riccati/chebyshev.hpp>
 #include <Eigen/Dense>
@@ -34,6 +34,7 @@ namespace riccati {
  * @param dy0 complex - Initial derivative of the dependent variable at `x0`.
  * @param epsres float - Tolerance for the relative accuracy of the Chebyshev
  * step.
+ * @param alloc An allocator for the Eigen objects.
  * @return std::tuple<std::complex<double>, std::complex<double>, float, int> -
  * A tuple containing:
  *         1. std::complex<double> - Value of the dependent variable at the end
@@ -98,15 +99,26 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
  * approximation method. The function also computes the total phase change of
  * the dependent variable over the step.
  *
+ * @tparam SolverInfo A riccati solver like object
+ * @tparam OmegaVec An Eigen vector
+ * @tparam GammaVec An Eigen vector
+ * @tparam Scalar A scalar type for the x values
+ * @tparam YScalar A scalar type for the y values
+ * @tparam Allocator An allocator for the Eigen objects
  * @param info SolverInfo object - Object containing pre-computed information
  * for the solver, like differentiation matrices and methods for evaluating
  * functions `w(x)` and `g(x)` over the interval `[x0, x0+h]`.
+ * @param omega_s Vector of the frequency function `w(x)` evaluated at the
+ * Chebyshev nodes over the interval `[x0, x0+h]`.
+ * @param gamma_s Vector of the friction function `g(x)` evaluated at the
+ * Chebyshev nodes over the interval `[x0, x0+h]`.
  * @param x0 float - The starting value of the independent variable.
  * @param h float - Step size for the Riccati step.
  * @param y0 complex - Initial value of the dependent variable at `x0`.
  * @param dy0 complex - Initial derivative of the dependent variable at `x0`.
  * @param epsres float - Tolerance for the relative accuracy of the Riccati
  * step.
+ * @param alloc An allocator for the Eigen objects.
  * @return std::tuple<std::complex<double>, std::complex<double>, float, int,
  * std::complex<double>> - A tuple containing:
  *         1. std::complex<double> - Value of the dependent variable at the end

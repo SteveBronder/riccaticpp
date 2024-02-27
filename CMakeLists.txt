@@ -1,18 +1,14 @@
 cmake_minimum_required(VERSION 3.20.2)
 project(
     riccati
-    VERSION 1.3.0
+    VERSION 0.1.0
     LANGUAGES C CXX)
 
 include(FetchContent)
-set(CMAKE_VERBOSE_MAKEFILE YES)
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_CXX_STANDARD_REQUIRED NO)
 cmake_policy(SET CMP0135 NEW)
 cmake_policy(SET CMP0077 NEW)
-if(MSVC)
-    add_compile_options(/std:c++14)
-endif()
 set(CMAKE_CXX_EXTENSIONS NO)
 if (CMAKE_BUILD_TYPE MATCHES Release)
 #  set(CMAKE_VERBOSE_MAKEFILE NO)
@@ -79,13 +75,59 @@ if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
       -Wall)
 endif()
 
-set(riccati_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-# Allows upstream users to call fetch_content etc.
-add_library(riccati INTERFACE)
+# Define the include directory for this library
+add_library(${PROJECT_NAME} INTERFACE)
+target_include_directories(${PROJECT_NAME} INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
 
-target_include_directories(riccati PUBLIC INTERFACE
-  ${riccati_INCLUDE_DIR}
+# Optionally, specify install rules for your library
+# This is necessary for FetchContent to work properly
+install(TARGETS ${PROJECT_NAME}
+    EXPORT ${PROJECT_NAME}Targets
+    INCLUDES DESTINATION include
+)
+install(DIRECTORY include/ DESTINATION include)
+
+# Create and install the CMake configuration files for your library
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${PROJECT_NAME}ConfigVersion.cmake"
+    VERSION ${VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+install(EXPORT ${PROJECT_NAME}Targets
+    FILE ${PROJECT_NAME}Config.cmake
+    NAMESPACE riccaticpp::
+    DESTINATION lib/cmake/${PROJECT_NAME}
 )
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+
+
+# Check if Doxygen is installed
+if (RICCATI_BUILD_DOXYGEN)
+    set(Eigen_INCLUDE_DIR "${Eigen3_SOURCE_DIR}")
+    find_package(Doxygen)
+    if(DOXYGEN_FOUND)
+        # Set input and output files
+        set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in)
+        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/docs/Doxyfile)
+
+        # Request to configure the file
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+        message(STATUS "Doxygen build started")
+
+        # Note: do not put 'ALL' keyword since you probably don't want documentation
+        # to be generated every time you build the project.
+        add_custom_target( doc_doxygen
+            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen"
+            VERBATIM )
+    else()
+        message("Doxygen need to be installed to generate the doxygen documentation")
+    endif()
+endif()

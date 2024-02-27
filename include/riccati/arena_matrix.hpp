@@ -28,7 +28,8 @@ class arena_matrix : public Eigen::Map<MatrixType> {
   using allocator_t = arena_allocator<Scalar, arena_alloc>;
   allocator_t allocator_;
   /**
-   * Default constructor.
+   * Basic allocator constructor.
+   * @param allocator The allocator to receive memory from
    */
   template <typename T>
   arena_matrix(arena_allocator<T, arena_alloc>& allocator)
@@ -39,6 +40,7 @@ class arena_matrix : public Eigen::Map<MatrixType> {
 
   /**
    * Constructs `arena_matrix` with given number of rows and columns.
+   * @param allocator The allocator to receive memory from
    * @param rows number of rows
    * @param cols number of columns
    */
@@ -51,6 +53,7 @@ class arena_matrix : public Eigen::Map<MatrixType> {
   /**
    * Constructs `arena_matrix` with given size. This only works if
    * `MatrixType` is row or col vector.
+   * @param allocator The allocator to receive memory from
    * @param size number of elements
    */
   template <typename T>
@@ -60,6 +63,7 @@ class arena_matrix : public Eigen::Map<MatrixType> {
 
   /**
    * Constructs `arena_matrix` from an expression.
+   * @param allocator The allocator to receive memory from
    * @param other expression
    */
   template <typename T, typename Expr>

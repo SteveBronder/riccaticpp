@@ -1,5 +1,5 @@
-#ifndef INCLUDE_riccati_CHEBYSHEV_HPP
-#define INCLUDE_riccati_CHEBYSHEV_HPP
+#ifndef INCLUDE_RICCATI_CHEBYSHEV_HPP
+#define INCLUDE_RICCATI_CHEBYSHEV_HPP
 
 #include <riccati/arena_matrix.hpp>
 #include <riccati/memory.hpp>
@@ -55,15 +55,15 @@ inline auto fft(T&& x) {
  * Chebyshev node.
  */
 template <typename Mat>
-inline auto coeffs_to_cheby_nodes(Mat&& input_id) {
+inline auto coeffs_to_cheby_nodes(Mat&& coeffs) {
   using Scalar = typename std::decay_t<Mat>::Scalar;
-  const auto n = input_id.rows();
+  const auto n = coeffs.rows();
   using Mat_t = matrix_t<Scalar>;
   if (n <= 1) {
-    return Mat_t(input_id);
+    return Mat_t(coeffs);
   } else {
-    Mat_t fwd_values(n + n - 2, input_id.cols());
-    fwd_values.topRows(n) = input_id;
+    Mat_t fwd_values(n + n - 2, coeffs.cols());
+    fwd_values.topRows(n) = coeffs;
     fwd_values.block(1, 0, n - 2, n) /= 2.0;
     fwd_values.bottomRows(n - 1)
         = fwd_values.topRows(n - 1).rowwise().reverse();
@@ -102,15 +102,15 @@ inline auto coeffs_to_cheby_nodes(Mat&& input_id) {
  * interpolating the j-th input polynomial.
  */
 template <typename Mat>
-inline auto cheby_nodes_to_coeffs(Mat&& input_id) {
+inline auto cheby_nodes_to_coeffs(Mat&& values) {
   using Scalar = typename std::decay_t<Mat>::Scalar;
   using Mat_t = matrix_t<Scalar>;
-  const auto n = input_id.rows();
+  const auto n = values.rows();
   if (n <= 1) {
-    return Mat_t(Mat_t::Zero(input_id.rows(), input_id.cols()));
+    return Mat_t(Mat_t::Zero(values.rows(), values.cols()));
   } else {
-    Mat_t rev_values(n + n - 2, input_id.cols());
-    rev_values.topRows(n) = input_id;
+    Mat_t rev_values(n + n - 2, values.cols());
+    rev_values.topRows(n) = values;
     rev_values.bottomRows(n - 1)
         = rev_values.topRows(n - 1).rowwise().reverse();
     auto rev_ret = Mat_t(internal::fft<false>(rev_values).topRows(n)).eval();
@@ -124,27 +124,27 @@ inline auto cheby_nodes_to_coeffs(Mat&& input_id) {
  * kind for a set of polynomials.
  *
  * @tparam Mat Eigen matrix type
- * @param input_id A matrix of size (n+1, m), where the
+ * @param values A matrix of size (n+1, m), where the
  * (i, j)th element is the value of the j-th polynomial evaluated at the i-th
  * Chebyshev node.
  */
 template <typename Mat>
-inline auto coeffs_and_cheby_nodes(Mat&& input_id) {
+inline auto coeffs_and_cheby_nodes(Mat&& values) {
   using Scalar = typename std::decay_t<Mat>::Scalar;
   using Mat_t = matrix_t<Scalar>;
-  const auto n = input_id.rows();
+  const auto n = values.rows();
   if (n <= 1) {
-    return std::make_pair(Mat_t(input_id),
-                          Mat_t(Mat_t::Zero(input_id.rows(), input_id.cols())));
+    return std::make_pair(Mat_t(values),
+                          Mat_t(Mat_t::Zero(values.rows(), values.cols())));
   } else {
-    Mat_t fwd_values(n + n - 2, input_id.cols());
-    fwd_values.topRows(n) = input_id;
+    Mat_t fwd_values(n + n - 2, values.cols());
+    fwd_values.topRows(n) = values;
     fwd_values.block(1, 0, n - 2, n) /= 2.0;
     fwd_values.bottomRows(n - 1)
         = fwd_values.topRows(n - 1).rowwise().reverse();
     auto fwd_val = Mat_t(internal::fft<true>(fwd_values).topRows(n).eval());
-    Mat_t rev_values(n + n - 2, input_id.cols());
-    rev_values.topRows(n) = input_id;
+    Mat_t rev_values(n + n - 2, values.cols());
+    rev_values.topRows(n) = values;
     rev_values.bottomRows(n - 1)
         = rev_values.topRows(n - 1).rowwise().reverse();
     auto rev_ret = Mat_t(internal::fft<false>(rev_values).topRows(n)).eval();
@@ -167,7 +167,7 @@ inline auto coeffs_and_cheby_nodes(Mat&& input_id) {
  *
  * @tparam Scalar The scalar type of the Chebyshev nodes and integration matrix
  * @tparam Integral The integral type of the number of Chebyshev nodes
- * @param n int - Number of Chebyshev nodes the integrand is evaluated at. The
+ * @param n Number of Chebyshev nodes the integrand is evaluated at. The
  * nodes are ordered from +1 to -1.
  * @return Integration matrix of size (n, n). This
  * matrix maps the values of the integrand at the n Chebyshev nodes to the
@@ -217,7 +217,7 @@ inline auto integration_matrix(Integral n) {
  * @return A vector of size (n+1), containing the
  * quadrature weights.
  *
- * @reference
+ * @note See the below for more information
  * Trefethen, Lloyd N. Spectral methods in MATLAB. Society for industrial and
  * applied mathematics, 2000.
  */
@@ -322,6 +322,7 @@ inline auto chebyshev(Integral n) {
  * which the function values are known.
  * @param t A vector specifying the target nodes, at
  * which the function values are to be interpolated.
+ * @param alloc An allocator for the Eigen objects.
  * @return The interpolation matrix `L`. If `s` has
  * size `p` and `t` has size `q`, then `L` has size (q, p). `L` takes function
  * values at source points `s` and yields the function evaluated at target
@@ -376,11 +377,11 @@ inline auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
  * @param dy0 Initial derivative of the dependent variable at `x0`.
  * @param niter Counter for the number of iterations of the spectral
  * collocation step performed.
- * @return std::tuple<std::vector<std::complex<double>>,
- * std::vector<std::complex<double>>, Eigen::VectorXd> - A tuple containing:
- *         1. std::vector<std::complex<double>> - Numerical estimate of the
+ * @param alloc An allocator for the Eigen objects.
+ * @return A tuple containing:
+ *         1. Eigen::Vector<std::complex<Scalar>, Eigen::Dynamic, 1> - Numerical estimate of the
  * solution at the end of the step, at `x0 + h`.
- *         2. std::vector<std::complex<double>> - Numerical estimate of the
+ *         2. Eigen::Vector<std::complex<Scalar>, Eigen::Dynamic, 1> - Numerical estimate of the
  * derivative of the solution at the end of the step, at `x0 + h`.
  *         3. Eigen::VectorXd (real) - Chebyshev nodes used for the current
  * iteration of the spectral collocation method, scaled to lie in the interval
