@@ -78,10 +78,10 @@ include(FetchContent)
 FetchContent_Declare(
   riccaticpp
   https://github.com/SteveBronder/riccaticpp
-  master # Use a specific version or commit
+  main # Use a specific version or commit
 )
 FetchContent_MakeAvailable(riccaticpp)
 
 # For your target
-target_link_libraries(target_name riccati::riccati)
+target_link_libraries(target_name riccati)
 ```
