@@ -2,7 +2,7 @@
 
 # riccati
 
-**A package implementing the adaptive Riccati defect correction (ARDC) method**
+A package implementing the adaptive Riccati defect correction (ARDC) method
 
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.05430/status.svg)](https://doi.org/10.21105/joss.05430)
 [![Documentation Status](https://readthedocs.org/projects/riccati/badge/?version=latest)](https://riccati.readthedocs.io/en/latest/?badge=latest)
@@ -25,7 +25,7 @@ its behaviour. For more details on the algorithm, please see [Attribution](https
 
 ## Documentation
 
-Read the documentation at [riccati.readthedocs.io](http://riccati.readthedocs.io).
+Read the documentation at [the docs site](https://stevebronder.com/riccaticpp/).
 
 ## Attribution
 
@@ -83,5 +83,5 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(riccaticpp)
 
 # For your target
-target_link_libraries(target_name riccati)
+target_link_libraries(target_name riccati::riccati)
 ```

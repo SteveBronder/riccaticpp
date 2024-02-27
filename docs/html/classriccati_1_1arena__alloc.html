@@ -133,6 +133,8 @@ Public Member Functions</h2></td></tr>
 <p>This class is useful in settings where large numbers of small objects are allocated and then collected all at once. This may include objects whose destructors have no effect.</p>
 <p>Memory is allocated on a stack of blocks. Each block allocated is twice as large as the previous one. The memory may be recovered, with the blocks being reused, or all blocks may be freed, resetting the stack of blocks to its original state.</p>
 <p>Alignment up to 8 byte boundaries guaranteed for the first malloc, and after that it's up to the caller. On 64-bit architectures, all struct values should be padded to 8-byte boundaries if they contain an 8-byte member or a virtual function. </p>
+
+<p class="definition">Definition at line <a class="el" href="memory_8hpp_source.html#l00078">78</a> of file <a class="el" href="memory_8hpp_source.html">memory.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a3f78e32470da8e837af28cf12fb127ab" name="a3f78e32470da8e837af28cf12fb127ab"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3f78e32470da8e837af28cf12fb127ab">&#9670;&#160;</a></span>arena_alloc()</h2>
@@ -171,7 +173,9 @@ Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="reference">References <a class="el" href="macros_8hpp.html#ac6c45889010c1bd68631771b64f18101">unlikely</a>.</p>
+<p class="definition">Definition at line <a class="el" href="memory_8hpp_source.html#l00134">134</a> of file <a class="el" href="memory_8hpp_source.html">memory.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="macros_8hpp_source.html#l00054">unlikely</a>.</p>
 
 </div>
 </div>
@@ -199,6 +203,8 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Destroy this memory allocator.</p>
 <p>This is implemented as a no-op as there is no destruction required. </p>
+
+<p class="definition">Definition at line <a class="el" href="memory_8hpp_source.html#l00152">152</a> of file <a class="el" href="memory_8hpp_source.html">memory.hpp</a>.</p>
 
 </div>
 </div>
@@ -237,7 +243,9 @@ Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>A pointer to the allocated memory. </dd></dl>
 
-<p class="reference">References <a class="el" href="macros_8hpp.html#ac6c45889010c1bd68631771b64f18101">unlikely</a>.</p>
+<p class="definition">Definition at line <a class="el" href="memory_8hpp_source.html#l00175">175</a> of file <a class="el" href="memory_8hpp_source.html">memory.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="macros_8hpp_source.html#l00054">unlikely</a>.</p>
 
 </div>
 </div>
@@ -281,7 +289,9 @@ template&lt;typename T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>new array allocated on the arena. </dd></dl>
 
-<p class="reference">References <a class="el" href="classriccati_1_1arena__alloc.html#a0610f2fd9d9706bd24c07e360cd7fb83">alloc()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="memory_8hpp_source.html#l00197">197</a> of file <a class="el" href="memory_8hpp_source.html">memory.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="memory_8hpp_source.html#l00175">alloc()</a>.</p>
 
 </div>
 </div>
@@ -310,6 +320,8 @@ template&lt;typename T &gt; </div>
 <p>Return number of bytes allocated to this instance by the heap. This is not the same as the number of bytes allocated through calls to memalloc_. The latter number is not calculatable because space is wasted at the end of blocks if the next alloc request doesn't fit. (Perhaps we could trim down to what is actually used?)</p>
 <dl class="section return"><dt>Returns</dt><dd>number of bytes allocated to this instance </dd></dl>
 
+<p class="definition">Definition at line <a class="el" href="memory_8hpp_source.html#l00253">253</a> of file <a class="el" href="memory_8hpp_source.html">memory.hpp</a>.</p>
+
 </div>
 </div>
 <a id="abfd096644f3afc9c1a2a00273e5352dd" name="abfd096644f3afc9c1a2a00273e5352dd"></a>
@@ -336,7 +348,9 @@ template&lt;typename T &gt; </div>
 </div><div class="memdoc">
 <p>Free all memory used by the stack allocator other than the initial block allocation back to the system. Note: the destructor will free all memory. </p>
 
-<p class="reference">References <a class="el" href="classriccati_1_1arena__alloc.html#aad2ef8e2495c4f1d7c198b3c72a843ef">recover_all()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="memory_8hpp_source.html#l00231">231</a> of file <a class="el" href="memory_8hpp_source.html">memory.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="memory_8hpp_source.html#l00209">recover_all()</a>.</p>
 
 </div>
 </div>
@@ -372,6 +386,8 @@ template&lt;typename T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the pointer is in the stack, false otherwise. </dd></dl>
 
+<p class="definition">Definition at line <a class="el" href="memory_8hpp_source.html#l00269">269</a> of file <a class="el" href="memory_8hpp_source.html">memory.hpp</a>.</p>
+
 </div>
 </div>
 <a id="aad2ef8e2495c4f1d7c198b3c72a843ef" name="aad2ef8e2495c4f1d7c198b3c72a843ef"></a>
@@ -398,7 +414,9 @@ template&lt;typename T &gt; </div>
 </div><div class="memdoc">
 <p>Recover all the memory used by the stack allocator. The stack of memory blocks allocated so far will be available for further allocations. If more than one block exists, all memory is freed and then one large allocation takes place to allow only a single block of memory. To free memory back to the system, use the function <a class="el" href="classriccati_1_1arena__alloc.html#abfd096644f3afc9c1a2a00273e5352dd">free_all()</a>. </p>
 
-<p class="reference">References <a class="el" href="namespacericcati_1_1internal.html#af325c8816465cecca88024e7eb4522ca">riccati::internal::eight_byte_aligned_malloc()</a>, and <a class="el" href="macros_8hpp.html#ac6c45889010c1bd68631771b64f18101">unlikely</a>.</p>
+<p class="definition">Definition at line <a class="el" href="memory_8hpp_source.html#l00209">209</a> of file <a class="el" href="memory_8hpp_source.html">memory.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="memory_8hpp_source.html#l00041">riccati::internal::eight_byte_aligned_malloc()</a>, and <a class="el" href="macros_8hpp_source.html#l00054">unlikely</a>.</p>
 
 </div>
 </div>
@@ -407,11 +425,24 @@ template&lt;typename T &gt; </div>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->
+
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespacericcati.html">riccati</a></li><li class="navelem"><a class="el" href="classriccati_1_1arena__alloc.html">arena_alloc</a></li>
-    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.6 </li>
+    <li class="footer">
+    <div class="contents" style="font-size:100%;">
+      <span style="float:left; margin=0 1em 0 1em;">
+      &nbsp;&nbsp;&nbsp;&nbsp;
+      [ <a href="http://mc-stan.org/">Stan Home Page</a> ]
+      </span>
+      <span style="float:right; margin=0 1em 0 1em;">
+      <i>&copy; 2011&ndash;2019,
+      Stan Development Team.
+      &nbsp;&nbsp;&nbsp;&nbsp;
+      </i>
+      </span>
+    </div> </li>
   </ul>
 </div>
 </body>

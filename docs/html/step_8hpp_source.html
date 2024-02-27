@@ -222,21 +222,34 @@ $(document).ready(function(){initNavTree('step_8hpp_source.html',''); initResiza
 <div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span> </div>
 <div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="achebyshev_8hpp_html"><div class="ttname"><a href="chebyshev_8hpp.html">chebyshev.hpp</a></div></div>
-<div class="ttc" id="aclassriccati_1_1SolverInfo_html"><div class="ttname"><a href="classriccati_1_1SolverInfo.html">riccati::SolverInfo</a></div><div class="ttdef"><b>Definition:</b> solver.hpp:33</div></div>
-<div class="ttc" id="aclassriccati_1_1arena__matrix_html"><div class="ttname"><a href="classriccati_1_1arena__matrix.html">riccati::arena_matrix</a></div><div class="ttdef"><b>Definition:</b> arena_matrix.hpp:20</div></div>
-<div class="ttc" id="anamespacericcati_html"><div class="ttname"><a href="namespacericcati.html">riccati</a></div><div class="ttdef"><b>Definition:</b> arena_matrix.hpp:10</div></div>
-<div class="ttc" id="anamespacericcati_html_a175788391385040495c493ca8b2428ed"><div class="ttname"><a href="namespacericcati.html#a175788391385040495c493ca8b2428ed">riccati::vector_t</a></div><div class="ttdeci">Eigen::Matrix&lt; Scalar, -1, 1 &gt; vector_t</div><div class="ttdef"><b>Definition:</b> utils.hpp:43</div></div>
-<div class="ttc" id="anamespacericcati_html_a783cb34bf5100dbe3c19e54012df4c47"><div class="ttname"><a href="namespacericcati.html#a783cb34bf5100dbe3c19e54012df4c47">riccati::nonosc_step</a></div><div class="ttdeci">auto nonosc_step(SolverInfo &amp;&amp;info, Scalar x0, Scalar h, YScalar y0, YScalar dy0, Scalar epsres, Allocator &amp;&amp;alloc)</div><div class="ttdoc">Performs a single Chebyshev step with adaptive node count for solving differential equations.</div><div class="ttdef"><b>Definition:</b> step.hpp:52</div></div>
-<div class="ttc" id="anamespacericcati_html_ad8033aae36bb0bf505088874ff6e8861"><div class="ttname"><a href="namespacericcati.html#ad8033aae36bb0bf505088874ff6e8861">riccati::osc_step</a></div><div class="ttdeci">auto osc_step(SolverInfo &amp;&amp;info, OmegaVec &amp;&amp;omega_s, GammaVec &amp;&amp;gamma_s, Scalar x0, Scalar h, YScalar y0, YScalar dy0, Scalar epsres, Allocator &amp;&amp;alloc)</div><div class="ttdoc">Performs a single Riccati step for solving differential equations with oscillatory behavior.</div><div class="ttdef"><b>Definition:</b> step.hpp:141</div></div>
-<div class="ttc" id="anamespacericcati_html_ad9de8b25a572dc23c4d9a48af37d272c"><div class="ttname"><a href="namespacericcati.html#ad9de8b25a572dc23c4d9a48af37d272c">riccati::spectral_chebyshev</a></div><div class="ttdeci">auto spectral_chebyshev(SolverInfo &amp;&amp;info, Scalar x0, Scalar h, YScalar y0, YScalar dy0, Integral niter, Allocator &amp;&amp;alloc)</div><div class="ttdoc">Applies a spectral collocation method based on Chebyshev nodes for solving differential equations.</div><div class="ttdef"><b>Definition:</b> chebyshev.hpp:392</div></div>
-<div class="ttc" id="anamespacericcati_html_ae832e3a80987d97a8ba7ecf0a90c8d57"><div class="ttname"><a href="namespacericcati.html#ae832e3a80987d97a8ba7ecf0a90c8d57">riccati::eval</a></div><div class="ttdeci">RICCATI_ALWAYS_INLINE auto eval(arena_allocator&lt; T, arena_alloc &gt; &amp;arena, const Expr &amp;expr) noexcept</div><div class="ttdef"><b>Definition:</b> arena_matrix.hpp:150</div></div>
+<div class="ttc" id="aclassriccati_1_1SolverInfo_html"><div class="ttname"><a href="classriccati_1_1SolverInfo.html">riccati::SolverInfo</a></div><div class="ttdef"><b>Definition:</b> <a href="solver_8hpp_source.html#l00033">solver.hpp:33</a></div></div>
+<div class="ttc" id="aclassriccati_1_1arena__matrix_html"><div class="ttname"><a href="classriccati_1_1arena__matrix.html">riccati::arena_matrix</a></div><div class="ttdef"><b>Definition:</b> <a href="arena__matrix_8hpp_source.html#l00020">arena_matrix.hpp:20</a></div></div>
+<div class="ttc" id="anamespacericcati_html"><div class="ttname"><a href="namespacericcati.html">riccati</a></div><div class="ttdef"><b>Definition:</b> <a href="arena__matrix_8hpp_source.html#l00010">arena_matrix.hpp:10</a></div></div>
+<div class="ttc" id="anamespacericcati_html_a175788391385040495c493ca8b2428ed"><div class="ttname"><a href="namespacericcati.html#a175788391385040495c493ca8b2428ed">riccati::vector_t</a></div><div class="ttdeci">Eigen::Matrix&lt; Scalar, -1, 1 &gt; vector_t</div><div class="ttdef"><b>Definition:</b> <a href="utils_8hpp_source.html#l00043">utils.hpp:43</a></div></div>
+<div class="ttc" id="anamespacericcati_html_a783cb34bf5100dbe3c19e54012df4c47"><div class="ttname"><a href="namespacericcati.html#a783cb34bf5100dbe3c19e54012df4c47">riccati::nonosc_step</a></div><div class="ttdeci">auto nonosc_step(SolverInfo &amp;&amp;info, Scalar x0, Scalar h, YScalar y0, YScalar dy0, Scalar epsres, Allocator &amp;&amp;alloc)</div><div class="ttdoc">Performs a single Chebyshev step with adaptive node count for solving differential equations.</div><div class="ttdef"><b>Definition:</b> <a href="step_8hpp_source.html#l00052">step.hpp:52</a></div></div>
+<div class="ttc" id="anamespacericcati_html_ad8033aae36bb0bf505088874ff6e8861"><div class="ttname"><a href="namespacericcati.html#ad8033aae36bb0bf505088874ff6e8861">riccati::osc_step</a></div><div class="ttdeci">auto osc_step(SolverInfo &amp;&amp;info, OmegaVec &amp;&amp;omega_s, GammaVec &amp;&amp;gamma_s, Scalar x0, Scalar h, YScalar y0, YScalar dy0, Scalar epsres, Allocator &amp;&amp;alloc)</div><div class="ttdoc">Performs a single Riccati step for solving differential equations with oscillatory behavior.</div><div class="ttdef"><b>Definition:</b> <a href="step_8hpp_source.html#l00141">step.hpp:141</a></div></div>
+<div class="ttc" id="anamespacericcati_html_ad9de8b25a572dc23c4d9a48af37d272c"><div class="ttname"><a href="namespacericcati.html#ad9de8b25a572dc23c4d9a48af37d272c">riccati::spectral_chebyshev</a></div><div class="ttdeci">auto spectral_chebyshev(SolverInfo &amp;&amp;info, Scalar x0, Scalar h, YScalar y0, YScalar dy0, Integral niter, Allocator &amp;&amp;alloc)</div><div class="ttdoc">Applies a spectral collocation method based on Chebyshev nodes for solving differential equations.</div><div class="ttdef"><b>Definition:</b> <a href="chebyshev_8hpp_source.html#l00392">chebyshev.hpp:392</a></div></div>
+<div class="ttc" id="anamespacericcati_html_ae832e3a80987d97a8ba7ecf0a90c8d57"><div class="ttname"><a href="namespacericcati.html#ae832e3a80987d97a8ba7ecf0a90c8d57">riccati::eval</a></div><div class="ttdeci">RICCATI_ALWAYS_INLINE auto eval(arena_allocator&lt; T, arena_alloc &gt; &amp;arena, const Expr &amp;expr) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="arena__matrix_8hpp_source.html#l00150">arena_matrix.hpp:150</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
+
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="dir_779d899e79ff381671a2df16e628d9ba.html">riccati</a></li><li class="navelem"><a class="el" href="step_8hpp.html">step.hpp</a></li>
-    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.6 </li>
+    <li class="footer">
+    <div class="contents" style="font-size:100%;">
+      <span style="float:left; margin=0 1em 0 1em;">
+      &nbsp;&nbsp;&nbsp;&nbsp;
+      [ <a href="http://mc-stan.org/">Stan Home Page</a> ]
+      </span>
+      <span style="float:right; margin=0 1em 0 1em;">
+      <i>&copy; 2011&ndash;2019,
+      Stan Development Team.
+      &nbsp;&nbsp;&nbsp;&nbsp;
+      </i>
+      </span>
+    </div> </li>
   </ul>
 </div>
 </body>

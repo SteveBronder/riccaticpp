@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.6"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>riccaticpp: Main Page</title>
+<title>riccaticpp: riccaticpp</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -98,16 +98,89 @@ $(document).ready(function(){initNavTree('index.html',''); initResizable(); });
 </div>
 </div>
 
-<div class="header">
-  <div class="headertitle"><div class="title">riccaticpp Documentation</div></div>
+<div><div class="header">
+  <div class="headertitle"><div class="title">riccaticpp </div></div>
 </div><!--header-->
 <div class="contents">
+<div class="textblock"><p><a class="anchor" id="md__home_sbronder_open_source_riccaticpp_README"></a> <img src="https://github.com/fruzsinaagocs/riccati/blob/master/logo.png?raw=true" alt="Riccati logo" class="inline"/></p>
+<h1><a class="anchor" id="autotoc_md0"></a>
+riccati</h1>
+<p>A package implementing the adaptive Riccati defect correction (ARDC) method</p>
+<p><a href="https://doi.org/10.21105/joss.05430"><img src="https://joss.theoj.org/papers/10.21105/joss.05430/status.svg" alt="DOI" style="pointer-events: none;" class="inline"/></a> <a href="https://riccati.readthedocs.io/en/latest/?badge=latest"><img src="https://readthedocs.org/projects/riccati/badge/?version=latest" alt="Documentation Status" class="inline"/></a> <a href="https://codecov.io/gh/fruzsinaagocs/riccati"><img src="https://codecov.io/gh/fruzsinaagocs/riccati/branch/master/graph/badge.svg?token=XA47G7P1XM" alt="codecov" style="pointer-events: none;" class="inline"/></a></p>
+<h2><a class="anchor" id="autotoc_md1"></a>
+About</h2>
+<p>This package is a C++ port of the <a href="https://github.com/fruzsinaagocs/riccati">riccati</a> python package.</p>
+<p><code>riccati</code> is a <code>C++</code> package for solving ODEs of the form</p>
+<p>$$ u''(t) + 2\gamma(t)u'(t) + \omega^2(t)u(t) = 0,$$</p>
+<p>on some solution interval $t \in [t_0, t_1]$, and with initial conditions $u(t_0) = u_0$, $u'(t_0) = u'_0$.</p>
+<p><code>riccati</code> uses the adaptive Riccati defect correction method &ndash; it switches between using nonoscillatory (spectral Chebyshev) and a specialised oscillatory solver (Riccati defect correction) to propagate the numerical solution based on its behaviour. For more details on the algorithm, please see <a href="https://github.com/stevebronder/riccaticpp/blob/master/README.md#Attribution">Attribution</a>.</p>
+<h2><a class="anchor" id="autotoc_md2"></a>
+Documentation</h2>
+<p>Read the documentation at <a href="https://stevebronder.com/riccaticpp/">the docs site</a>.</p>
+<h2><a class="anchor" id="autotoc_md3"></a>
+Attribution</h2>
+<p>If you find this code useful in your research, please cite <a href="https://arxiv.org/abs/2212.06924">Agocs &amp; Barnett (2022)</a>. Its BibTeX entry is </p><pre class="fragment">@ARTICLE{ardc,
+       author = {{Agocs}, Fruzsina J. and {Barnett}, Alex H.},
+        title = "{An adaptive spectral method for oscillatory second-order
+        linear ODEs with frequency-independent cost}",
+      journal = {arXiv e-prints},
+     keywords = {Mathematics - Numerical Analysis},
+         year = 2022,
+        month = dec,
+          eid = {arXiv:2212.06924},
+        pages = {arXiv:2212.06924},
+          doi = {10.48550/arXiv.2212.06924},
+archivePrefix = {arXiv},
+       eprint = {2212.06924},
+ primaryClass = {math.NA},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2022arXiv221206924A},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+</pre> <h2><a class="anchor" id="autotoc_md4"></a>
+License</h2>
+<p>Copyright 2024 The Simons Foundation, Inc.</p>
+<p><b>riccati</b> is free software available under the BSD 3.0, for details see the <a href="https://github.com/fruzsinaagocs/riccati/blob/master/LICENSE">LICENSE</a>.</p>
+<h2><a class="anchor" id="autotoc_md5"></a>
+Building Tests</h2>
+<p>From the top level directory you can build and call the tests with the following.</p>
+<div class="fragment"><div class="line"># DEBUG build types enable 0g, ggdb3, and pretty printing helper functions in utils</div>
+<div class="line">cmake -S . -B &quot;build&quot; -DCMAKE_BUILD_TYPE=RELEASE  -DRICCATI_BUILD_TESTING=ON</div>
+<div class="line">cd build/tests</div>
+<div class="line">make -j4 riccati_test &amp;&amp; ctest</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md6"></a>
+Including</h2>
+<p><code>riccaticpp</code> is a header only library and so any project can include it just by copy/pasting in the include folder. For cmake based projects</p>
+<div class="fragment"><div class="line">include(FetchContent)</div>
+<div class="line"> </div>
+<div class="line">FetchContent_Declare(</div>
+<div class="line">  riccaticpp</div>
+<div class="line">  https://github.com/SteveBronder/riccaticpp</div>
+<div class="line">  master # Use a specific version or commit</div>
+<div class="line">)</div>
+<div class="line">FetchContent_MakeAvailable(riccaticpp)</div>
+<div class="line"> </div>
+<div class="line"># For your target</div>
+<div class="line">target_link_libraries(target_name riccati::riccati)</div>
+</div><!-- fragment --> </div></div><!-- PageDoc -->
 </div><!-- contents -->
 </div><!-- doc-content -->
+
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.6 </li>
+    <li class="footer">
+    <div class="contents" style="font-size:100%;">
+      <span style="float:left; margin=0 1em 0 1em;">
+      &nbsp;&nbsp;&nbsp;&nbsp;
+      [ <a href="http://mc-stan.org/">Stan Home Page</a> ]
+      </span>
+      <span style="float:right; margin=0 1em 0 1em;">
+      <i>&copy; 2011&ndash;2019,
+      Stan Development Team.
+      &nbsp;&nbsp;&nbsp;&nbsp;
+      </i>
+      </span>
+    </div> </li>
   </ul>
 </div>
 </body>
