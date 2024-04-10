@@ -66,7 +66,7 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
     N *= 2;
     if (N > Nmax) {
       return std::make_tuple(false, complex_t(0.0, 0.0), complex_t(0.0, 0.0),
-                             maxerr, yprev, dyprev);
+                             maxerr, yprev, dyprev, iter);
     }
     auto cheb_num = static_cast<int>(std::log2(N / info.nini_));
     auto cheby2 = spectral_chebyshev(info, x0, h, y0, dy0, cheb_num, alloc);
@@ -81,7 +81,7 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
     dyprev = std::move(dy);
     xprev = std::move(x);
   }
-  return std::make_tuple(true, yprev(0), dyprev(0), maxerr, yprev, dyprev);
+  return std::make_tuple(true, yprev(0), dyprev(0), maxerr, yprev, dyprev, iter);
 }
 
 /**
@@ -164,7 +164,7 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     y += deltay;
     Ry = R(deltay);
     maxerr = Ry.array().abs().maxCoeff();
-    if (maxerr >= prev_err) {
+    if (maxerr >= (2.0 * prev_err)) {
       success = false;
       break;
     }
@@ -199,7 +199,7 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     auto dy1 = (ap * y * f1 + am * du2 * f2).eval();
     Scalar phase = std::imag(f1);
     return std::make_tuple(success, y1, dy1(0), maxerr, phase,
-                           arena_matrix<vectorc_t>(alloc, y.size(), 0),
+                           arena_matrix<vectorc_t>(alloc, y.size()),
                            std::make_pair(ap, am));
   }
 }

@@ -23,6 +23,22 @@ between using nonoscillatory (spectral Chebyshev) and a specialised oscillatory
 solver (Riccati defect correction) to propagate the numerical solution based on
 its behaviour. For more details on the algorithm, please see [Attribution](https://github.com/stevebronder/riccaticpp/blob/master/README.md#Attribution).
 
+## Benchmarks
+
+Benchmarks are available in `python/benchmarks` and can be run with
+
+```bash
+cmake -S . -B "build" -DCMAKE_BUILD_TYPE=RELEASE  -DRICCATI_BUILD_TESTING=ON
+cd build/python/benchmark
+make -j4 figgen
+```
+
+![bench1](./imgs/bremer1e6.png)
+
+![bench2](./imgs/bremer1e12.png)
+
+
+
 ## Documentation
 
 Read the documentation at [the docs site](https://stevebronder.com/riccaticpp/).

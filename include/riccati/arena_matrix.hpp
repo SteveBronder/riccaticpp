@@ -58,7 +58,7 @@ class arena_matrix : public Eigen::Map<MatrixType> {
    */
   template <typename T>
   arena_matrix(arena_allocator<T, arena_alloc>& allocator, Eigen::Index size)
-      : Base::Map(allocator_.template allocate<Scalar>(size), size),
+      : Base::Map(allocator.template allocate<Scalar>(size), size),
         allocator_(allocator) {}
 
   /**

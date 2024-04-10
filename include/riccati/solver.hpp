@@ -204,18 +204,6 @@ template <bool DenseOutput, typename Scalar, typename OmegaFun,
           typename GammaFun, typename Integral>
 inline auto make_solver(OmegaFun&& omega_fun, GammaFun&& gamma_fun,
                         Integral nini, Integral nmax, Integral n, Integral p) {
-  if (n < nini) {
-    throw std::invalid_argument("n must be greater than or equal to nini");
-  }
-  if (n > nmax) {
-    throw std::invalid_argument("n must be less than or equal to nmax");
-  }
-  if (p < nini) {
-    throw std::invalid_argument("p must be greater than or equal to nini");
-  }
-  if (p > nmax) {
-    throw std::invalid_argument("p must be less than or equal to nmax");
-  }
   return SolverInfo<std::decay_t<OmegaFun>, std::decay_t<GammaFun>, Scalar,
                     Integral, DenseOutput>(std::forward<OmegaFun>(omega_fun),
                                            std::forward<GammaFun>(gamma_fun),

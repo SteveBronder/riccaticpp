@@ -204,7 +204,7 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
 
         auto xi_scaled
             = (xi + init_stepsize / 2
-               + (init_stepsize / 2) * info.chebyshev_[1].second.array())
+               + (init_stepsize / 2) * info.chebyshev_[std::get<6>(nonosc_ret)].second.array())
                   .matrix()
                   .eval();
         auto Linterp = interpolate(xi_scaled, x_eval_map, alloc);
@@ -370,18 +370,20 @@ inline auto evolve(SolverInfo &&info, Scalar xi, Scalar xf,
                    std::abs(gi / dgi));
 
   if (hard_stop) {
-    hosc_ini
-        = (direction * (xi + hosc_ini) > direction * xf) ? xf - xi : hosc_ini;
-    hslo_ini
-        = (direction * (xi + hslo_ini) > direction * xf) ? xf - xi : hslo_ini;
+    if (direction * (xi + hosc_ini) > direction * xf) {
+      hosc_ini = xf - xi;
+    }
+    if (direction * (xi + hslo_ini) > direction * xf) {
+      hslo_ini = xf - xi;
+    }
   }
   auto hslo = choose_nonosc_stepsize(info, xi, hslo_ini, 0.2);
   // o and g written here
   auto osc_step_tup = choose_osc_stepsize(info, xi, hosc_ini, epsilon_h, alloc);
   auto hosc = std::get<0>(osc_step_tup);
   // NOTE: Calling choose_osc_stepsize will update these values
-  auto &&omega_n = std::get<1>(osc_step_tup);
-  auto &&gamma_n = std::get<2>(osc_step_tup);
+  auto&& omega_n = std::get<1>(osc_step_tup);
+  auto&& gamma_n = std::get<2>(osc_step_tup);
   Scalar xcurrent = xi;
   Scalar wnext = wi;
   using matrixc_t = matrix_t<complex_t>;
@@ -395,6 +397,7 @@ inline auto evolve(SolverInfo &&info, Scalar xi, Scalar xf,
     bool success = false;
     bool steptype = true;
     Scalar err;
+    int cheb_N = 0;
     if ((direction * hosc > direction * hslo * 5.0)
         && (direction * hosc * wnext / (2.0 * pi<Scalar>()) > 1.0)) {
       if (hard_stop) {
@@ -414,7 +417,7 @@ inline auto evolve(SolverInfo &&info, Scalar xi, Scalar xf,
       steptype = 1;
     }
     while (!success) {
-      std::tie(success, y, dy, err, y_eval, dy_eval)
+      std::tie(success, y, dy, err, y_eval, dy_eval, cheb_N)
           = nonosc_step(info, xcurrent, hslo, yprev, dyprev, eps, alloc);
       steptype = 0;
       if (!success) {
@@ -446,7 +449,7 @@ inline auto evolve(SolverInfo &&info, Scalar xi, Scalar xf,
               = a_pair.first * fdense + a_pair.second * fdense.conjugate();
         } else {
           auto xc_scaled = eval(
-              alloc, scale(info.chebyshev_[1].second, xcurrent, h).matrix());
+              alloc, scale(info.chebyshev_[cheb_N].second, xcurrent, h).matrix());
           auto Linterp = interpolate(xc_scaled, x_eval_map, alloc);
           y_eval_map = Linterp * y_eval;
         }

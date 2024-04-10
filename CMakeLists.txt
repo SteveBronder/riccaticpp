@@ -5,7 +5,7 @@ project(
     LANGUAGES C CXX)
 
 include(FetchContent)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED NO)
 cmake_policy(SET CMP0135 NEW)
 cmake_policy(SET CMP0077 NEW)
@@ -106,6 +106,7 @@ install(EXPORT ${PROJECT_NAME}Targets
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/python)
 
 # Check if Doxygen is installed
 if (RICCATI_BUILD_DOXYGEN)
