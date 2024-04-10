@@ -113,10 +113,10 @@ TEST_F(Riccati, chebyshev_integration) {
   constexpr Eigen::Index n = 32;
   constexpr double a = 3.0;
   auto f = [a](auto x) {
-    return riccati::test::sin(a * x.array() + 1.0).matrix().eval();
+    return riccati::sin(a * x.array() + 1.0).matrix().eval();
   };
   auto df = [a](auto x) {
-    return (a * riccati::test::cos(a * x.array() + 1.0)).matrix().eval();
+    return (a * riccati::cos(a * x.array() + 1.0)).matrix().eval();
   };
   auto chebyshev_pair = riccati::chebyshev<double>(n);
   auto dfs = df(chebyshev_pair.second);
@@ -159,8 +159,12 @@ TEST_F(Riccati, interpolate_test) {
 
 TEST_F(Riccati, spectral_chebyshev_test) {
   using namespace riccati::test;
+  using riccati::zero_like;
+  using riccati::eval;
+  using riccati::matrix;
+  using riccati::array;
   auto omega_fun
-      = [](auto&& x) { return eval(matrix(riccati::test::sqrt(array(x)))); };
+      = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<true, double>(omega_fun, gamma_fun, 16, 32,
                                                  32, 32);

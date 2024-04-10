@@ -9,8 +9,12 @@
 
 TEST_F(Riccati, osc_step_test) {
   using namespace riccati::test;
+  using riccati::zero_like;
+  using riccati::eval;
+  using riccati::matrix;
+  using riccati::array;
   auto omega_fun
-      = [](auto&& x) { return eval(matrix(riccati::test::sqrt(array(x)))); };
+      = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<true, double>(omega_fun, gamma_fun, 16, 32,
                                                  32, 32);
@@ -33,8 +37,11 @@ TEST_F(Riccati, osc_step_test) {
 
 TEST_F(Riccati, nonosc_step_test) {
   using namespace riccati::test;
+  using riccati::eval;
+  using riccati::matrix;
+  using riccati::array;
   auto omega_fun
-      = [](auto&& x) { return eval(matrix(riccati::test::sqrt(array(x)))); };
+      = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<true, double>(omega_fun, gamma_fun, 16, 32,
                                                  32, 32);

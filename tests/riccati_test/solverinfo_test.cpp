@@ -7,7 +7,7 @@
 #include <string>
 
 TEST_F(Riccati, solver_make_solver_nondense) {
-  auto omega_f = [](auto& x) { return riccati::test::sqrt(x); };
+  auto omega_f = [](auto& x) { return riccati::sqrt(x); };
   auto gamma_f = [](auto& x) { return zero_like(x); };
   auto info = riccati::make_solver<false, double>(omega_f, gamma_f, 16UL, 32UL,
                                                   16UL, 32UL);

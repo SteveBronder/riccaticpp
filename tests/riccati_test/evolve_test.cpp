@@ -184,7 +184,7 @@ TEST_F(Riccati, evolve_dense_output_burst) {
   auto omega_fun = [m](auto&& x) {
     return eval(
         matrix(riccati::sqrt(static_cast<double>(std::pow(m, 2)) - 1.0)
-               / (1 + riccati::test::pow(array(x), 2.0))));
+               / (1 + riccati::pow(array(x), 2.0))));
   };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<true, double>(omega_fun, gamma_fun, 16, 32,
