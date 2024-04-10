@@ -50,55 +50,6 @@ using require_not_floating_point_or_complex
     = std::enable_if_t<!std::is_floating_point<std::decay_t<T>>::value
                        && !is_complex<std::decay_t<T>>::value>;
 
-template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline auto sin(T x) {
-  return std::sin(x);
-}
-
-template <typename T, require_not_floating_point<T>* = nullptr>
-inline auto sin(T&& x) {
-  return x.sin();
-}
-
-template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline auto cos(T x) {
-  return std::cos(x);
-}
-
-template <typename T, require_not_floating_point<T>* = nullptr>
-inline auto cos(T&& x) {
-  return x.cos();
-}
-
-template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline auto sqrt(T x) {
-  return std::sqrt(x);
-}
-
-template <typename T, require_not_floating_point<T>* = nullptr>
-inline auto sqrt(T&& x) {
-  return x.sqrt();
-}
-
-template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline auto array(T x) {
-  return x;
-}
-
-template <typename T, require_not_floating_point<T>* = nullptr>
-inline auto array(T&& x) {
-  return x.array();
-}
-
-template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline auto matrix(T x) {
-  return x;
-}
-
-template <typename T, require_not_floating_point<T>* = nullptr>
-inline auto matrix(T&& x) {
-  return x.matrix();
-}
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
 inline auto eval(T x) {
@@ -108,26 +59,6 @@ inline auto eval(T x) {
 template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
 inline auto eval(T&& x) {
   return x.eval();
-}
-
-template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline constexpr T zero_like(T x) {
-  return static_cast<T>(0);
-}
-
-template <typename T, require_not_floating_point<T>* = nullptr>
-inline auto zero_like(const T& x) {
-  return std::decay_t<typename T::PlainObject>::Zero(x.rows(), x.cols());
-}
-
-template <typename T1, typename T2, require_floating_point<T1>* = nullptr>
-inline auto pow(T1 x, T2 y) {
-  return std::pow(x, y);
-}
-
-template <typename T1, typename T2, require_not_floating_point<T1>* = nullptr>
-inline auto pow(T1&& x, T2 y) {
-  return x.array().pow(y);
 }
 
 template <typename T, require_floating_point<T>* = nullptr>
