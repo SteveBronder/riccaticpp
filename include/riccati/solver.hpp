@@ -29,15 +29,16 @@ inline Eigen::VectorXd logspace(double start, double end, int num,
 }  // namespace internal
 // OmegaFun / GammaFun take in a scalar and return a scalar
 template <typename OmegaFun, typename GammaFun, typename Scalar_,
-          typename Integral_, bool DenseOutput = false>
+          typename Integral_, bool DenseOutput = false, SolverEngine EngineType_ = SolverEngine::EIGEN>
 class SolverInfo {
  public:
+  static constexpr auto EngineType{EngineType_};
   using Scalar = Scalar_;
   using Integral = Integral_;
   using complex_t = std::complex<Scalar>;
-  using matrixd_t = matrix_t<Scalar>;
-  using vectorc_t = vector_t<complex_t>;
-  using vectord_t = vector_t<Scalar>;
+  using matrixd_t = matrix_t<Scalar, EngineType>;
+  using vectorc_t = vector_t<complex_t, EngineType>;
+  using vectord_t = vector_t<Scalar, EngineType>;
   // Frequency function
   OmegaFun omega_fun_;
   // Friction function

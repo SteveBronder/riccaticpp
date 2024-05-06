@@ -14,6 +14,20 @@ GIT_REPOSITORY https://github.com/google/googletest.git
 GIT_TAG main)
 FetchContent_MakeAvailable(googletest boost)
 
+FetchContent_Declare(
+  sundials
+  GIT_REPOSITORY https://github.com/LLNL/sundials
+  GIT_TAG        v6.5.1
+    # adjust this to the version you need
+)
+
+FetchContent_GetProperties(sundials)
+if(NOT sundials_POPULATED)
+  FetchContent_Populate(sundials)
+  add_subdirectory(${sundials_SOURCE_DIR} ${sundials_BINARY_DIR})
+endif()
+
+
 # Define a function to simplify adding grouped tests
 function(add_gtest_grouped_test test_directory)
   # Create a test target name based on the directory
@@ -43,7 +57,7 @@ function(add_gtest_grouped_test test_directory)
     # Add include directories, link libraries, and register the individual test
     target_include_directories(${INDIVIDUAL_TEST_TARGET_NAME} PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR} ${boost_SOURCE_DIR})
-    target_link_libraries(${INDIVIDUAL_TEST_TARGET_NAME} gtest_main riccati Eigen3::Eigen)
+    target_link_libraries(${INDIVIDUAL_TEST_TARGET_NAME} gtest_main riccati Eigen3::Eigen sundials_cvodes sundials_arkode)
     #add_test(NAME ${INDIVIDUAL_TEST_TARGET_NAME} COMMAND ${INDIVIDUAL_TEST_TARGET_NAME})
   endforeach()
 endfunction()

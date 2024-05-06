@@ -3,11 +3,15 @@
 
 #include <Eigen/Dense>
 #include <type_traits>
+#include <riccati/sundials_matrix.hpp>
+
 #ifdef RICCATI_DEBUG
 #include <iostream>
 #include <iomanip>
 #endif
 namespace riccati {
+
+enum class SolverEngine {EIGEN, SUNDIALS};
 
 /**
  * @brief Scales and shifts a vector of Chebyshev nodes.
@@ -40,20 +44,21 @@ inline auto scale(Vector&& x, Scalar x0, Scalar h) {
 /**
  *
  */
-template <typename Scalar>
-using matrix_t = Eigen::Matrix<Scalar, -1, -1>;
-template <typename Scalar>
-using vector_t = Eigen::Matrix<Scalar, -1, 1>;
+template <typename Scalar, SolverEngine EngineType = SolverEngine::EIGEN>
+using matrix_t = std::conditional_t<EngineType == SolverEngine::EIGEN, Eigen::Matrix<Scalar, -1, -1>, riccati::sundials_wrap::matrix<Scalar, -1, -1>>;
 
-template <typename Scalar>
-using row_vector_t = Eigen::Matrix<Scalar, 1, -1>;
+template <typename Scalar, SolverEngine EngineType = SolverEngine::EIGEN>
+using vector_t = std::conditional_t<EngineType == SolverEngine::EIGEN, Eigen::Matrix<Scalar, -1, 1>, riccati::sundials_wrap::vector<Scalar, -1, 1>>;
 
-template <typename Scalar>
-using array2d_t = Eigen::Matrix<Scalar, -1, -1>;
-template <typename Scalar>
-using array1d_t = Eigen::Matrix<Scalar, -1, 1>;
-template <typename Scalar>
-using row_array1d_t = Eigen::Matrix<Scalar, 1, -1>;
+template <typename Scalar, SolverEngine EngineType = SolverEngine::EIGEN>
+using row_vector_t = std::conditional_t<EngineType == SolverEngine::EIGEN, Eigen::Matrix<Scalar, 1, -1>, riccati::sundials_wrap::vector<Scalar, -1, 1>>;
+
+template <typename Scalar, SolverEngine EngineType = SolverEngine::EIGEN>
+using array2d_t = std::conditional_t<EngineType == SolverEngine::EIGEN, Eigen::Matrix<Scalar, -1, -1>, riccati::sundials_wrap::matrix<Scalar, -1, -1>>;
+template <typename Scalar, SolverEngine EngineType = SolverEngine::EIGEN>
+using array1d_t = std::conditional_t<EngineType == SolverEngine::EIGEN, Eigen::Matrix<Scalar, -1, 1>, riccati::sundials_wrap::vector<Scalar, -1, 1>>;
+template <typename Scalar, SolverEngine EngineType = SolverEngine::EIGEN>
+using row_array1d_t = std::conditional_t<EngineType == SolverEngine::EIGEN, Eigen::Matrix<Scalar, 1, -1>, riccati::sundials_wrap::vector<Scalar, 1, -1>>;
 
 template <typename T>
 inline constexpr T pi() {
