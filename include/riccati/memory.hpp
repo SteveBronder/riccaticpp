@@ -295,15 +295,22 @@ stan::math::arena_allocator<double>>>>;@endcode
 template <typename T, typename ArenaType>
 struct arena_allocator {
   ArenaType* alloc_;
+  bool owns_alloc_{false};
   using value_type = T;
-  RICCATI_NO_INLINE arena_allocator(ArenaType* alloc) : alloc_(alloc) {}
+  RICCATI_NO_INLINE explicit arena_allocator(ArenaType* alloc, bool owns_alloc = false) : 
+    alloc_(alloc), owns_alloc_(owns_alloc) {}
 
   RICCATI_NO_INLINE arena_allocator(const arena_allocator& rhs)
       : alloc_(rhs.alloc_){};
-
   template <typename U, typename UArena>
   RICCATI_NO_INLINE arena_allocator(const arena_allocator<U, UArena>& rhs)
       : alloc_(rhs.alloc_) {}
+
+  ~arena_allocator() {
+    if (owns_alloc_) {
+      delete alloc_;
+    }
+  }
 
   /**
    * Allocates space for `n` items of type `T`.

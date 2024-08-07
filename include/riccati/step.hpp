@@ -34,7 +34,6 @@ namespace riccati {
  * @param dy0 complex - Initial derivative of the dependent variable at `x0`.
  * @param epsres float - Tolerance for the relative accuracy of the Chebyshev
  * step.
- * @param alloc An allocator for the Eigen objects.
  * @return std::tuple<std::complex<double>, std::complex<double>, float, int> -
  * A tuple containing:
  *         1. std::complex<double> - Value of the dependent variable at the end
@@ -47,16 +46,15 @@ namespace riccati {
  *         4. int - Flag indicating success (`1`) if the asymptotic series has
  * reached the desired `epsres` residual, `0` otherwise.
  */
-template <typename SolverInfo, typename Scalar, typename YScalar,
-          typename Allocator>
+template <typename SolverInfo, typename Scalar, typename YScalar>
 inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
-                        YScalar dy0, Scalar epsres, Allocator &&alloc) {
+                        YScalar dy0, Scalar epsres) {
   using complex_t = std::complex<Scalar>;
 
   Scalar maxerr = 10 * epsres;
   auto N = info.nini_;
   auto Nmax = info.nmax_;
-  auto cheby = spectral_chebyshev(info, x0, h, y0, dy0, 0, alloc);
+  auto cheby = spectral_chebyshev(info, x0, h, y0, dy0, 0);
   auto yprev = std::get<0>(cheby);
   auto dyprev = std::get<1>(cheby);
   auto xprev = std::get<2>(cheby);
@@ -69,7 +67,7 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
                              maxerr, yprev, dyprev, iter);
     }
     auto cheb_num = static_cast<int>(std::log2(N / info.nini_));
-    auto cheby2 = spectral_chebyshev(info, x0, h, y0, dy0, cheb_num, alloc);
+    auto cheby2 = spectral_chebyshev(info, x0, h, y0, dy0, cheb_num);
     auto y = std::get<0>(std::move(cheby2));
     auto dy = std::get<1>(std::move(cheby2));
     auto x = std::get<2>(std::move(cheby2));
@@ -104,7 +102,6 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
  * @tparam GammaVec An Eigen vector
  * @tparam Scalar A scalar type for the x values
  * @tparam YScalar A scalar type for the y values
- * @tparam Allocator An allocator for the Eigen objects
  * @param info SolverInfo object - Object containing pre-computed information
  * for the solver, like differentiation matrices and methods for evaluating
  * functions `w(x)` and `g(x)` over the interval `[x0, x0+h]`.
@@ -118,7 +115,6 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
  * @param dy0 complex - Initial derivative of the dependent variable at `x0`.
  * @param epsres float - Tolerance for the relative accuracy of the Riccati
  * step.
- * @param alloc An allocator for the Eigen objects.
  * @return std::tuple<std::complex<double>, std::complex<double>, float, int,
  * std::complex<double>> - A tuple containing:
  *         1. std::complex<double> - Value of the dependent variable at the end
@@ -137,15 +133,14 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
  * of automatically, but it needs to be done manually otherwise.
  */
 template <typename SolverInfo, typename OmegaVec, typename GammaVec,
-          typename Scalar, typename YScalar, typename Allocator>
+          typename Scalar, typename YScalar>
 inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
-                     Scalar x0, Scalar h, YScalar y0, YScalar dy0,
-                     Scalar epsres, Allocator &&alloc) {
+                     Scalar x0, Scalar h, YScalar y0, YScalar dy0, Scalar epsres) {
   using complex_t = std::complex<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   bool success = true;
   auto &&Dn = info.Dn();
-  auto y = eval(alloc, complex_t(0.0, 1.0) * omega_s);
+  auto y = eval(info.alloc_, complex_t(0.0, 1.0) * omega_s);
   auto delta = [&](const auto &r, const auto &y) {
     return (-r.array() / (2.0 * (y.array() + gamma_s.array()))).matrix().eval();
   };
@@ -157,7 +152,7 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
                 .eval();
   Scalar maxerr = Ry.array().abs().maxCoeff();
 
-  arena_matrix<vectorc_t> deltay(alloc, Ry.size(), 1);
+  arena_matrix<vectorc_t> deltay(info.alloc_, Ry.size(), 1);
   Scalar prev_err = std::numeric_limits<Scalar>::infinity();
   while (maxerr > epsres) {
     deltay = delta(Ry, y);
@@ -171,18 +166,18 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     prev_err = maxerr;
   }
   if (info.denseout_) {
-    auto u1 = eval(alloc, h / 2.0 * (info.integration_matrix_ * y));
-    auto f1 = eval(alloc, (u1).array().exp().matrix());
-    auto f2 = eval(alloc, f1.conjugate());
-    auto du2 = eval(alloc, y.conjugate());
+    auto u1 = eval(info.alloc_, h / 2.0 * (info.integration_matrix_ * y));
+    auto f1 = eval(info.alloc_, (u1).array().exp().matrix());
+    auto f2 = eval(info.alloc_, f1.conjugate());
+    auto du2 = eval(info.alloc_, y.conjugate());
     auto ap_top = (dy0 - y0 * du2(du2.size() - 1));
     auto ap_bottom = (y(y.size() - 1) - du2(du2.size() - 1));
     auto ap = ap_top / ap_bottom;
     auto am = (dy0 - y0 * y(y.size() - 1))
               / (du2(du2.size() - 1) - y(y.size() - 1));
-    auto y1 = eval(alloc, ap * f1 + am * f2);
+    auto y1 = eval(info.alloc_, ap * f1 + am * f2);
     auto dy1
-        = eval(alloc, ap * y.cwiseProduct(f1) + am * du2.cwiseProduct(f2));
+        = eval(info.alloc_, ap * y.cwiseProduct(f1) + am * du2.cwiseProduct(f2));
     Scalar phase = std::imag(f1(0));
     return std::make_tuple(success, y1(0), dy1(0), maxerr, phase, u1,
                            std::make_pair(ap, am));
@@ -199,7 +194,7 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     auto dy1 = (ap * y * f1 + am * du2 * f2).eval();
     Scalar phase = std::imag(f1);
     return std::make_tuple(success, y1, dy1(0), maxerr, phase,
-                           arena_matrix<vectorc_t>(alloc, y.size()),
+                           arena_matrix<vectorc_t>(info.alloc_, y.size()),
                            std::make_pair(ap, am));
   }
 }

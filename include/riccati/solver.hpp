@@ -12,6 +12,10 @@
 #include <cmath>
 #include <vector>
 
+namespace pybind11 {
+  class object;
+}
+
 namespace riccati {
 
 namespace internal {
@@ -27,9 +31,23 @@ inline Eigen::VectorXd logspace(double start, double end, int num,
   return result;
 }
 }  // namespace internal
+
+
+template <typename SolverInfo, typename Scalar,
+  std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::funtype, pybind11::object>::value>* = nullptr>
+inline auto gamma(SolverInfo&& info, const Scalar& x) {
+  return info.gamma_fun_(x);
+}
+
+template <typename SolverInfo,  typename Scalar,
+  std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::funtype, pybind11::object>::value>* = nullptr>
+inline auto omega(SolverInfo&& info, const Scalar& x) {
+  return info.omega_fun_(x);
+}
+
 // OmegaFun / GammaFun take in a scalar and return a scalar
 template <typename OmegaFun, typename GammaFun, typename Scalar_,
-          typename Integral_, bool DenseOutput = false>
+          typename Integral_, bool DenseOutput = false, typename Allocator = arena_allocator<Scalar_, arena_alloc>>
 class SolverInfo {
  public:
   using Scalar = Scalar_;
@@ -38,10 +56,13 @@ class SolverInfo {
   using matrixd_t = matrix_t<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   using vectord_t = vector_t<Scalar>;
+  using funtype = std::decay_t<OmegaFun>;
   // Frequency function
   OmegaFun omega_fun_;
   // Friction function
   GammaFun gamma_fun_;
+
+  Allocator alloc_;
   // Number of nodes and diff matrices
   Integral n_nodes_{0};
   // Differentiation matrices and Vectors of Chebyshev nodes
@@ -113,11 +134,12 @@ class SolverInfo {
    * @param p (Number of Chebyshev nodes - 1) to use for computing Riccati
    * steps.
    */
-  template <typename OmegaFun_, typename GammaFun_>
-  SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Integral nini,
+  template <typename OmegaFun_, typename GammaFun_, typename Allocator_>
+  SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Allocator_&& alloc, Integral nini,
              Integral nmax, Integral n, Integral p)
       : omega_fun_(std::forward<OmegaFun_>(omega_fun)),
         gamma_fun_(std::forward<GammaFun_>(gamma_fun)),
+        alloc_(std::forward<Allocator_>(alloc)),
         n_nodes_(log2(nmax / nini) + 1),
         chebyshev_(build_chebyshev(nini, n_nodes_)),
         ns_(internal::logspace(std::log2(nini), std::log2(nini) + n_nodes_ - 1,
@@ -140,6 +162,15 @@ class SolverInfo {
         nmax_(nmax),
         n_(n),
         p_(p) {}
+
+  template <typename OmegaFun_, typename GammaFun_>
+  SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Integral nini,
+             Integral nmax, Integral n, Integral p) : 
+             SolverInfo(std::forward<OmegaFun_>(omega_fun), 
+               std::forward<GammaFun_>(gamma_fun), 
+               arena_allocator<Scalar_, arena_alloc>(new arena_alloc{}, true), 
+               nini, nmax, n, n) {}
+
 
   RICCATI_ALWAYS_INLINE const auto& Dn() const noexcept {
     return chebyshev_[n_idx_].first;
@@ -200,13 +231,14 @@ class SolverInfo {
  * @param p (Number of Chebyshev nodes - 1) to use for computing Riccati
  * steps.
  */
-template <bool DenseOutput, typename Scalar, typename OmegaFun,
+template <bool DenseOutput, typename Scalar, typename OmegaFun, typename Allocator,
           typename GammaFun, typename Integral>
-inline auto make_solver(OmegaFun&& omega_fun, GammaFun&& gamma_fun,
+inline auto make_solver(OmegaFun&& omega_fun, GammaFun&& gamma_fun, Allocator&& alloc,
                         Integral nini, Integral nmax, Integral n, Integral p) {
   return SolverInfo<std::decay_t<OmegaFun>, std::decay_t<GammaFun>, Scalar,
-                    Integral, DenseOutput>(std::forward<OmegaFun>(omega_fun),
+                    Integral, DenseOutput, Allocator>(std::forward<OmegaFun>(omega_fun),
                                            std::forward<GammaFun>(gamma_fun),
+                                           std::forward<Allocator>(alloc),
                                            nini, nmax, n, p);
 }
 
