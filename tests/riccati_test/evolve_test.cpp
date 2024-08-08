@@ -177,7 +177,6 @@ TEST_F(Riccati, evolve_nondense_output_airy) {
   EXPECT_LE(y_err.maxCoeff(), 9e-6);
 }
 
-
 TEST_F(Riccati, evolve_dense_output_burst) {
   using namespace riccati;
   constexpr int m = 1e6;

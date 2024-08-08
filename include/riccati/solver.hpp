@@ -161,16 +161,48 @@ class SolverInfo {
         nini_(nini),
         nmax_(nmax),
         n_(n),
-        p_(p) {}
+        p_(p) {        }
 
   template <typename OmegaFun_, typename GammaFun_>
   SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Integral nini,
-             Integral nmax, Integral n, Integral p) : 
-             SolverInfo(std::forward<OmegaFun_>(omega_fun), 
-               std::forward<GammaFun_>(gamma_fun), 
-               arena_allocator<Scalar_, arena_alloc>(new arena_alloc{}, true), 
-               nini, nmax, n, n) {}
+             Integral nmax, Integral n, Integral p) :
+                   omega_fun_(std::forward<OmegaFun_>(omega_fun)),
+        gamma_fun_(std::forward<GammaFun_>(gamma_fun)),
+        alloc_(),
+        n_nodes_(log2(nmax / nini) + 1),
+        chebyshev_(build_chebyshev(nini, n_nodes_)),
+        ns_(internal::logspace(std::log2(nini), std::log2(nini) + n_nodes_ - 1,
+                               n_nodes_, 2.0)),
+        n_idx_(
+            std::distance(ns_.begin(), std::find(ns_.begin(), ns_.end(), n))),
+        p_idx_(
+            std::distance(ns_.begin(), std::find(ns_.begin(), ns_.end(), p))),
+        xp_interp_((vector_t<Scalar>::LinSpaced(
+                        p, pi<Scalar>() / (2.0 * p),
+                        pi<Scalar>() * (1.0 - (1.0 / (2.0 * p))))
+                        .array())
+                       .cos()
+                       .matrix()),
+        L_(interpolate(this->xp(), xp_interp_, dummy_allocator{})),
+        quadwts_(quad_weights<Scalar>(n)),
+        integration_matrix_(DenseOutput ? integration_matrix<Scalar>(n + 1)
+                                        : matrixd_t(0, 0)),
+        nini_(nini),
+        nmax_(nmax),
+        n_(n),
+        p_(p) {}
 
+  void mem_info() {
+#ifdef RICCATI_DEBUG
+    auto* mem = alloc_.alloc_;
+    std::cout << "mem info: " << std::endl;
+    std::cout << "blocks_ size: " << mem->blocks_.size() << std::endl;
+    std::cout << "sizes_ size: " << mem->sizes_.size() << std::endl;
+    std::cout << "cur_block_: " << mem->cur_block_ << std::endl;
+    std::cout << "cur_block_end_: " << mem->cur_block_end_ << std::endl;
+    std::cout << "next_loc_: " << mem->next_loc_ << std::endl;
+#endif
+  }
 
   RICCATI_ALWAYS_INLINE const auto& Dn() const noexcept {
     return chebyshev_[n_idx_].first;

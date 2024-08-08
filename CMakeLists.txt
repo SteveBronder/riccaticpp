@@ -52,7 +52,7 @@ set(CMAKE_CXX_FLAGS_LSAN
     FORCE)
 
 set(CMAKE_CXX_FLAGS_DEBUG
-    "-fno-omit-frame-pointer -ggdb3 -Og -DRICCATI_DEBUG=true"
+    "-fno-omit-frame-pointer -glldb -Og -DRICCATI_DEBUG=true"
     CACHE STRING "Flags used by the C++ compiler during Debug builds."
     FORCE)
 
@@ -146,7 +146,7 @@ target_link_libraries(pyriccaticpp PRIVATE pybind11::headers riccati Eigen3::Eig
 
 # This is passing in the version as a define just as an example
 target_compile_definitions(pyriccaticpp PRIVATE VERSION_INFO=${PROJECT_VERSION})
-
+#target_compile_options(pyriccaticpp PRIVATE -Og -glldb)
 # The install directory is the output (wheel) directory
 install(TARGETS pyriccaticpp DESTINATION pyriccaticpp)
 endif()

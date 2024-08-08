@@ -76,7 +76,7 @@ RICCATI_ALWAYS_INLINE unsigned char* eight_byte_aligned_malloc(size_t size) {
  * contain an 8-byte member or a virtual function.
  */
 class arena_alloc {
- private:
+ public:
   using byte_t = unsigned char;
   std::vector<byte_t*> blocks_;  // storage for blocks,
                                  // may be bigger than cur_block_
@@ -131,8 +131,7 @@ class arena_alloc {
    * @throws std::runtime_error if the underlying malloc is not 8-byte
    * aligned.
    */
-  RICCATI_NO_INLINE explicit arena_alloc(size_t initial_nbytes
-                                         = internal::DEFAULT_INITIAL_NBYTES)
+  RICCATI_NO_INLINE explicit arena_alloc(size_t initial_nbytes)
       : blocks_(1, internal::eight_byte_aligned_malloc(initial_nbytes)),
         sizes_(1, initial_nbytes),
         cur_block_(0),
@@ -142,6 +141,21 @@ class arena_alloc {
       throw std::bad_alloc();  // no msg allowed in bad_alloc ctor
     }
   }
+  RICCATI_NO_INLINE arena_alloc()
+      : blocks_(1, internal::eight_byte_aligned_malloc(internal::DEFAULT_INITIAL_NBYTES)),
+        sizes_(1, internal::DEFAULT_INITIAL_NBYTES),
+        cur_block_(0),
+        cur_block_end_(blocks_[0] + internal::DEFAULT_INITIAL_NBYTES),
+        next_loc_(blocks_[0]) {
+    if (unlikely(!blocks_[0])) {
+      throw std::bad_alloc();  // no msg allowed in bad_alloc ctor
+    }
+  }
+  arena_alloc(const arena_alloc&) = delete;
+  arena_alloc& operator=(const arena_alloc&) = delete;
+  arena_alloc(arena_alloc&&) = delete;
+  arena_alloc& operator=(arena_alloc&&) = delete;
+
 
   /**
    * Destroy this memory allocator.
@@ -299,12 +313,14 @@ struct arena_allocator {
   using value_type = T;
   RICCATI_NO_INLINE explicit arena_allocator(ArenaType* alloc, bool owns_alloc = false) : 
     alloc_(alloc), owns_alloc_(owns_alloc) {}
+  RICCATI_NO_INLINE arena_allocator() : 
+    alloc_(new ArenaType{}), owns_alloc_(true) {}
 
   RICCATI_NO_INLINE arena_allocator(const arena_allocator& rhs)
-      : alloc_(rhs.alloc_){};
+      : alloc_(rhs.alloc_), owns_alloc_(false) {};
   template <typename U, typename UArena>
   RICCATI_NO_INLINE arena_allocator(const arena_allocator<U, UArena>& rhs)
-      : alloc_(rhs.alloc_) {}
+      : alloc_(rhs.alloc_), owns_alloc_(false) {}
 
   ~arena_allocator() {
     if (owns_alloc_) {

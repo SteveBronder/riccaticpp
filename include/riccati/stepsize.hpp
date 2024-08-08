@@ -24,7 +24,7 @@ namespace riccati {
  *
  */
 template <typename SolverInfo, typename FloatingPoint>
-inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
+inline FloatingPoint choose_nonosc_stepsize(SolverInfo& info, FloatingPoint x0,
                                             FloatingPoint h,
                                             FloatingPoint epsilon_h) {
   auto ws = omega(info, riccati::scale(info.xp(), x0, h));
@@ -60,7 +60,7 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
  * of `w(x)` and `g(x)` satisfies the relative error tolerance `epsh`.
  */
 template <typename SolverInfo, typename FloatingPoint>
-inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
+inline auto choose_osc_stepsize(SolverInfo& info, FloatingPoint x0,
                                 FloatingPoint h, FloatingPoint epsilon_h) {
   auto t = eval(info.alloc_, riccati::scale(info.xp_interp(), x0, h));
   auto s = eval(info.alloc_, riccati::scale(info.xp(), x0, h));

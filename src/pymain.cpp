@@ -1,12 +1,13 @@
 
-#include <riccati/evolve.hpp>
-#include <riccati/solver.hpp>
 #include <pybind11/pybind11.h>
+#include <pybind11/iostream.h>
 #include <pybind11/eigen/matrix.h>
-#include <pybind11/complex.h>
 #include <pybind11/stl.h>
 #include <pybind11/eigen.h>
 #include <pybind11/numpy.h>
+#include <pybind11/complex.h>
+#include <riccati/evolve.hpp>
+#include <riccati/solver.hpp>
 #include <Eigen/Dense>
 #include <functional>
 #include <iostream>
@@ -86,13 +87,36 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
                    Eigen::VectorXd not_used;
                    return evolve(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, not_used, hard_stop);
                    }
+
+template <typename SolverInfo, typename FloatingPoint>
+inline auto choose_osc_stepsize_(SolverInfo& info, FloatingPoint x0,
+                                FloatingPoint h, FloatingPoint epsilon_h) {
+  return choose_osc_stepsize(info, x0, h, epsilon_h);
+  info.alloc_.recover_memory();                                
+}
+
+template <typename SolverInfo, typename FloatingPoint>
+inline FloatingPoint choose_nonosc_stepsize_(SolverInfo& info, FloatingPoint x0,
+                                            FloatingPoint h,
+                                            FloatingPoint epsilon_h) {
+  return choose_nonosc_stepsize(info, x0, h, epsilon_h);
+  info.alloc_.recover_memory();
+}
+
 }
 
 PYBIND11_MODULE(pyriccaticpp, m) {
     py::class_<riccati::nondense_init_f64_i64>(m, "Init")
-        .def(py::init<py::object, py::object, int64_t, int64_t, int64_t, int64_t>());
+        .def(py::init<py::object, py::object, int64_t, int64_t, int64_t, int64_t>())
+        // exposing mem_info() method
+        .def("mem_info", &riccati::nondense_init_f64_i64::mem_info);
     m.def("evolve", &riccati::evolve<riccati::nondense_init_f64_i64, double>, 
           py::arg("info"), py::arg("xi"), py::arg("xf"), py::arg("yi"), py::arg("dyi"),
           py::arg("eps"), py::arg("epsilon_h"), py::arg("init_stepsize"),
           py::arg("hard_stop") = false);
+    m.def("choose_osc_stepsize", &riccati::choose_osc_stepsize_<riccati::nondense_init_f64_i64, double>,
+          py::arg("info"), py::arg("x0"), py::arg("h"), py::arg("epsilon_h"));
+    m.def("choose_nonosc_stepsize", &riccati::choose_nonosc_stepsize_<riccati::nondense_init_f64_i64, double>,
+          py::arg("info"), py::arg("x0"), py::arg("h"), py::arg("epsilon_h"));
+    
 }
