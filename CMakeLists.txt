@@ -103,11 +103,10 @@ install(EXPORT ${PROJECT_NAME}Targets
     NAMESPACE riccaticpp::
     DESTINATION lib/cmake/${PROJECT_NAME}
 )
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/python)
-
+if (RICCATI_BUILD_TESTING)
+#    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+#    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/benchmarks)
+endif()
 # Check if Doxygen is installed
 if (RICCATI_BUILD_DOXYGEN)
     set(Eigen_INCLUDE_DIR "${Eigen3_SOURCE_DIR}")
@@ -146,6 +145,7 @@ target_link_libraries(pyriccaticpp PRIVATE pybind11::headers riccati Eigen3::Eig
 
 # This is passing in the version as a define just as an example
 target_compile_definitions(pyriccaticpp PRIVATE VERSION_INFO=${PROJECT_VERSION})
+target_compile_options(pyriccaticpp PRIVATE -Wno-deprecated-declaration)
 #target_compile_options(pyriccaticpp PRIVATE -Og -glldb)
 # The install directory is the output (wheel) directory
 install(TARGETS pyriccaticpp DESTINATION pyriccaticpp)

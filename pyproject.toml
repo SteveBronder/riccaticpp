@@ -34,6 +34,7 @@ cmake.build-type = "RELEASE"
 
 [tool.scikit-build.cmake.define]
 RICCATI_BUILD_PYTHON="ON"
+RICCATI_BUILD_TESTING="OFF"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
