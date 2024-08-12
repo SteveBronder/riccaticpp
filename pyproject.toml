@@ -9,7 +9,7 @@ version = "0.0.1"
 description="A minimal example package (with pybind11)"
 readme = "README.md"
 authors = [
-  { name = "My Name", email = "me@email.com" },
+  { name = "Steve Bronde", email = "sbronder@flatironinstitute.org" },
 ]
 requires-python = ">=3.7"
 classifiers = [

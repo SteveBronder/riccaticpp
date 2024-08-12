@@ -389,19 +389,19 @@ inline auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
  */
 template <typename SolverInfo, typename Scalar, typename YScalar,
           typename Integral>
-inline auto spectral_chebyshev(SolverInfo&& info, Scalar x0, Scalar h,
+__attribute__((noinline)) auto spectral_chebyshev(SolverInfo&& info, Scalar x0, Scalar h,
                                YScalar y0, YScalar dy0, Integral niter) {
   using complex_t = std::complex<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   auto x_scaled
-      = eval(info.alloc_, riccati::scale(info.chebyshev_[niter].second, x0, h));
+      = eval(info.alloc_, riccati::scale(std::get<2>(info.chebyshev_[niter]), x0, h));
   auto&& D = info.Dn(niter);
   auto ws = omega(info, x_scaled);
   auto gs = gamma(info, x_scaled);
   auto D2 = eval(
       info.alloc_, (4.0 / (h * h) * (D * D) + 4.0 / h * (gs.asDiagonal() * D)));
   D2 += (ws.array().square()).matrix().asDiagonal();
-  const auto n = std::round(info.ns_[niter]);
+  const auto n = std::round(std::get<0>(info.chebyshev_[niter]));
   auto D2ic = eval(info.alloc_, matrix_t<complex_t>::Zero(n + 3, n + 1));
   D2ic.topRows(n + 1) = D2;
   D2ic.row(n + 1) = 2.0 / h * D.row(D.rows() - 1);
@@ -413,7 +413,6 @@ inline auto spectral_chebyshev(SolverInfo&& info, Scalar x0, Scalar h,
   rhs.coeffRef(n + 2) = y0;
   auto y1 = eval(info.alloc_, D2ic.colPivHouseholderQr().solve(rhs));
   auto dy1 = eval(info.alloc_, 2.0 / h * (D * y1));
-
   return std::make_tuple(std::move(y1), std::move(dy1), std::move(x_scaled));
 }
 

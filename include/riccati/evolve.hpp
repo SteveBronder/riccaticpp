@@ -87,7 +87,7 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
   } else {
     Eigen::Index dense_size = 0;
     Eigen::Index dense_start = 0;
-    if constexpr (SolverInfo::denseout_) {
+    if constexpr (std::decay_t<SolverInfo>::denseout_) {
       // Assuming x_eval is sorted we just want start and size
       std::tie(dense_start, dense_size)
           = get_slice(x_eval, sign * xi, sign * (xi + init_stepsize));
@@ -190,7 +190,7 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
   } else {
     Eigen::Index dense_size = 0;
     Eigen::Index dense_start = 0;
-    if constexpr (SolverInfo::denseout_) {
+    if constexpr (std::decay_t<SolverInfo>::denseout_) {
       // Assuming x_eval is sorted we just want start and size
       std::tie(dense_start, dense_size)
           = get_slice(x_eval, sign * xi, sign * (xi + init_stepsize));
@@ -199,7 +199,7 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
 
         auto xi_scaled
             = (xi + init_stepsize / 2
-               + (init_stepsize / 2) * info.chebyshev_[std::get<6>(nonosc_ret)].second.array())
+               + (init_stepsize / 2) * std::get<2>(info.chebyshev_[std::get<6>(nonosc_ret)]).array())
                   .matrix()
                   .eval();
         auto Linterp = interpolate(xi_scaled, x_eval_map, info.alloc_);
@@ -285,7 +285,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
         " adjusting it so that integration happens from xi to xf.");
   }
   // Check that yeval and x_eval are right size
-  if constexpr (SolverInfo::denseout_) {
+  if constexpr (std::decay_t<SolverInfo>::denseout_) {
     if (!x_eval.size()) {
       throw std::domain_error("Dense output requested but x_eval is size 0!");
     }
@@ -420,7 +420,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       }
     }
     auto h = steptype ? hosc : hslo;
-    if constexpr (SolverInfo::denseout_) {
+    if constexpr (std::decay_t<SolverInfo>::denseout_) {
       Eigen::Index dense_size = 0;
       Eigen::Index dense_start = 0;
       // Assuming x_eval is sorted we just want start and size
@@ -441,7 +441,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
               = a_pair.first * fdense + a_pair.second * fdense.conjugate();
         } else {
           auto xc_scaled = eval(
-              info.alloc_, scale(info.chebyshev_[cheb_N].second, xcurrent, h).matrix());
+              info.alloc_, scale(std::get<2>(info.chebyshev_[cheb_N]), xcurrent, h).matrix());
           auto Linterp = interpolate(xc_scaled, x_eval_map, info.alloc_);
           y_eval_map = Linterp * y_eval;
         }

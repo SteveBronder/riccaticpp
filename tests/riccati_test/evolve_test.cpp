@@ -255,7 +255,7 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_airy) {
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<false, double>(omega_fun, gamma_fun, allocator, 16, 32,
-                                                 32, 32);
+                                                 20, 20);
   auto xi = 1e0;
   auto xf = 1e6;
   auto eps = 1e-12;

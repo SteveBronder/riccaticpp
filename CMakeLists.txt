@@ -16,6 +16,8 @@ else()
   set(CMAKE_VERBOSE_MAKEFILE YES)
 endif()
 
+
+add_compile_options(-Wno-deprecated-declarations)
 # Build Types
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}
     CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel tsan asan lsan msan ubsan"
@@ -104,9 +106,13 @@ install(EXPORT ${PROJECT_NAME}Targets
     DESTINATION lib/cmake/${PROJECT_NAME}
 )
 if (RICCATI_BUILD_TESTING)
-#    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
-#    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/benchmarks)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 endif()
+
+if (RICCATI_BUILD_BENCHMARKS)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/benchmarks)
+endif()
+
 # Check if Doxygen is installed
 if (RICCATI_BUILD_DOXYGEN)
     set(Eigen_INCLUDE_DIR "${Eigen3_SOURCE_DIR}")
@@ -133,20 +139,20 @@ if (RICCATI_BUILD_DOXYGEN)
 endif()
 
 if (RICCATI_BUILD_PYTHON) 
-# Find the module development requirements (requires FindPython from 3.17 or
-# scikit-build-core's built-in backport)
-find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
-find_package(pybind11 CONFIG REQUIRED)
+    # Find the module development requirements (requires FindPython from 3.17 or
+    # scikit-build-core's built-in backport)
+    find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+    find_package(pybind11 CONFIG REQUIRED)
 
-# Add a library using FindPython's tooling (pybind11 also provides a helper like
-# this)
-python_add_library(pyriccaticpp MODULE src/pymain.cpp WITH_SOABI)
-target_link_libraries(pyriccaticpp PRIVATE pybind11::headers riccati Eigen3::Eigen)
+    # Add a library using FindPython's tooling (pybind11 also provides a helper like
+    # this)
+    python_add_library(pyriccaticpp MODULE src/pymain.cpp WITH_SOABI)
+    target_link_libraries(pyriccaticpp PRIVATE pybind11::headers riccati Eigen3::Eigen)
 
-# This is passing in the version as a define just as an example
-target_compile_definitions(pyriccaticpp PRIVATE VERSION_INFO=${PROJECT_VERSION})
-target_compile_options(pyriccaticpp PRIVATE -Wno-deprecated-declaration)
-#target_compile_options(pyriccaticpp PRIVATE -Og -glldb)
-# The install directory is the output (wheel) directory
-install(TARGETS pyriccaticpp DESTINATION pyriccaticpp)
+    # This is passing in the version as a define just as an example
+    target_compile_definitions(pyriccaticpp PRIVATE VERSION_INFO=${PROJECT_VERSION})
+    target_compile_options(pyriccaticpp PRIVATE -Wno-deprecated-declarations)
+    #target_compile_options(pyriccaticpp PRIVATE -Og -glldb)
+    # The install directory is the output (wheel) directory
+    install(TARGETS pyriccaticpp DESTINATION pyriccaticpp)
 endif()

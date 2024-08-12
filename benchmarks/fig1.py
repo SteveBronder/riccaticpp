@@ -1,5 +1,6 @@
 import numpy as np
 import riccati
+import pyriccaticpp as ric
 import scipy.special as sp
 from scipy.integrate import solve_ivp
 import matplotlib
@@ -17,12 +18,13 @@ from matplotlib.ticker import LogLocator
 from enum import Enum
 
 class Algo(Enum):
-    RK = 1
-    RICCATICPP = 2
-    RDC = 3
-    OSCODE = 4
-    WKBMARCHING = 5
-    KUMMER = 6
+    RICCATICPP = 1
+    PYRICCATICPP = 2
+    RK = 3
+    RDC = 4
+    OSCODE = 5
+    WKBMARCHING = 6
+    KUMMER = 7
 
 
 class HandlerTupleVertical(HandlerTuple):
@@ -88,8 +90,41 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
     ytrue = refarray[abs(ls -l) < 1e-8, 1]
     errref = refarray[abs(ls -l) < 1e-8, 2]
 
-    if algo is Algo.RICCATICPP:
-        print("riccati-cpp")
+    if algo is Algo.PYRICCATICPP:
+        print("pyriccaticpp")
+        N = 1000 # Number of repetitions for timing
+        epsh = epsh
+        n = n
+        p = n
+        start = time.time_ns()
+        info = ric.Init(w, g, 8, 32, n, p)
+        for i in range(N):
+            xs, ys, dys, ss, ps, stypes, _ = ric.evolve(info = info, xi = xi, xf = xf, yi = yi, dyi = dyi, eps = eps, epsilon_h = epsh, init_stepsize = 0.1, hard_stop = True)
+        end = time.time_ns()
+        ys = np.array(ys)
+        # Compute statistics
+        runtime = (end - start)*1e-9/N
+        yerr = np.abs((ytrue - ys[-1])/ytrue)
+        # Write to txt file
+        # Create dir
+        outputf = outdir + "bremer237-pyriccaticpp.txt"
+        outputpath = Path(outputf)
+        outputpath.touch(exist_ok = True)
+        lines = ""
+        if os.stat(outputf).st_size != 0:
+            with open(outputf, 'r') as f:
+                lines = f.readlines()
+        with open(outputf, 'w') as f:
+            if lines == "":
+                f.write("# method, l, eps, relerr, tsolve, errlessref, params\n")
+            for line in lines:
+                f.write(line)
+            f.write("{}, {}, {}, {}, {}, {}, {}".format("pyriccaticpp",\
+                    l, eps, round_to_n(3, max(yerr)), round_to_n(3, runtime),\
+                    (yerr < errref)[0], "(n = {}; p = {}; epsh = {})".format(n, p, epsh)))
+            f.write("\n")
+    elif algo is Algo.RICCATICPP:
+        print("riccaticpp")
         n = 32
         p = 32
         atol = 1e-14
@@ -294,7 +329,7 @@ def joss_fig(outdir):
     round_to_n = lambda n, x: x if x == 0 else round(x, - int(math.floor(math.log10(abs(x)))) + (n-1))
 
     # Read in little tables and combine into one pandas dataframe
-    outputfs = [outdir + "bremer237-{0}.txt".format(method) for method in ["rk", "rdc", "kummer", "oscode", "wkbmarching"]]
+    outputfs = [outdir + "bremer237-{0}.txt".format(method) for method in ["rdc", "kummer", "oscode", "wkbmarching"]]
     dfs = []
     for outputf in outputfs:
         df = pandas.read_csv(outputf, sep = ', ')#, index_col = None)

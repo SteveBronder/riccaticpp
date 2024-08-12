@@ -66,7 +66,7 @@ class SolverInfo {
   // Number of nodes and diff matrices
   Integral n_nodes_{0};
   // Differentiation matrices and Vectors of Chebyshev nodes
-  std::vector<std::pair<matrixd_t, vectord_t>> chebyshev_;
+  std::vector<std::tuple<Integral, matrixd_t, vectord_t>> chebyshev_;
   // Lengths of node vectors
   vectord_t ns_;
   Integral n_idx_;
@@ -106,13 +106,28 @@ class SolverInfo {
 
   static constexpr bool denseout_{DenseOutput};  // Dense output flag
  private:
-  inline auto build_chebyshev(Integral nini, Integral n_nodes) {
-    std::vector<std::pair<matrixd_t, vectord_t>> res(
-        n_nodes + 1, std::make_pair(matrixd_t{}, vectord_t{}));
+  inline auto build_chebyshev(Integral nini, Integral n_nodes, Integral n, Integral p) {
+    std::vector<std::tuple<Integral, matrixd_t, vectord_t>> res;
+    res.reserve(n_nodes + 1);
     // Compute Chebyshev nodes and differentiation matrices
-    for (Integral i = 0; i <= n_nodes_; ++i) {
-      res[i] = chebyshev<Scalar>(nini * std::pow(2, i));
+    bool n_found = false;
+    bool p_found = false;
+    for (Integral i = 0; i <= n_nodes; ++i) {
+      auto it_v = nini * std::pow(2, i);
+      n_found = n_found || (it_v == n);
+      p_found = p_found || (it_v == p);
+      auto cheb_v = chebyshev<Scalar>(it_v);
+      res.emplace_back(it_v, std::move(cheb_v.first), std::move(cheb_v.second));
     }
+    if (!n_found) {
+      auto cheb_v = chebyshev<Scalar>(n);
+      res.emplace_back(n, std::move(cheb_v.first), std::move(cheb_v.second));
+    }
+    if (!p_found && n != p) {
+      auto cheb_v = chebyshev<Scalar>(p);
+      res.emplace_back(p, std::move(cheb_v.first), std::move(cheb_v.second));
+    }
+    std::sort(res.begin(), res.end(), [](auto& a, auto& b) { return std::get<0>(a) < std::get<0>(b); });
     return res;
   }
 
@@ -141,13 +156,13 @@ class SolverInfo {
         gamma_fun_(std::forward<GammaFun_>(gamma_fun)),
         alloc_(std::forward<Allocator_>(alloc)),
         n_nodes_(log2(nmax / nini) + 1),
-        chebyshev_(build_chebyshev(nini, n_nodes_)),
+        chebyshev_(build_chebyshev(nini, n_nodes_, n, p)),
         ns_(internal::logspace(std::log2(nini), std::log2(nini) + n_nodes_ - 1,
                                n_nodes_, 2.0)),
         n_idx_(
-            std::distance(ns_.begin(), std::find(ns_.begin(), ns_.end(), n))),
+            std::distance(chebyshev_.begin(), std::find_if(chebyshev_.begin(), chebyshev_.end(), [n](auto& x) { return std::get<0>(x) == n; }))),
         p_idx_(
-            std::distance(ns_.begin(), std::find(ns_.begin(), ns_.end(), p))),
+            std::distance(chebyshev_.begin(), std::find_if(chebyshev_.begin(), chebyshev_.end(), [p](auto& x) { return std::get<0>(x) == p; }))),
         xp_interp_((vector_t<Scalar>::LinSpaced(
                         p, pi<Scalar>() / (2.0 * p),
                         pi<Scalar>() * (1.0 - (1.0 / (2.0 * p))))
@@ -161,7 +176,7 @@ class SolverInfo {
         nini_(nini),
         nmax_(nmax),
         n_(n),
-        p_(p) {        }
+        p_(p) {}
 
   template <typename OmegaFun_, typename GammaFun_>
   SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Integral nini,
@@ -170,13 +185,13 @@ class SolverInfo {
         gamma_fun_(std::forward<GammaFun_>(gamma_fun)),
         alloc_(),
         n_nodes_(log2(nmax / nini) + 1),
-        chebyshev_(build_chebyshev(nini, n_nodes_)),
+        chebyshev_(build_chebyshev(nini, n_nodes_, n, p)),
         ns_(internal::logspace(std::log2(nini), std::log2(nini) + n_nodes_ - 1,
                                n_nodes_, 2.0)),
         n_idx_(
-            std::distance(ns_.begin(), std::find(ns_.begin(), ns_.end(), n))),
+            std::distance(chebyshev_.begin(), std::find_if(chebyshev_.begin(), chebyshev_.end(), [n](auto& x) { return std::get<0>(x) == n; }))),
         p_idx_(
-            std::distance(ns_.begin(), std::find(ns_.begin(), ns_.end(), p))),
+            std::distance(chebyshev_.begin(), std::find_if(chebyshev_.begin(), chebyshev_.end(), [p](auto& x) { return std::get<0>(x) == p; }))),
         xp_interp_((vector_t<Scalar>::LinSpaced(
                         p, pi<Scalar>() / (2.0 * p),
                         pi<Scalar>() * (1.0 - (1.0 / (2.0 * p))))
@@ -205,10 +220,10 @@ class SolverInfo {
   }
 
   RICCATI_ALWAYS_INLINE const auto& Dn() const noexcept {
-    return chebyshev_[n_idx_].first;
+    return std::get<1>(chebyshev_[n_idx_]);
   }
   RICCATI_ALWAYS_INLINE const auto& Dn(std::size_t idx) const noexcept {
-    return chebyshev_[idx].first;
+    return std::get<1>(chebyshev_[idx]);
   }
 
   /**
@@ -218,7 +233,7 @@ class SolverInfo {
    * current stepsize.
    */
   RICCATI_ALWAYS_INLINE const auto& xn() const noexcept {
-    return chebyshev_[n_idx_].second;
+    return std::get<2>(chebyshev_[n_idx_]);
   }
 
   /**
@@ -228,7 +243,7 @@ class SolverInfo {
    * current stepsize.
    */
   RICCATI_ALWAYS_INLINE const auto& xp() const noexcept {
-    return chebyshev_[p_idx_].second;
+    return std::get<2>(chebyshev_[p_idx_]);
   }
 
   RICCATI_ALWAYS_INLINE const auto& xp_interp() const noexcept {
@@ -268,7 +283,7 @@ template <bool DenseOutput, typename Scalar, typename OmegaFun, typename Allocat
 inline auto make_solver(OmegaFun&& omega_fun, GammaFun&& gamma_fun, Allocator&& alloc,
                         Integral nini, Integral nmax, Integral n, Integral p) {
   return SolverInfo<std::decay_t<OmegaFun>, std::decay_t<GammaFun>, Scalar,
-                    Integral, DenseOutput, Allocator>(std::forward<OmegaFun>(omega_fun),
+                    Integral, DenseOutput, std::decay_t<Allocator>>(std::forward<OmegaFun>(omega_fun),
                                            std::forward<GammaFun>(gamma_fun),
                                            std::forward<Allocator>(alloc),
                                            nini, nmax, n, p);
