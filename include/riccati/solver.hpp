@@ -18,20 +18,6 @@ namespace pybind11 {
 
 namespace riccati {
 
-namespace internal {
-inline Eigen::VectorXd logspace(double start, double end, int num,
-                                double base) {
-  Eigen::VectorXd result(num);
-  double delta = (end - start) / (num - 1);
-
-  for (int i = 0; i < num; ++i) {
-    result[i] = std::pow(base, start + i * delta);
-  }
-
-  return result;
-}
-}  // namespace internal
-
 
 template <typename SolverInfo, typename Scalar,
   std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::funtype, pybind11::object>::value>* = nullptr>
@@ -68,7 +54,6 @@ class SolverInfo {
   // Differentiation matrices and Vectors of Chebyshev nodes
   std::vector<std::tuple<Integral, matrixd_t, vectord_t>> chebyshev_;
   // Lengths of node vectors
-  vectord_t ns_;
   Integral n_idx_;
   Integral p_idx_;
 
@@ -157,8 +142,6 @@ class SolverInfo {
         alloc_(std::forward<Allocator_>(alloc)),
         n_nodes_(log2(nmax / nini) + 1),
         chebyshev_(build_chebyshev(nini, n_nodes_, n, p)),
-        ns_(internal::logspace(std::log2(nini), std::log2(nini) + n_nodes_ - 1,
-                               n_nodes_, 2.0)),
         n_idx_(
             std::distance(chebyshev_.begin(), std::find_if(chebyshev_.begin(), chebyshev_.end(), [n](auto& x) { return std::get<0>(x) == n; }))),
         p_idx_(
@@ -186,8 +169,6 @@ class SolverInfo {
         alloc_(),
         n_nodes_(log2(nmax / nini) + 1),
         chebyshev_(build_chebyshev(nini, n_nodes_, n, p)),
-        ns_(internal::logspace(std::log2(nini), std::log2(nini) + n_nodes_ - 1,
-                               n_nodes_, 2.0)),
         n_idx_(
             std::distance(chebyshev_.begin(), std::find_if(chebyshev_.begin(), chebyshev_.end(), [n](auto& x) { return std::get<0>(x) == n; }))),
         p_idx_(

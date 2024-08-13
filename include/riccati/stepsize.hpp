@@ -24,12 +24,12 @@ namespace riccati {
  *
  */
 template <typename SolverInfo, typename FloatingPoint>
-inline FloatingPoint choose_nonosc_stepsize(SolverInfo& info, FloatingPoint x0,
+inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                             FloatingPoint h,
                                             FloatingPoint epsilon_h) {
   auto ws = omega(info, riccati::scale(info.xp(), x0, h));
-  if (ws.maxCoeff() > (1 + epsilon_h) / std::abs(h)) {
-    return choose_nonosc_stepsize(info, x0, h / 2.0, epsilon_h);
+  if (ws.maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
+    return choose_nonosc_stepsize(info, x0, static_cast<FloatingPoint>(h / 2.0), epsilon_h);
   } else {
     return h;
   }
@@ -60,7 +60,7 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo& info, FloatingPoint x0,
  * of `w(x)` and `g(x)` satisfies the relative error tolerance `epsh`.
  */
 template <typename SolverInfo, typename FloatingPoint>
-inline auto choose_osc_stepsize(SolverInfo& info, FloatingPoint x0,
+inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                 FloatingPoint h, FloatingPoint epsilon_h) {
   auto t = eval(info.alloc_, riccati::scale(info.xp_interp(), x0, h));
   auto s = eval(info.alloc_, riccati::scale(info.xp(), x0, h));
@@ -88,8 +88,8 @@ inline auto choose_osc_stepsize(SolverInfo& info, FloatingPoint x0,
     }
     return std::make_tuple(h, ws, gs);
   } else {
-    auto h_scaling = std::min(
-        0.7, 0.9 * std::pow(epsilon_h / max_err, (1.0 / (info.p_ - 1.0))));
+    auto h_scaling = static_cast<FloatingPoint>(std::min(
+        0.7, 0.9 * std::pow(epsilon_h / max_err, (1.0 / (info.p_ - 1.0)))));
     return choose_osc_stepsize(info, x0, h * h_scaling, epsilon_h);
   }
 }

@@ -188,7 +188,7 @@ inline auto integration_matrix(Integral n) {
   matrix_t<Scalar> B = matrix_t<Scalar>::Zero(n + 1, n + 1);
   B.diagonal(-1).array() = 1.0 / (2.0 * k).array();
   B.diagonal(1).array() = -1.0 / k2.array();
-  vector_t<Scalar> v = Eigen::VectorXd::Ones(n);
+  vector_t<Scalar> v = vector_t<Scalar>::Ones(n);
   for (Integral i = 1; i < n; i += 2) {
     v.coeffRef(i) = -1;
   }

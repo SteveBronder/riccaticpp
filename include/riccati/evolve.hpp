@@ -355,10 +355,10 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   Scalar dwi = (2.0 / init_stepsize * (info.Dn() * omega_is)).mean();
   Scalar dgi = (2.0 / init_stepsize * (info.Dn() * gamma_is)).mean();
   Scalar hslo_ini
-      = direction * std::min(static_cast<Scalar>(1e8), std::abs(1.0 / wi));
+      = direction * std::min(static_cast<Scalar>(1e8), static_cast<Scalar>(std::abs(1.0 / wi)));
   Scalar hosc_ini
       = direction
-        * std::min(std::min(static_cast<Scalar>(1e8), std::abs(wi / dwi)),
+        * std::min(std::min(static_cast<Scalar>(1e8), static_cast<Scalar>(std::abs(wi / dwi))),
                    std::abs(gi / dgi));
 
   if (hard_stop) {
@@ -369,7 +369,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       hslo_ini = xf - xi;
     }
   }
-  auto hslo = choose_nonosc_stepsize(info, xi, hslo_ini, 0.2);
+  auto hslo = choose_nonosc_stepsize(info, xi, hslo_ini, Scalar(0.2));
   // o and g written here
   auto osc_step_tup = choose_osc_stepsize(info, xi, hosc_ini, epsilon_h);
   auto hosc = std::get<0>(osc_step_tup);
@@ -413,7 +413,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
           = nonosc_step(info, xcurrent, hslo, yprev, dyprev, eps);
       steptype = 0;
       if (!success) {
-        hslo *= 0.5;
+        hslo *= Scalar{0.5};
       }
       if (direction * hslo < 1e-16) {
         throw std::domain_error("Stepsize became to small error");
@@ -473,9 +473,9 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
     }
     xcurrent += h;
     if (direction * xcurrent < direction * xf) {
-      hslo_ini = direction * std::min(1e8, std::abs(1.0 / wnext));
+      hslo_ini = direction * std::min(Scalar{1e8}, std::abs(Scalar{1.0} / wnext));
       hosc_ini = direction
-                 * std::min(std::min(1e8, std::abs(wnext / dwnext)),
+                 * std::min(std::min(Scalar{1e8}, std::abs(wnext / dwnext)),
                             std::abs(gnext / dgnext));
       if (hard_stop) {
         if (direction * (xcurrent + hosc_ini) > direction * xf) {
@@ -489,7 +489,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       osc_step_tup
           = choose_osc_stepsize(info, xcurrent, hosc_ini, epsilon_h);
       hosc = std::get<0>(osc_step_tup);
-      hslo = choose_nonosc_stepsize(info, xcurrent, hslo_ini, 0.2);
+      hslo = choose_nonosc_stepsize(info, xcurrent, hslo_ini, Scalar{0.2});
       yprev = y;
       dyprev = dy;
     }
