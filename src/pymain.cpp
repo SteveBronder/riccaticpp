@@ -17,11 +17,10 @@
 
 namespace py = pybind11;
 
-
 namespace riccati {
 template <bool B>
 using bool_constant = std::integral_constant<bool, B>;
-  /**
+/**
  * Checks if a type's pointer is convertible to a templated base type's pointer.
  * If the arbitrary function
  * ```
@@ -35,12 +34,12 @@ using bool_constant = std::integral_constant<bool, B>;
  */
 template <template <typename> class Base, typename Derived>
 struct is_base_pointer_convertible {
-  static std::false_type f(const void *);
+  static std::false_type f(const void*);
   template <typename OtherDerived>
-  static std::true_type f(const Base<OtherDerived> *);
+  static std::true_type f(const Base<OtherDerived>*);
   enum {
     value
-    = decltype(f(std::declval<std::remove_reference_t<Derived> *>()))::value
+    = decltype(f(std::declval<std::remove_reference_t<Derived>*>()))::value
   };
 };
 template <typename T>
@@ -48,74 +47,89 @@ struct is_eigen
     : bool_constant<is_base_pointer_convertible<Eigen::EigenBase, T>::value> {};
 
 template <typename T>
-struct is_scalar :
-    bool_constant<std::is_floating_point<std::decay_t<T>>::value || std::is_integral<std::decay_t<T>>::value> {};
+struct is_scalar : bool_constant<std::is_floating_point<std::decay_t<T>>::value
+                                 || std::is_integral<std::decay_t<T>>::value> {
+};
 
-  template <typename SolverInfo, typename Scalar,
-  std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::funtype, pybind11::object>::value>* = nullptr,
-  std::enable_if_t<is_scalar<Scalar>::value>* = nullptr>
+template <
+    typename SolverInfo, typename Scalar,
+    std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::funtype,
+                                  pybind11::object>::value>* = nullptr,
+    std::enable_if_t<is_scalar<Scalar>::value>* = nullptr>
 inline auto gamma(SolverInfo&& info, const Scalar& x) {
   return info.gamma_fun_(x).template cast<Scalar>();
 }
 
-template <typename SolverInfo,  typename Scalar,
-  std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::funtype, pybind11::object>::value>* = nullptr,
-  std::enable_if_t<is_scalar<Scalar>::value>* = nullptr>
+template <
+    typename SolverInfo, typename Scalar,
+    std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::funtype,
+                                  pybind11::object>::value>* = nullptr,
+    std::enable_if_t<is_scalar<Scalar>::value>* = nullptr>
 inline auto omega(SolverInfo&& info, const Scalar& x) {
   return info.omega_fun_(x).template cast<Scalar>();
 }
-  template <typename SolverInfo, typename Scalar,
-  std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::funtype, pybind11::object>::value>* = nullptr,
-  std::enable_if_t<is_eigen<Scalar>::value>* = nullptr>
+template <
+    typename SolverInfo, typename Scalar,
+    std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::funtype,
+                                  pybind11::object>::value>* = nullptr,
+    std::enable_if_t<is_eigen<Scalar>::value>* = nullptr>
 inline auto gamma(SolverInfo&& info, const Scalar& x) {
-  return info.gamma_fun_(x.eval()).template cast<typename Scalar::PlainObject>();
+  return info.gamma_fun_(x.eval())
+      .template cast<typename Scalar::PlainObject>();
 }
 
-template <typename SolverInfo,  typename Scalar,
-  std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::funtype, pybind11::object>::value>* = nullptr,
-  std::enable_if_t<is_eigen<Scalar>::value>* = nullptr>
+template <
+    typename SolverInfo, typename Scalar,
+    std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::funtype,
+                                  pybind11::object>::value>* = nullptr,
+    std::enable_if_t<is_eigen<Scalar>::value>* = nullptr>
 inline auto omega(SolverInfo&& info, const Scalar& x) {
-  return info.omega_fun_(x.eval()).template cast<typename Scalar::PlainObject>();
+  return info.omega_fun_(x.eval())
+      .template cast<typename Scalar::PlainObject>();
 }
 
 template <typename SolverInfo, typename Scalar>
-inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
+inline auto evolve(SolverInfo& info, Scalar xi, Scalar xf,
                    std::complex<Scalar> yi, std::complex<Scalar> dyi,
                    Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
                    bool hard_stop = false) {
-                   Eigen::Matrix<double, 0, 0> not_used;
-                   return evolve(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, not_used, hard_stop);
-                   }
+  Eigen::Matrix<double, 0, 0> not_used;
+  return evolve(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, not_used,
+                hard_stop);
+}
 
 template <typename SolverInfo, typename Scalar>
-inline auto step_(SolverInfo &info, Scalar xi, Scalar xf,
-                   std::complex<Scalar> yi, std::complex<Scalar> dyi,
-                   Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
-                   bool hard_stop = false) {
+inline auto step_(SolverInfo& info, Scalar xi, Scalar xf,
+                  std::complex<Scalar> yi, std::complex<Scalar> dyi, Scalar eps,
+                  Scalar epsilon_h, Scalar init_stepsize,
+                  bool hard_stop = false) {
   Eigen::VectorXd not_used;
-  return step(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, not_used, hard_stop);
-                   }
+  return step(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, not_used,
+              hard_stop);
+}
 template <typename SolverInfo, typename FloatingPoint>
 inline auto choose_osc_stepsize_(SolverInfo& info, FloatingPoint x0,
-                                FloatingPoint h, FloatingPoint epsilon_h) {
+                                 FloatingPoint h, FloatingPoint epsilon_h) {
   return choose_osc_stepsize(info, x0, h, epsilon_h);
-  info.alloc_.recover_memory();                                
+  info.alloc_.recover_memory();
 }
 
 template <typename SolverInfo, typename FloatingPoint>
 inline FloatingPoint choose_nonosc_stepsize_(SolverInfo& info, FloatingPoint x0,
-                                            FloatingPoint h,
-                                            FloatingPoint epsilon_h) {
+                                             FloatingPoint h,
+                                             FloatingPoint epsilon_h) {
   return choose_nonosc_stepsize(info, x0, h, epsilon_h);
   info.alloc_.recover_memory();
 }
-using init_f64_i64 = riccati::SolverInfo<py::object, py::object, double, int64_t>;
-}
+using init_f64_i64
+    = riccati::SolverInfo<py::object, py::object, double, int64_t>;
+}  // namespace riccati
 
 PYBIND11_MODULE(pyriccaticpp, m) {
-    m.doc() = "Riccati solver module";
-    py::class_<riccati::init_f64_i64>(m, "Init")
-        .def(py::init<py::object, py::object, int64_t, int64_t, int64_t, int64_t>(), R"pbdoc(
+  m.doc() = "Riccati solver module";
+  py::class_<riccati::init_f64_i64>(m, "Init").def(
+      py::init<py::object, py::object, int64_t, int64_t, int64_t, int64_t>(),
+      R"pbdoc(
           """
           Construct a new SolverInfo object.
 
@@ -135,27 +149,34 @@ PYBIND11_MODULE(pyriccaticpp, m) {
               (Number of Chebyshev nodes - 1) to use for computing Riccati steps.
           """
             )pbdoc");
-    m.def("step", [](py::object& info, double xi, double xf, std::complex<double> yi, std::complex<double> dyi,
-                    double eps, double epsilon_h, double init_stepsize, py::object x_eval, bool hard_stop) {
-      if (py::isinstance<riccati::init_f64_i64>(info)) {
-        auto info_ = info.cast<riccati::init_f64_i64>();
-        if (x_eval.is_none()) {
-          auto ret = riccati::step_<riccati::init_f64_i64, double>(info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, hard_stop);
-          info_.alloc_.recover_memory();
-          return ret;
+  m.def(
+      "step",
+      [](py::object& info, double xi, double xf, std::complex<double> yi,
+         std::complex<double> dyi, double eps, double epsilon_h,
+         double init_stepsize, py::object x_eval, bool hard_stop) {
+        if (py::isinstance<riccati::init_f64_i64>(info)) {
+          auto info_ = info.cast<riccati::init_f64_i64>();
+          if (x_eval.is_none()) {
+            auto ret = riccati::step_<riccati::init_f64_i64, double>(
+                info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize,
+                hard_stop);
+            info_.alloc_.recover_memory();
+            return ret;
+          } else {
+            auto ret = riccati::step<riccati::init_f64_i64, double>(
+                info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize,
+                x_eval.cast<Eigen::VectorXd>(), hard_stop);
+            info_.alloc_.recover_memory();
+            return ret;
+          }
         } else {
-          auto ret = riccati::step<riccati::init_f64_i64, double>(info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, x_eval.cast<Eigen::VectorXd>(), hard_stop);
-          info_.alloc_.recover_memory();
-          return ret;
+          throw std::invalid_argument("Invalid SolverInfo object.");
         }
-      } else {
-        throw std::invalid_argument("Invalid SolverInfo object.");
-      }
-    }, 
-          py::arg("info"), py::arg("xi"), py::arg("xf"), py::arg("yi"), py::arg("dyi"),
-          py::arg("eps"), py::arg("epsilon_h"), py::arg("init_stepsize"),
-          py::arg("x_eval") = py::none(),
-          py::arg("hard_stop") = false, R"pbdoc(
+      },
+      py::arg("info"), py::arg("xi"), py::arg("xf"), py::arg("yi"),
+      py::arg("dyi"), py::arg("eps"), py::arg("epsilon_h"),
+      py::arg("init_stepsize"), py::arg("x_eval") = py::none(),
+      py::arg("hard_stop") = false, R"pbdoc(
     """
     Solves the differential equation y'' + 2gy' + w^2y = 0 over a given interval.
 
@@ -199,26 +220,33 @@ PYBIND11_MODULE(pyriccaticpp, m) {
     """
           )pbdoc");
 
-    m.def("evolve", [](py::object& info, double xi, double xf, std::complex<double> yi, std::complex<double> dyi,
-                    double eps, double epsilon_h, double init_stepsize, py::object x_eval, bool hard_stop) {
-      if (py::isinstance<riccati::init_f64_i64>(info)) {
-        auto info_ = info.cast<riccati::init_f64_i64>();
-        if (x_eval.is_none()) {
-          auto ret = riccati::evolve(info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, hard_stop);
-          info_.alloc_.recover_memory();
-          return ret;
+  m.def(
+      "evolve",
+      [](py::object& info, double xi, double xf, std::complex<double> yi,
+         std::complex<double> dyi, double eps, double epsilon_h,
+         double init_stepsize, py::object x_eval, bool hard_stop) {
+        if (py::isinstance<riccati::init_f64_i64>(info)) {
+          auto info_ = info.cast<riccati::init_f64_i64>();
+          if (x_eval.is_none()) {
+            auto ret = riccati::evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
+                                       init_stepsize, hard_stop);
+            info_.alloc_.recover_memory();
+            return ret;
+          } else {
+            auto ret = riccati::evolve(
+                info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize,
+                x_eval.cast<Eigen::VectorXd>(), hard_stop);
+            info_.alloc_.recover_memory();
+            return ret;
+          }
         } else {
-          auto ret = riccati::evolve(info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, x_eval.cast<Eigen::VectorXd>(), hard_stop);
-          info_.alloc_.recover_memory();
-          return ret;
+          throw std::invalid_argument("Invalid SolverInfo object.");
         }
-      } else {
-        throw std::invalid_argument("Invalid SolverInfo object.");
-      }
-                    },
-          py::arg("info"), py::arg("xi"), py::arg("xf"), py::arg("yi"), py::arg("dyi"),
-          py::arg("eps"), py::arg("epsilon_h"), py::arg("init_stepsize"), py::arg("x_eval") = py::none(),
-          py::arg("hard_stop") = false, R"pbdoc(
+      },
+      py::arg("info"), py::arg("xi"), py::arg("xf"), py::arg("yi"),
+      py::arg("dyi"), py::arg("eps"), py::arg("epsilon_h"),
+      py::arg("init_stepsize"), py::arg("x_eval") = py::none(),
+      py::arg("hard_stop") = false, R"pbdoc(
     """
     Solves the differential equation y'' + 2gy' + w^2y = 0 over a given interval.
 
@@ -262,17 +290,20 @@ PYBIND11_MODULE(pyriccaticpp, m) {
         - numpy.ndarray[numpy.complex128[m, 1]]: Interpolated solution at the specified x_eval.
     """
           )pbdoc");
-    m.def("choose_osc_stepsize", [](py::object& info, double x0, double h, double epsilon_h) {
-      if (py::isinstance<riccati::init_f64_i64>(info)) {
-        auto info_ = info.cast<riccati::init_f64_i64>();
-        auto ret = riccati::choose_osc_stepsize(info_, x0, h, epsilon_h);
-        info_.alloc_.recover_memory();
-        return ret;
-      } else {
-        throw std::invalid_argument("Invalid SolverInfo object.");
-      }
-    },
-          py::arg("info"), py::arg("x0"), py::arg("h"), py::arg("epsilon_h"), R"pbdoc(
+  m.def(
+      "choose_osc_stepsize",
+      [](py::object& info, double x0, double h, double epsilon_h) {
+        if (py::isinstance<riccati::init_f64_i64>(info)) {
+          auto info_ = info.cast<riccati::init_f64_i64>();
+          auto ret = riccati::choose_osc_stepsize(info_, x0, h, epsilon_h);
+          info_.alloc_.recover_memory();
+          return ret;
+        } else {
+          throw std::invalid_argument("Invalid SolverInfo object.");
+        }
+      },
+      py::arg("info"), py::arg("x0"), py::arg("h"), py::arg("epsilon_h"),
+      R"pbdoc(
                 """
     Chooses an appropriate step size for the Riccati step based on the accuracy of Chebyshev interpolation of w(x) and g(x).
 
@@ -302,17 +333,22 @@ PYBIND11_MODULE(pyriccaticpp, m) {
         The refined step size over which the Chebyshev interpolation of `w(x)` and `g(x)` satisfies the relative error tolerance `epsilon_h`.
     """
           )pbdoc");
-    m.def("choose_nonosc_stepsize", [](py::object& info, double x0, double h, double epsilon_h) {
-      if (py::isinstance<riccati::init_f64_i64>(info)) {
-        auto info_ = info.cast<riccati::init_f64_i64>();
-        auto ret = riccati::choose_nonosc_stepsize_<riccati::init_f64_i64, double>(info_, x0, h, epsilon_h);
-        info_.alloc_.recover_memory();
-        return ret;
-      } else {
-        throw std::invalid_argument("Invalid SolverInfo object.");
-      }
-    },
-          py::arg("info"), py::arg("x0"), py::arg("h"), py::arg("epsilon_h"), R"pbdoc(
+  m.def(
+      "choose_nonosc_stepsize",
+      [](py::object& info, double x0, double h, double epsilon_h) {
+        if (py::isinstance<riccati::init_f64_i64>(info)) {
+          auto info_ = info.cast<riccati::init_f64_i64>();
+          auto ret
+              = riccati::choose_nonosc_stepsize_<riccati::init_f64_i64, double>(
+                  info_, x0, h, epsilon_h);
+          info_.alloc_.recover_memory();
+          return ret;
+        } else {
+          throw std::invalid_argument("Invalid SolverInfo object.");
+        }
+      },
+      py::arg("info"), py::arg("x0"), py::arg("h"), py::arg("epsilon_h"),
+      R"pbdoc(
     """
     Chooses the stepsize for spectral Chebyshev steps based on the variation of 1/w, 
     the approximate timescale over which the solution changes.
@@ -338,5 +374,4 @@ PYBIND11_MODULE(pyriccaticpp, m) {
         Refined stepsize over which 1/w(x) does not change by more than epsilon_h/w(x).
     """            
           )pbdoc");
-
 }

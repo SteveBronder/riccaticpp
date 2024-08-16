@@ -29,7 +29,8 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                             FloatingPoint epsilon_h) {
   auto ws = omega(info, riccati::scale(info.xp(), x0, h));
   if (ws.maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
-    return choose_nonosc_stepsize(info, x0, static_cast<FloatingPoint>(h / 2.0), epsilon_h);
+    return choose_nonosc_stepsize(info, x0, static_cast<FloatingPoint>(h / 2.0),
+                                  epsilon_h);
   } else {
     return h;
   }
@@ -53,9 +54,9 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
  * interpolation matrices and node positions.
  * @param x0 float - The current value of the independent variable.
  * @param h float - The initial estimate of the step size.
- * @param epsilon_h float - Tolerance parameter defining the maximum relative error
- * allowed in the Chebyshev interpolation of `w(x)` and `g(x)` over the proposed
- * step.
+ * @param epsilon_h float - Tolerance parameter defining the maximum relative
+ * error allowed in the Chebyshev interpolation of `w(x)` and `g(x)` over the
+ * proposed step.
  * @return float - The refined step size over which the Chebyshev interpolation
  * of `w(x)` and `g(x)` satisfies the relative error tolerance `epsh`.
  */

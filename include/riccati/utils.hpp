@@ -10,7 +10,8 @@
 namespace riccati {
 
 template <typename T>
-constexpr Eigen::Index compile_size_v = std::decay_t<T>::RowsAtCompileTime * std::decay_t<T>::ColsAtCompileTime;
+constexpr Eigen::Index compile_size_v
+    = std::decay_t<T>::RowsAtCompileTime * std::decay_t<T>::ColsAtCompileTime;
 
 /**
  * @brief Scales and shifts a vector of Chebyshev nodes.

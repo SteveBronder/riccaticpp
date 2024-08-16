@@ -58,8 +58,6 @@ namespace riccati {
 #define RICCATI_PURE
 #endif
 
-
-
 }  // namespace riccati
 
 #endif

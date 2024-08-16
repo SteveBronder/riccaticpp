@@ -332,10 +332,10 @@ template <typename Vec1, typename Vec2, typename Allocator>
 inline auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
   const auto r = s.size();
   const auto q = t.size();
-  auto V = eval(alloc,
-                    matrix_t<typename std::decay_t<Vec1>::Scalar>::Ones(r, r));
-  auto R = eval(alloc,
-                    matrix_t<typename std::decay_t<Vec1>::Scalar>::Ones(q, r));
+  auto V
+      = eval(alloc, matrix_t<typename std::decay_t<Vec1>::Scalar>::Ones(r, r));
+  auto R
+      = eval(alloc, matrix_t<typename std::decay_t<Vec1>::Scalar>::Ones(q, r));
   for (std::size_t i = 1; i < static_cast<std::size_t>(r); ++i) {
     V.col(i).array() = V.col(i - 1).array() * s.array();
     R.col(i).array() = R.col(i - 1).array() * t.array();
@@ -379,27 +379,29 @@ inline auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
  * collocation step performed.
  * @param alloc An allocator for the Eigen objects.
  * @return A tuple containing:
- *         1. Eigen::Vector<std::complex<Scalar>, Eigen::Dynamic, 1> - Numerical estimate of the
- * solution at the end of the step, at `x0 + h`.
- *         2. Eigen::Vector<std::complex<Scalar>, Eigen::Dynamic, 1> - Numerical estimate of the
- * derivative of the solution at the end of the step, at `x0 + h`.
+ *         1. Eigen::Vector<std::complex<Scalar>, Eigen::Dynamic, 1> - Numerical
+ * estimate of the solution at the end of the step, at `x0 + h`.
+ *         2. Eigen::Vector<std::complex<Scalar>, Eigen::Dynamic, 1> - Numerical
+ * estimate of the derivative of the solution at the end of the step, at `x0 +
+ * h`.
  *         3. Eigen::VectorXd (real) - Chebyshev nodes used for the current
  * iteration of the spectral collocation method, scaled to lie in the interval
  * `[x0, x0 + h]`.
  */
 template <typename SolverInfo, typename Scalar, typename YScalar,
           typename Integral>
-__attribute__((noinline)) auto spectral_chebyshev(SolverInfo&& info, Scalar x0, Scalar h,
-                               YScalar y0, YScalar dy0, Integral niter) {
+__attribute__((noinline)) auto spectral_chebyshev(SolverInfo&& info, Scalar x0,
+                                                  Scalar h, YScalar y0,
+                                                  YScalar dy0, Integral niter) {
   using complex_t = std::complex<Scalar>;
   using vectorc_t = vector_t<complex_t>;
-  auto x_scaled
-      = eval(info.alloc_, riccati::scale(std::get<2>(info.chebyshev_[niter]), x0, h));
+  auto x_scaled = eval(
+      info.alloc_, riccati::scale(std::get<2>(info.chebyshev_[niter]), x0, h));
   auto&& D = info.Dn(niter);
   auto ws = omega(info, x_scaled);
   auto gs = gamma(info, x_scaled);
-  auto D2 = eval(
-      info.alloc_, (4.0 / (h * h) * (D * D) + 4.0 / h * (gs.asDiagonal() * D)));
+  auto D2 = eval(info.alloc_,
+                 (4.0 / (h * h) * (D * D) + 4.0 / h * (gs.asDiagonal() * D)));
   D2 += (ws.array().square()).matrix().asDiagonal();
   const auto n = std::round(std::get<0>(info.chebyshev_[niter]));
   auto D2ic = eval(info.alloc_, matrix_t<complex_t>::Zero(n + 3, n + 1));

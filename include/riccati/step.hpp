@@ -79,7 +79,8 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
     dyprev = std::move(dy);
     xprev = std::move(x);
   }
-  return std::make_tuple(true, yprev(0), dyprev(0), maxerr, yprev, dyprev, iter);
+  return std::make_tuple(true, yprev(0), dyprev(0), maxerr, yprev, dyprev,
+                         iter);
 }
 
 /**
@@ -132,24 +133,28 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
  * a step of size `h`. If `solve()` is calling this function, that is taken care
  * of automatically, but it needs to be done manually otherwise.
  */
-template <bool DenseOut, typename SolverInfo, typename OmegaVec, typename GammaVec,
-          typename Scalar, typename YScalar>
+template <bool DenseOut, typename SolverInfo, typename OmegaVec,
+          typename GammaVec, typename Scalar, typename YScalar>
 inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
-                     Scalar x0, Scalar h, YScalar y0, YScalar dy0, Scalar epsres) {
+                     Scalar x0, Scalar h, YScalar y0, YScalar dy0,
+                     Scalar epsres) {
   using complex_t = std::complex<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   bool success = true;
   auto &&Dn = info.Dn();
   auto y = eval(info.alloc_, complex_t(0.0, 1.0) * omega_s);
   auto delta = [&](const auto &r, const auto &y) {
-    return (-r.array() / (Scalar{2.0} * (y.array() + gamma_s.array()))).matrix().eval();
+    return (-r.array() / (Scalar{2.0} * (y.array() + gamma_s.array())))
+        .matrix()
+        .eval();
   };
   auto R = [&](const auto &d) {
     return Scalar{2.0} / h * (Dn * d) + d.array().square().matrix();
   };
-  auto Ry = (complex_t(0.0, 1.0) * Scalar{2.0}
-             * (Scalar{1.0} / h * (Dn * omega_s) + gamma_s.cwiseProduct(omega_s)))
-                .eval();
+  auto Ry
+      = (complex_t(0.0, 1.0) * Scalar{2.0}
+         * (Scalar{1.0} / h * (Dn * omega_s) + gamma_s.cwiseProduct(omega_s)))
+            .eval();
   Scalar maxerr = Ry.array().abs().maxCoeff();
 
   arena_matrix<vectorc_t> deltay(info.alloc_, Ry.size(), 1);
@@ -166,7 +171,8 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     prev_err = maxerr;
   }
   if constexpr (DenseOut) {
-    auto u1 = eval(info.alloc_, h /Scalar{2.0} * (info.integration_matrix_ * y));
+    auto u1
+        = eval(info.alloc_, h / Scalar{2.0} * (info.integration_matrix_ * y));
     auto f1 = eval(info.alloc_, (u1).array().exp().matrix());
     auto f2 = eval(info.alloc_, f1.conjugate());
     auto du2 = eval(info.alloc_, y.conjugate());
@@ -176,8 +182,8 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     auto am = (dy0 - y0 * y(y.size() - 1))
               / (du2(du2.size() - 1) - y(y.size() - 1));
     auto y1 = eval(info.alloc_, ap * f1 + am * f2);
-    auto dy1
-        = eval(info.alloc_, ap * y.cwiseProduct(f1) + am * du2.cwiseProduct(f2));
+    auto dy1 = eval(info.alloc_,
+                    ap * y.cwiseProduct(f1) + am * du2.cwiseProduct(f2));
     Scalar phase = std::imag(f1(0));
     return std::make_tuple(success, y1(0), dy1(0), maxerr, phase, u1, y,
                            std::make_pair(ap, am));
@@ -199,7 +205,6 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
                            std::make_pair(ap, am));
   }
 }
-
 
 /**
  * @brief Solves the differential equation y'' + 2gy' + w^2y = 0 over a given
@@ -235,31 +240,40 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
  * (dense output) and returned.
  * @param[in] hard_stop If true, forces the solver to have a potentially smaller
  * last stepsize to stop exactly at xf.
- * @return A tuple containing multiple elements representing the results of the ODE solving process:
- * 0. std::vector<Scalar>: A vector containing the x-values at which the solution was evaluated or interpolated.
- *   These values correspond to the points in the interval [xi, xf] and include the points specified in x_eval
- *   if dense output was requested.
- * 1. std::vector<std::complex<Scalar>>: A vector of complex numbers representing the solution y(x) of the differential
- *   equation at each x-value from the corresponding vector of x-values.
- * 2. std::vector<std::complex<Scalar>>: A vector of complex numbers representing the derivative of the solution, y'(x),
- *   at each x-value from the corresponding vector of x-values.
- * 3. std::vector<int>: A vector indicating the success status of the solver at each step. Each element corresponds to a
- *   step in the solver process, where a value of 1 indicates success, and 0 indicates failure.
- * 4. std::vector<int>: A vector indicating the type of step taken at each point in the solution process. Each element
- *   corresponds to a step in the solver process, where a value of 1 indicates an oscillatory step and 0 indicates a
+ * @return A tuple containing multiple elements representing the results of the
+ * ODE solving process: 0. std::vector<Scalar>: A vector containing the x-values
+ * at which the solution was evaluated or interpolated. These values correspond
+ * to the points in the interval [xi, xf] and include the points specified in
+ * x_eval if dense output was requested.
+ * 1. std::vector<std::complex<Scalar>>: A vector of complex numbers
+ * representing the solution y(x) of the differential equation at each x-value
+ * from the corresponding vector of x-values.
+ * 2. std::vector<std::complex<Scalar>>: A vector of complex numbers
+ * representing the derivative of the solution, y'(x), at each x-value from the
+ * corresponding vector of x-values.
+ * 3. std::vector<int>: A vector indicating the success status of the solver at
+ * each step. Each element corresponds to a step in the solver process, where a
+ * value of 1 indicates success, and 0 indicates failure.
+ * 4. std::vector<int>: A vector indicating the type of step taken at each point
+ * in the solution process. Each element corresponds to a step in the solver
+ * process, where a value of 1 indicates an oscillatory step and 0 indicates a
  *   non-oscillatory step.
- * 5. std::vector<Scalar>: A vector containing the phase angle at each step of the solution process if relevant. This
- *   is especially applicable for oscillatory solutions and may not be used for all types of differential equations.
- * 6. @ref Eigen::Matrix<std::complex<Scalar>, -1, 1>: A vector containing the interpolated solution at the specified `x_eval`
- * The function returns these vectors encapsulated in a standard tuple, providing comprehensive information about the
- * solution process, including where the solution was evaluated, the values and derivatives of the solution at those
- * points, success status of each step, type of each step, and phase angles where applicable.
+ * 5. std::vector<Scalar>: A vector containing the phase angle at each step of
+ * the solution process if relevant. This is especially applicable for
+ * oscillatory solutions and may not be used for all types of differential
+ * equations.
+ * 6. @ref Eigen::Matrix<std::complex<Scalar>, -1, 1>: A vector containing the
+ * interpolated solution at the specified `x_eval` The function returns these
+ * vectors encapsulated in a standard tuple, providing comprehensive information
+ * about the solution process, including where the solution was evaluated, the
+ * values and derivatives of the solution at those points, success status of
+ * each step, type of each step, and phase angles where applicable.
  */
 template <typename SolverInfo, typename Scalar, typename Vec>
 inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
-                   std::complex<Scalar> yi, std::complex<Scalar> dyi,
-                   Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
-                   Vec &&x_eval, bool hard_stop = false) {
+                 std::complex<Scalar> yi, std::complex<Scalar> dyi, Scalar eps,
+                 Scalar epsilon_h, Scalar init_stepsize, Vec &&x_eval,
+                 bool hard_stop = false) {
   using vectord_t = vector_t<Scalar>;
   using complex_t = std::complex<Scalar>;
   using vectorc_t = vector_t<complex_t>;
@@ -276,7 +290,7 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
       throw std::domain_error("Dense output requested but x_eval is size 0!");
     }
     // TODO: Better error messages
-    auto x_eval_max = (direction * x_eval.maxCoeff()); 
+    auto x_eval_max = (direction * x_eval.maxCoeff());
     auto x_eval_min = (direction * x_eval.minCoeff());
     auto xi_intdir = direction * xi;
     auto xf_intdir = direction * xf;
@@ -316,8 +330,8 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
   int successes;
   int steptypes;
   Scalar phases;
-  Eigen::Matrix<complex_t, -1, 1> yeval;//(x_eval.size());
-  Eigen::Matrix<complex_t, -1, 1> dyeval;//(x_eval.size());
+  Eigen::Matrix<complex_t, -1, 1> yeval;   //(x_eval.size());
+  Eigen::Matrix<complex_t, -1, 1> dyeval;  //(x_eval.size());
 
   complex_t y = yi;
   complex_t dy = dyi;
@@ -330,11 +344,13 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
   Scalar gi = gamma_is.mean();
   Scalar dwi = (2.0 / init_stepsize * (info.Dn() * omega_is)).mean();
   Scalar dgi = (2.0 / init_stepsize * (info.Dn() * gamma_is)).mean();
-  Scalar hslo_ini
-      = direction * std::min(static_cast<Scalar>(1e8), static_cast<Scalar>(std::abs(1.0 / wi)));
+  Scalar hslo_ini = direction
+                    * std::min(static_cast<Scalar>(1e8),
+                               static_cast<Scalar>(std::abs(1.0 / wi)));
   Scalar hosc_ini
       = direction
-        * std::min(std::min(static_cast<Scalar>(1e8), static_cast<Scalar>(std::abs(wi / dwi))),
+        * std::min(std::min(static_cast<Scalar>(1e8),
+                            static_cast<Scalar>(std::abs(wi / dwi))),
                    std::abs(gi / dgi));
 
   if (hard_stop) {
@@ -350,8 +366,8 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
   auto osc_step_tup = choose_osc_stepsize(info, xi, hosc_ini, epsilon_h);
   auto hosc = std::get<0>(osc_step_tup);
   // NOTE: Calling choose_osc_stepsize will update these values
-  auto&& omega_n = std::get<1>(osc_step_tup);
-  auto&& gamma_n = std::get<2>(osc_step_tup);
+  auto &&omega_n = std::get<1>(osc_step_tup);
+  auto &&gamma_n = std::get<2>(osc_step_tup);
   Scalar xcurrent = xi;
   Scalar wnext = wi;
   using matrixc_t = matrix_t<complex_t>;
@@ -379,8 +395,9 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
       }
     }
     // o and g read here
-    std::tie(success, y, dy, err, phase, un, d_un, a_pair) = osc_step<dense_output>(
-        info, omega_n, gamma_n, xcurrent, hosc, yprev, dyprev, eps);
+    std::tie(success, y, dy, err, phase, un, d_un, a_pair)
+        = osc_step<dense_output>(info, omega_n, gamma_n, xcurrent, hosc, yprev,
+                                 dyprev, eps);
     steptype = 1;
   }
   while (!success) {
@@ -411,18 +428,20 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
       auto dy_eval_map
           = Eigen::Map<vectorc_t>(dyeval.data() + dense_start, dense_size);
       if (steptype) {
-        auto x_eval_scaled = eval(
-            info.alloc_,
-            (2.0 / h * (x_eval_map.array() - xcurrent) - 1.0).matrix());
+        auto x_eval_scaled
+            = eval(info.alloc_,
+                   (2.0 / h * (x_eval_map.array() - xcurrent) - 1.0).matrix());
         auto Linterp = interpolate(info.xn(), x_eval_scaled, info.alloc_);
         auto fdense = eval(info.alloc_, (Linterp * un).array().exp().matrix());
-        y_eval_map
-            = a_pair.first * fdense + a_pair.second * fdense.conjugate();
+        y_eval_map = a_pair.first * fdense + a_pair.second * fdense.conjugate();
         auto du_dense = eval(info.alloc_, (Linterp * d_un));
-        dy_eval_map = a_pair.first * (du_dense.array() * fdense.array()) + a_pair.second * (du_dense.array() * fdense.array()).conjugate();
+        dy_eval_map
+            = a_pair.first * (du_dense.array() * fdense.array())
+              + a_pair.second * (du_dense.array() * fdense.array()).conjugate();
       } else {
         auto xc_scaled = eval(
-            info.alloc_, scale(std::get<2>(info.chebyshev_[cheb_N]), xcurrent, h).matrix());
+            info.alloc_,
+            scale(std::get<2>(info.chebyshev_[cheb_N]), xcurrent, h).matrix());
         auto Linterp = interpolate(xc_scaled, x_eval_map, info.alloc_);
         y_eval_map = Linterp * y_eval;
       }
@@ -447,16 +466,14 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
     wnext = omega(info, xcurrent + h);
     gnext = gamma(info, xcurrent + h);
     auto xn_scaled = scale(info.xn().array(), xcurrent, h).eval();
-    dwnext
-        = 2.0 / h * info.Dn().row(0).dot(omega(info, xn_scaled).matrix());
-    dgnext = 2.0 / h
-              * info.Dn().row(0).dot(gamma(info, (xn_scaled).matrix()));
+    dwnext = 2.0 / h * info.Dn().row(0).dot(omega(info, xn_scaled).matrix());
+    dgnext = 2.0 / h * info.Dn().row(0).dot(gamma(info, (xn_scaled).matrix()));
   }
   xcurrent += h;
   if (direction * xcurrent < direction * xf) {
     hslo_ini = direction * std::min(Scalar{1e8}, std::abs(Scalar{1.0} / wnext));
     hosc_ini = direction
-                * std::min(std::min(Scalar{1e8}, std::abs(wnext / dwnext)),
+               * std::min(std::min(Scalar{1e8}, std::abs(wnext / dwnext)),
                           std::abs(gnext / dgnext));
     if (hard_stop) {
       if (direction * (xcurrent + hosc_ini) > direction * xf) {
@@ -467,15 +484,15 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
       }
     }
     // o and g written here
-    osc_step_tup
-        = choose_osc_stepsize(info, xcurrent, hosc_ini, epsilon_h);
+    osc_step_tup = choose_osc_stepsize(info, xcurrent, hosc_ini, epsilon_h);
     hosc = std::get<0>(osc_step_tup);
     hslo = choose_nonosc_stepsize(info, xcurrent, hslo_ini, Scalar{0.2});
     yprev = y;
     dyprev = dy;
   }
   info.alloc_.recover_memory();
-  return std::make_tuple(xs, ys, dys, hosc, hslo, successes, phases, steptypes, yeval);
+  return std::make_tuple(xs, ys, dys, hosc, hslo, successes, phases, steptypes,
+                         yeval);
 }
 
 }  // namespace riccati

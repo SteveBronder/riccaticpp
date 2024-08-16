@@ -13,27 +13,31 @@
 #include <vector>
 
 namespace pybind11 {
-  class object;
+class object;
 }
 
 namespace riccati {
 
-
-template <typename SolverInfo, typename Scalar,
-  std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::funtype, pybind11::object>::value>* = nullptr>
+template <
+    typename SolverInfo, typename Scalar,
+    std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::funtype,
+                                   pybind11::object>::value>* = nullptr>
 inline auto gamma(SolverInfo&& info, const Scalar& x) {
   return info.gamma_fun_(x);
 }
 
-template <typename SolverInfo,  typename Scalar,
-  std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::funtype, pybind11::object>::value>* = nullptr>
+template <
+    typename SolverInfo, typename Scalar,
+    std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::funtype,
+                                   pybind11::object>::value>* = nullptr>
 inline auto omega(SolverInfo&& info, const Scalar& x) {
   return info.omega_fun_(x);
 }
 
 // OmegaFun / GammaFun take in a scalar and return a scalar
 template <typename OmegaFun, typename GammaFun, typename Scalar_,
-          typename Integral_, typename Allocator = arena_allocator<Scalar_, arena_alloc>>
+          typename Integral_,
+          typename Allocator = arena_allocator<Scalar_, arena_alloc>>
 class SolverInfo {
  public:
   using Scalar = Scalar_;
@@ -90,7 +94,8 @@ class SolverInfo {
   Integral p_;
 
  private:
-  inline auto build_chebyshev(Integral nini, Integral n_nodes, Integral n, Integral p) {
+  inline auto build_chebyshev(Integral nini, Integral n_nodes, Integral n,
+                              Integral p) {
     std::vector<std::tuple<Integral, matrixd_t, vectord_t>> res;
     res.reserve(n_nodes + 1);
     // Compute Chebyshev nodes and differentiation matrices
@@ -111,7 +116,8 @@ class SolverInfo {
       auto cheb_v = chebyshev<Scalar>(p);
       res.emplace_back(p, std::move(cheb_v.first), std::move(cheb_v.second));
     }
-    std::sort(res.begin(), res.end(), [](auto& a, auto& b) { return std::get<0>(a) < std::get<0>(b); });
+    std::sort(res.begin(), res.end(),
+              [](auto& a, auto& b) { return std::get<0>(a) < std::get<0>(b); });
     return res;
   }
 
@@ -134,17 +140,21 @@ class SolverInfo {
    * steps.
    */
   template <typename OmegaFun_, typename GammaFun_, typename Allocator_>
-  SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Allocator_&& alloc, Integral nini,
-             Integral nmax, Integral n, Integral p)
+  SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Allocator_&& alloc,
+             Integral nini, Integral nmax, Integral n, Integral p)
       : omega_fun_(std::forward<OmegaFun_>(omega_fun)),
         gamma_fun_(std::forward<GammaFun_>(gamma_fun)),
         alloc_(std::forward<Allocator_>(alloc)),
         n_nodes_(log2(nmax / nini) + 1),
         chebyshev_(build_chebyshev(nini, n_nodes_, n, p)),
-        n_idx_(
-            std::distance(chebyshev_.begin(), std::find_if(chebyshev_.begin(), chebyshev_.end(), [n](auto& x) { return std::get<0>(x) == n; }))),
-        p_idx_(
-            std::distance(chebyshev_.begin(), std::find_if(chebyshev_.begin(), chebyshev_.end(), [p](auto& x) { return std::get<0>(x) == p; }))),
+        n_idx_(std::distance(
+            chebyshev_.begin(),
+            std::find_if(chebyshev_.begin(), chebyshev_.end(),
+                         [n](auto& x) { return std::get<0>(x) == n; }))),
+        p_idx_(std::distance(
+            chebyshev_.begin(),
+            std::find_if(chebyshev_.begin(), chebyshev_.end(),
+                         [p](auto& x) { return std::get<0>(x) == p; }))),
         xp_interp_((vector_t<Scalar>::LinSpaced(
                         p, pi<Scalar>() / (2.0 * p),
                         pi<Scalar>() * (1.0 - (1.0 / (2.0 * p))))
@@ -161,16 +171,20 @@ class SolverInfo {
 
   template <typename OmegaFun_, typename GammaFun_>
   SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Integral nini,
-             Integral nmax, Integral n, Integral p) :
-                   omega_fun_(std::forward<OmegaFun_>(omega_fun)),
+             Integral nmax, Integral n, Integral p)
+      : omega_fun_(std::forward<OmegaFun_>(omega_fun)),
         gamma_fun_(std::forward<GammaFun_>(gamma_fun)),
         alloc_(),
         n_nodes_(log2(nmax / nini) + 1),
         chebyshev_(build_chebyshev(nini, n_nodes_, n, p)),
-        n_idx_(
-            std::distance(chebyshev_.begin(), std::find_if(chebyshev_.begin(), chebyshev_.end(), [n](auto& x) { return std::get<0>(x) == n; }))),
-        p_idx_(
-            std::distance(chebyshev_.begin(), std::find_if(chebyshev_.begin(), chebyshev_.end(), [p](auto& x) { return std::get<0>(x) == p; }))),
+        n_idx_(std::distance(
+            chebyshev_.begin(),
+            std::find_if(chebyshev_.begin(), chebyshev_.end(),
+                         [n](auto& x) { return std::get<0>(x) == n; }))),
+        p_idx_(std::distance(
+            chebyshev_.begin(),
+            std::find_if(chebyshev_.begin(), chebyshev_.end(),
+                         [p](auto& x) { return std::get<0>(x) == p; }))),
         xp_interp_((vector_t<Scalar>::LinSpaced(
                         p, pi<Scalar>() / (2.0 * p),
                         pi<Scalar>() * (1.0 - (1.0 / (2.0 * p))))
@@ -257,13 +271,13 @@ class SolverInfo {
  */
 template <typename Scalar, typename OmegaFun, typename Allocator,
           typename GammaFun, typename Integral>
-inline auto make_solver(OmegaFun&& omega_fun, GammaFun&& gamma_fun, Allocator&& alloc,
-                        Integral nini, Integral nmax, Integral n, Integral p) {
+inline auto make_solver(OmegaFun&& omega_fun, GammaFun&& gamma_fun,
+                        Allocator&& alloc, Integral nini, Integral nmax,
+                        Integral n, Integral p) {
   return SolverInfo<std::decay_t<OmegaFun>, std::decay_t<GammaFun>, Scalar,
-                    Integral, std::decay_t<Allocator>>(std::forward<OmegaFun>(omega_fun),
-                                           std::forward<GammaFun>(gamma_fun),
-                                           std::forward<Allocator>(alloc),
-                                           nini, nmax, n, p);
+                    Integral, std::decay_t<Allocator>>(
+      std::forward<OmegaFun>(omega_fun), std::forward<GammaFun>(gamma_fun),
+      std::forward<Allocator>(alloc), nini, nmax, n, p);
 }
 
 }  // namespace riccati

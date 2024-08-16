@@ -142,7 +142,8 @@ class arena_alloc {
     }
   }
   RICCATI_NO_INLINE arena_alloc()
-      : blocks_(1, internal::eight_byte_aligned_malloc(internal::DEFAULT_INITIAL_NBYTES)),
+      : blocks_(1, internal::eight_byte_aligned_malloc(
+                       internal::DEFAULT_INITIAL_NBYTES)),
         sizes_(1, internal::DEFAULT_INITIAL_NBYTES),
         cur_block_(0),
         cur_block_end_(blocks_[0] + internal::DEFAULT_INITIAL_NBYTES),
@@ -155,7 +156,6 @@ class arena_alloc {
   arena_alloc& operator=(const arena_alloc&) = delete;
   arena_alloc(arena_alloc&&) = delete;
   arena_alloc& operator=(arena_alloc&&) = delete;
-
 
   /**
    * Destroy this memory allocator.
@@ -311,10 +311,11 @@ struct arena_allocator {
   ArenaType* alloc_;
   bool owns_alloc_{false};
   using value_type = T;
-  RICCATI_NO_INLINE explicit arena_allocator(ArenaType* alloc, bool owns_alloc = false) : 
-    alloc_(alloc), owns_alloc_(owns_alloc) {}
-  RICCATI_NO_INLINE arena_allocator() : 
-    alloc_(new ArenaType{}), owns_alloc_(true) {}
+  RICCATI_NO_INLINE explicit arena_allocator(ArenaType* alloc,
+                                             bool owns_alloc = false)
+      : alloc_(alloc), owns_alloc_(owns_alloc) {}
+  RICCATI_NO_INLINE arena_allocator()
+      : alloc_(new ArenaType{}), owns_alloc_(true) {}
 
   RICCATI_NO_INLINE arena_allocator(const arena_allocator& rhs)
       : alloc_(rhs.alloc_), owns_alloc_(false) {};
