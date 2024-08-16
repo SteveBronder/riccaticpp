@@ -69,6 +69,7 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
   auto omega_n = eval(info.alloc_, omega(info, xi_scaled));
   auto gamma_n = eval(info.alloc_, gamma(info, xi_scaled));
   vectorc_t yeval;
+  vectorc_t dyeval;
   // TODO: Add this check to regular evolve
   if (sign * (xi + init_stepsize) > sign * xf) {
     throw std::out_of_range(
@@ -81,7 +82,7 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
   auto osc_ret = osc_step(info, omega_n, gamma_n, xi, init_stepsize, yi, dyi,
                           eps);
   if (std::get<0>(osc_ret) == 0) {
-    return std::make_tuple(false, xi, init_stepsize, osc_ret, vectorc_t(0),
+    return std::make_tuple(false, xi, init_stepsize, osc_ret, vectorc_t(0), vectorc_t(0),
                            static_cast<Eigen::Index>(0),
                            static_cast<Eigen::Index>(0));
   } else {
@@ -99,8 +100,11 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
         auto Linterp = interpolate(info.xn(), x_eval_scaled, info.alloc_);
         auto fdense = eval(
             info.alloc_, (Linterp * std::get<5>(osc_ret)).array().exp().matrix());
-        yeval = std::get<6>(osc_ret).first * fdense
-                + std::get<6>(osc_ret).second * fdense.conjugate();
+        yeval = std::get<7>(osc_ret).first * fdense
+                + std::get<7>(osc_ret).second * fdense.conjugate();
+        auto du_dense = eval(info.alloc_, (Linterp * std::get<6>(osc_ret))).array();
+        dyeval = std::get<7>(osc_ret).first * (du_dense.array() * fdense.array()) + std::get<7>(osc_ret).second * (du_dense.array() * fdense.array()).conjugate();
+
       }
     }
     auto x_next = xi + init_stepsize;
@@ -117,7 +121,7 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
     }
     // o and g written here
     auto h_next = choose_osc_stepsize(info, x_next, hosc_ini, epsilon_h);
-    return std::make_tuple(true, x_next, std::get<0>(h_next), osc_ret, yeval,
+    return std::make_tuple(true, x_next, std::get<0>(h_next), osc_ret, yeval, dyeval,
                            dense_start, dense_size);
   }
 }
@@ -173,6 +177,7 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
   using complex_t = std::complex<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   vectorc_t yeval;
+  vectorc_t dyeval;
   // TODO: Add this check to regular evolve
   const int sign = init_stepsize > 0 ? 1 : -1;
   if (sign * (xi + init_stepsize) > sign * xf) {
@@ -184,7 +189,7 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
   }
   auto nonosc_ret = nonosc_step(info, xi, init_stepsize, yi, dyi, eps);
   if (!std::get<0>(nonosc_ret)) {
-    return std::make_tuple(false, xi, init_stepsize, nonosc_ret, vectorc_t(0),
+    return std::make_tuple(false, xi, init_stepsize, nonosc_ret, vectorc_t(0), vectorc_t(0),
                            static_cast<Eigen::Index>(0),
                            static_cast<Eigen::Index>(0));
   } else {
@@ -204,6 +209,7 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
                   .eval();
         auto Linterp = interpolate(xi_scaled, x_eval_map, info.alloc_);
         yeval = Linterp * std::get<4>(nonosc_ret);
+        dyeval = Linterp * std::get<5>(nonosc_ret);
       }
     }
     auto x_next = xi + init_stepsize;
@@ -213,7 +219,7 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
       hslo_ini = xf - x_next;
     }
     auto h_next = choose_nonosc_stepsize(info, x_next, hslo_ini, epsilon_h);
-    return std::make_tuple(true, x_next, h_next, nonosc_ret, yeval, dense_start,
+    return std::make_tuple(true, x_next, h_next, nonosc_ret, yeval, dyeval, dense_start,
                            dense_size);
   }
 }
@@ -342,6 +348,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   phases.reserve(output_size);
   using vectorc_t = vector_t<complex_t>;
   vectorc_t yeval(x_eval.size());
+  vectorc_t dyeval(x_eval.size());
 
   complex_t y = yi;
   complex_t dy = dyi;
@@ -382,6 +389,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   matrixc_t y_eval;
   matrixc_t dy_eval;
   arena_matrix<vectorc_t> un(info.alloc_, omega_n.size(), 1);
+  arena_matrix<vectorc_t> d_un(info.alloc_, omega_n.size(), 1);
   std::pair<complex_t, complex_t> a_pair;
   while (std::abs(xcurrent - xf) > Scalar(1e-8)
          && direction * xcurrent < direction * xf) {
@@ -404,7 +412,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
         }
       }
       // o and g read here
-      std::tie(success, y, dy, err, phase, un, a_pair) = osc_step(
+      std::tie(success, y, dy, err, phase, un, d_un, a_pair) = osc_step(
           info, omega_n, gamma_n, xcurrent, hosc, yprev, dyprev, eps);
       steptype = 1;
     }
@@ -431,6 +439,8 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
             = Eigen::Map<vectord_t>(x_eval.data() + dense_start, dense_size);
         auto y_eval_map
             = Eigen::Map<vectorc_t>(yeval.data() + dense_start, dense_size);
+        auto dy_eval_map
+            = Eigen::Map<vectorc_t>(dyeval.data() + dense_start, dense_size);
         if (steptype) {
           auto x_eval_scaled = eval(
               info.alloc_,
@@ -439,11 +449,14 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
           auto fdense = eval(info.alloc_, (Linterp * un).array().exp().matrix());
           y_eval_map
               = a_pair.first * fdense + a_pair.second * fdense.conjugate();
+          auto du_dense = eval(info.alloc_, (Linterp * d_un));
+          dy_eval_map = a_pair.first * (du_dense.array() * fdense.array()) + a_pair.second * (du_dense.array() * fdense.array()).conjugate();
         } else {
           auto xc_scaled = eval(
               info.alloc_, scale(std::get<2>(info.chebyshev_[cheb_N]), xcurrent, h).matrix());
           auto Linterp = interpolate(xc_scaled, x_eval_map, info.alloc_);
           y_eval_map = Linterp * y_eval;
+          dy_eval_map = Linterp * dy_eval;
         }
       }
     }
@@ -495,7 +508,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
     }
     info.alloc_.recover_memory();
   }
-  return std::make_tuple(xs, ys, dys, successes, phases, steptypes, yeval);
+  return std::make_tuple(xs, ys, dys, successes, phases, steptypes, yeval, dyeval);
 }
 
 }  // namespace riccati

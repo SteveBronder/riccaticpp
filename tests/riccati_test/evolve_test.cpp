@@ -43,8 +43,8 @@ TEST_F(Riccati, osc_evolve_dense_output) {
     auto airy_est = yi;
     auto err = std::abs((airy_true - airy_est) / airy_true);
     EXPECT_LE(err, 3e-7);
-    auto start_y = std::get<5>(res);
-    auto size_y = std::get<6>(res);
+    auto start_y = std::get<6>(res);
+    auto size_y = std::get<7>(res);
     if (size_y > 0) {
       x_validated = true;
       auto y_true_slice = ytrue.segment(start_y, size_y);
@@ -100,8 +100,8 @@ TEST_F(Riccati, nonosc_evolve_dense_output) {
     auto airy_est = yi;
     auto err = std::abs((airy_true - airy_est) / airy_true);
     EXPECT_LE(err, 5e-9);
-    auto start_y = std::get<5>(res);
-    auto size_y = std::get<6>(res);
+    auto start_y = std::get<6>(res);
+    auto size_y = std::get<7>(res);
     if (size_y > 0) {
       x_validated = true;
       auto y_true_slice = ytrue.segment(start_y, size_y);

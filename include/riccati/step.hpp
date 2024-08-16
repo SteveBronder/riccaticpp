@@ -179,7 +179,7 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     auto dy1
         = eval(info.alloc_, ap * y.cwiseProduct(f1) + am * du2.cwiseProduct(f2));
     Scalar phase = std::imag(f1(0));
-    return std::make_tuple(success, y1(0), dy1(0), maxerr, phase, u1,
+    return std::make_tuple(success, y1(0), dy1(0), maxerr, phase, u1, y,
                            std::make_pair(ap, am));
   } else {
     complex_t f1 = std::exp(h / Scalar{2.0} * (info.quadwts_.dot(y)));
@@ -194,6 +194,7 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     auto dy1 = (ap * y * f1 + am * du2 * f2).eval();
     Scalar phase = std::imag(f1);
     return std::make_tuple(success, y1, dy1(0), maxerr, phase,
+                           arena_matrix<vectorc_t>(info.alloc_, y.size()),
                            arena_matrix<vectorc_t>(info.alloc_, y.size()),
                            std::make_pair(ap, am));
   }
