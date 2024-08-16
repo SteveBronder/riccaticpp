@@ -270,7 +270,8 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
         " adjusting it so that integration happens from xi to xf.");
   }
   // Check that yeval and x_eval are right size
-  if constexpr (compile_size_v<Vec> != 0) {
+  constexpr bool dense_output = compile_size_v<Vec> != 0;
+  if constexpr (dense_output) {
     if (!x_eval.size()) {
       throw std::domain_error("Dense output requested but x_eval is size 0!");
     }
@@ -316,6 +317,7 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
   int steptypes;
   Scalar phases;
   Eigen::Matrix<complex_t, -1, 1> yeval;//(x_eval.size());
+  Eigen::Matrix<complex_t, -1, 1> dyeval;//(x_eval.size());
 
   complex_t y = yi;
   complex_t dy = dyi;
@@ -356,6 +358,7 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
   matrixc_t y_eval;
   matrixc_t dy_eval;
   arena_matrix<vectorc_t> un(info.alloc_, omega_n.size(), 1);
+  arena_matrix<vectorc_t> d_un(info.alloc_, omega_n.size(), 1);
   std::pair<complex_t, complex_t> a_pair;
   Scalar phase{0.0};
   bool success = false;
@@ -376,7 +379,7 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
       }
     }
     // o and g read here
-    std::tie(success, y, dy, err, phase, un, a_pair) = osc_step(
+    std::tie(success, y, dy, err, phase, un, d_un, a_pair) = osc_step<dense_output>(
         info, omega_n, gamma_n, xcurrent, hosc, yprev, dyprev, eps);
     steptype = 1;
   }
@@ -392,18 +395,21 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
     }
   }
   auto h = steptype ? hosc : hslo;
-  if constexpr (compile_size_v<Vec> != 0) {
+  if constexpr (dense_output) {
     Eigen::Index dense_size = 0;
     Eigen::Index dense_start = 0;
     // Assuming x_eval is sorted we just want start and size
     std::tie(dense_start, dense_size)
         = get_slice(x_eval, direction * xcurrent, direction * (xcurrent + h));
     yeval = Eigen::Matrix<complex_t, -1, 1>(dense_size);
+    dyeval = Eigen::Matrix<complex_t, -1, 1>(dense_size);
     if (dense_size != 0) {
       auto x_eval_map
           = Eigen::Map<vectord_t>(x_eval.data() + dense_start, dense_size);
       auto y_eval_map
           = Eigen::Map<vectorc_t>(yeval.data() + dense_start, dense_size);
+      auto dy_eval_map
+          = Eigen::Map<vectorc_t>(dyeval.data() + dense_start, dense_size);
       if (steptype) {
         auto x_eval_scaled = eval(
             info.alloc_,
@@ -412,6 +418,8 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
         auto fdense = eval(info.alloc_, (Linterp * un).array().exp().matrix());
         y_eval_map
             = a_pair.first * fdense + a_pair.second * fdense.conjugate();
+        auto du_dense = eval(info.alloc_, (Linterp * d_un));
+        dy_eval_map = a_pair.first * (du_dense.array() * fdense.array()) + a_pair.second * (du_dense.array() * fdense.array()).conjugate();
       } else {
         auto xc_scaled = eval(
             info.alloc_, scale(std::get<2>(info.chebyshev_[cheb_N]), xcurrent, h).matrix());
