@@ -33,7 +33,7 @@ inline auto omega(SolverInfo&& info, const Scalar& x) {
 
 // OmegaFun / GammaFun take in a scalar and return a scalar
 template <typename OmegaFun, typename GammaFun, typename Scalar_,
-          typename Integral_, bool DenseOutput = false, typename Allocator = arena_allocator<Scalar_, arena_alloc>>
+          typename Integral_, typename Allocator = arena_allocator<Scalar_, arena_alloc>>
 class SolverInfo {
  public:
   using Scalar = Scalar_;
@@ -89,7 +89,6 @@ class SolverInfo {
   // (Number of Chebyshev nodes - 1) to use for estimating Riccati stepsizes.
   Integral p_;
 
-  static constexpr bool denseout_{DenseOutput};  // Dense output flag
  private:
   inline auto build_chebyshev(Integral nini, Integral n_nodes, Integral n, Integral p) {
     std::vector<std::tuple<Integral, matrixd_t, vectord_t>> res;
@@ -154,8 +153,7 @@ class SolverInfo {
                        .matrix()),
         L_(interpolate(this->xp(), xp_interp_, dummy_allocator{})),
         quadwts_(quad_weights<Scalar>(n)),
-        integration_matrix_(DenseOutput ? integration_matrix<Scalar>(n + 1)
-                                        : matrixd_t(0, 0)),
+        integration_matrix_(integration_matrix<Scalar>(n + 1)),
         nini_(nini),
         nmax_(nmax),
         n_(n),
@@ -181,8 +179,7 @@ class SolverInfo {
                        .matrix()),
         L_(interpolate(this->xp(), xp_interp_, dummy_allocator{})),
         quadwts_(quad_weights<Scalar>(n)),
-        integration_matrix_(DenseOutput ? integration_matrix<Scalar>(n + 1)
-                                        : matrixd_t(0, 0)),
+        integration_matrix_(integration_matrix<Scalar>(n + 1)),
         nini_(nini),
         nmax_(nmax),
         n_(n),
@@ -241,7 +238,6 @@ class SolverInfo {
 
 /**
  * @brief Construct a new Solver Info object
- * @tparam DenseOutput Flag to enable dense output
  * @tparam Scalar A scalar type used for calculations
  * @tparam OmegaFun Type of the frequency function. Must be able to take in and
  *  return scalars and vectors.
@@ -259,12 +255,12 @@ class SolverInfo {
  * @param p (Number of Chebyshev nodes - 1) to use for computing Riccati
  * steps.
  */
-template <bool DenseOutput, typename Scalar, typename OmegaFun, typename Allocator,
+template <typename Scalar, typename OmegaFun, typename Allocator,
           typename GammaFun, typename Integral>
 inline auto make_solver(OmegaFun&& omega_fun, GammaFun&& gamma_fun, Allocator&& alloc,
                         Integral nini, Integral nmax, Integral n, Integral p) {
   return SolverInfo<std::decay_t<OmegaFun>, std::decay_t<GammaFun>, Scalar,
-                    Integral, DenseOutput, std::decay_t<Allocator>>(std::forward<OmegaFun>(omega_fun),
+                    Integral, std::decay_t<Allocator>>(std::forward<OmegaFun>(omega_fun),
                                            std::forward<GammaFun>(gamma_fun),
                                            std::forward<Allocator>(alloc),
                                            nini, nmax, n, p);

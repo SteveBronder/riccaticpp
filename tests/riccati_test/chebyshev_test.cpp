@@ -166,7 +166,7 @@ TEST_F(Riccati, spectral_chebyshev_test) {
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
-  auto info = riccati::make_solver<true, double>(omega_fun, gamma_fun, allocator, 16, 32,
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16, 32,
                                                  32, 32);
   constexpr auto xi = 1.0;
   const auto h = 0.4880213350286135;

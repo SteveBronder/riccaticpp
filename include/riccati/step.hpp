@@ -132,7 +132,7 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
  * a step of size `h`. If `solve()` is calling this function, that is taken care
  * of automatically, but it needs to be done manually otherwise.
  */
-template <typename SolverInfo, typename OmegaVec, typename GammaVec,
+template <bool DenseOut, typename SolverInfo, typename OmegaVec, typename GammaVec,
           typename Scalar, typename YScalar>
 inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
                      Scalar x0, Scalar h, YScalar y0, YScalar dy0, Scalar epsres) {
@@ -165,7 +165,7 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     }
     prev_err = maxerr;
   }
-  if (info.denseout_) {
+  if constexpr (DenseOut) {
     auto u1 = eval(info.alloc_, h /Scalar{2.0} * (info.integration_matrix_ * y));
     auto f1 = eval(info.alloc_, (u1).array().exp().matrix());
     auto f2 = eval(info.alloc_, f1.conjugate());
@@ -270,7 +270,7 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
         " adjusting it so that integration happens from xi to xf.");
   }
   // Check that yeval and x_eval are right size
-  if constexpr (std::decay_t<SolverInfo>::denseout_) {
+  if constexpr (compile_size_v<Vec> != 0) {
     if (!x_eval.size()) {
       throw std::domain_error("Dense output requested but x_eval is size 0!");
     }
@@ -392,7 +392,7 @@ inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
     }
   }
   auto h = steptype ? hosc : hslo;
-  if constexpr (std::decay_t<SolverInfo>::denseout_) {
+  if constexpr (compile_size_v<Vec> != 0) {
     Eigen::Index dense_size = 0;
     Eigen::Index dense_start = 0;
     // Assuming x_eval is sorted we just want start and size

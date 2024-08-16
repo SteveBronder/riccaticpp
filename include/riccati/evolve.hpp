@@ -79,7 +79,8 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
         + std::string(")!"));
   }
   // o and g read here
-  auto osc_ret = osc_step(info, omega_n, gamma_n, xi, init_stepsize, yi, dyi,
+  constexpr bool dense_output = compile_size_v<Vec> != 0;
+  auto osc_ret = osc_step<dense_output>(info, omega_n, gamma_n, xi, init_stepsize, yi, dyi,
                           eps);
   if (std::get<0>(osc_ret) == 0) {
     return std::make_tuple(false, xi, init_stepsize, osc_ret, vectorc_t(0), vectorc_t(0),
@@ -88,7 +89,7 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
   } else {
     Eigen::Index dense_size = 0;
     Eigen::Index dense_start = 0;
-    if constexpr (std::decay_t<SolverInfo>::denseout_) {
+    if constexpr (dense_output) {
       // Assuming x_eval is sorted we just want start and size
       std::tie(dense_start, dense_size)
           = get_slice(x_eval, sign * xi, sign * (xi + init_stepsize));
@@ -195,7 +196,7 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
   } else {
     Eigen::Index dense_size = 0;
     Eigen::Index dense_start = 0;
-    if constexpr (std::decay_t<SolverInfo>::denseout_) {
+    if constexpr (compile_size_v<Vec> != 0) {
       // Assuming x_eval is sorted we just want start and size
       std::tie(dense_start, dense_size)
           = get_slice(x_eval, sign * xi, sign * (xi + init_stepsize));
@@ -291,7 +292,8 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
         " adjusting it so that integration happens from xi to xf.");
   }
   // Check that yeval and x_eval are right size
-  if constexpr (std::decay_t<SolverInfo>::denseout_) {
+  constexpr bool dense_output = compile_size_v<Vec> != 0;
+  if constexpr (dense_output) {
     if (!x_eval.size()) {
       throw std::domain_error("Dense output requested but x_eval is size 0!");
     }
@@ -412,7 +414,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
         }
       }
       // o and g read here
-      std::tie(success, y, dy, err, phase, un, d_un, a_pair) = osc_step(
+      std::tie(success, y, dy, err, phase, un, d_un, a_pair) = osc_step<dense_output>(
           info, omega_n, gamma_n, xcurrent, hosc, yprev, dyprev, eps);
       steptype = 1;
     }
@@ -428,7 +430,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       }
     }
     auto h = steptype ? hosc : hslo;
-    if constexpr (std::decay_t<SolverInfo>::denseout_) {
+    if constexpr (dense_output) {
       Eigen::Index dense_size = 0;
       Eigen::Index dense_start = 0;
       // Assuming x_eval is sorted we just want start and size

@@ -19,7 +19,7 @@ TEST_F(Riccati, osc_stepsize_dense_output) {
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
-  auto info = riccati::make_solver<true, double>(omega_fun, gamma_fun, allocator, 16, 32,
+  auto info = riccati::make_solver< double>(omega_fun, gamma_fun, allocator, 16, 32,
                                                  32, 32);
   auto xi = 1e2;
   auto epsh = 1e-13;
@@ -38,7 +38,7 @@ TEST_F(Riccati, osc_stepsize_nondense_output) {
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
-  auto info = riccati::make_solver<false, double>(omega_fun, gamma_fun, allocator, 16, 32,
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16, 32,
                                                   32, 32);
   auto xi = 1e2;
   auto epsh = 1e-13;
@@ -57,7 +57,7 @@ TEST_F(Riccati, nonosc_stepsize_dense_output) {
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
-  auto info = riccati::make_solver<true, double>(omega_fun, gamma_fun, allocator, 16, 32,
+  auto info = riccati::make_solver< double>(omega_fun, gamma_fun, allocator, 16, 32,
                                                  32, 32);
   auto xi = 1e0;
   auto epsh = 2e-1;
@@ -76,7 +76,7 @@ TEST_F(Riccati, nonosc_stepsize_nondense_output) {
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
-  auto info = riccati::make_solver<false, double>(omega_fun, gamma_fun, allocator, 16, 32,
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16, 32,
                                                   32, 32);
   auto xi = 1e0;
   auto epsh = 2e-1;
