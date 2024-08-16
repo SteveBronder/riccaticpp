@@ -136,6 +136,7 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
     }
     // o and g written here
     auto h_next = choose_osc_stepsize(info, x_next, hosc_ini, epsilon_h);
+    // TODO: CANNOT RETURN ARENA MATRIX FROM OSC_RET
     return std::make_tuple(true, x_next, std::get<0>(h_next), osc_ret, yeval,
                            dyeval, dense_start, dense_size);
   }
@@ -473,7 +474,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       Eigen::Index dense_start = 0;
       // Assuming x_eval is sorted we just want start and size
       std::tie(dense_start, dense_size)
-          = get_slice(x_eval, direction * xcurrent, direction * (xcurrent + h));
+          = get_slice(x_eval, xcurrent, (xcurrent + h));
       if (dense_size != 0) {
         auto x_eval_map
             = Eigen::Map<vectord_t>(x_eval.data() + dense_start, dense_size);

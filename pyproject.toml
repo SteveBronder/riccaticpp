@@ -45,12 +45,12 @@ filterwarnings = [
   "error",
   "ignore::pytest.PytestCacheWarning",
 ]
-testpaths = ["tests"]
+testpaths = ["tests/python"]
 
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
-test-command = "pytest {project}/tests"
+test-command = "pytest {project}/tests/python"
 test-extras = ["test"]
 
 [tool.cibuildwheel.pyodide]

@@ -99,6 +99,26 @@ inline auto evolve(SolverInfo& info, Scalar xi, Scalar xf,
 }
 
 template <typename SolverInfo, typename Scalar>
+inline auto osc_evolve(SolverInfo& info, Scalar xi, Scalar xf,
+                   std::complex<Scalar> yi, std::complex<Scalar> dyi,
+                   Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
+                   bool hard_stop = false) {
+  Eigen::Matrix<double, 0, 0> not_used;
+  return osc_evolve(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, not_used,
+                hard_stop);
+}
+
+template <typename SolverInfo, typename Scalar>
+inline auto nonosc_evolve(SolverInfo& info, Scalar xi, Scalar xf,
+                   std::complex<Scalar> yi, std::complex<Scalar> dyi,
+                   Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
+                   bool hard_stop = false) {
+  Eigen::Matrix<double, 0, 0> not_used;
+  return nonosc_evolve(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, not_used,
+                hard_stop);
+}
+
+template <typename SolverInfo, typename Scalar>
 inline auto step_(SolverInfo& info, Scalar xi, Scalar xf,
                   std::complex<Scalar> yi, std::complex<Scalar> dyi, Scalar eps,
                   Scalar epsilon_h, Scalar init_stepsize,
@@ -123,6 +143,25 @@ inline FloatingPoint choose_nonosc_stepsize_(SolverInfo& info, FloatingPoint x0,
 }
 using init_f64_i64
     = riccati::SolverInfo<py::object, py::object, double, int64_t>;
+
+template <typename Mat>
+auto hard_copy_arena(arena_matrix<Mat>&& x) {
+  return Mat(x);
+}
+
+template <typename Alt>
+auto hard_copy_arena(Alt&& x) {
+  return std::move(x);
+}
+
+template <typename Tuple>
+auto hard_copy_arena(std::tuple<Tuple>&& tup) {
+  return std::apply(
+      [](auto&&... args) {
+        return std::make_tuple(hard_copy_arena(std::forward<decltype(args)>(args))...);
+      },
+      std::move(tup));
+}
 }  // namespace riccati
 
 PYBIND11_MODULE(pyriccaticpp, m) {
@@ -149,6 +188,7 @@ PYBIND11_MODULE(pyriccaticpp, m) {
               (Number of Chebyshev nodes - 1) to use for computing Riccati steps.
           """
             )pbdoc");
+
   m.def(
       "step",
       [](py::object& info, double xi, double xf, std::complex<double> yi,
@@ -175,7 +215,7 @@ PYBIND11_MODULE(pyriccaticpp, m) {
       },
       py::arg("info"), py::arg("xi"), py::arg("xf"), py::arg("yi"),
       py::arg("dyi"), py::arg("eps"), py::arg("epsilon_h"),
-      py::arg("init_stepsize"), py::arg("x_eval") = py::none(),
+      py::arg("init_stepsize") = 0.01, py::arg("x_eval") = py::none(),
       py::arg("hard_stop") = false, R"pbdoc(
     """
     Solves the differential equation y'' + 2gy' + w^2y = 0 over a given interval.
@@ -245,7 +285,7 @@ PYBIND11_MODULE(pyriccaticpp, m) {
       },
       py::arg("info"), py::arg("xi"), py::arg("xf"), py::arg("yi"),
       py::arg("dyi"), py::arg("eps"), py::arg("epsilon_h"),
-      py::arg("init_stepsize"), py::arg("x_eval") = py::none(),
+      py::arg("init_stepsize") = 0.01, py::arg("x_eval") = py::none(),
       py::arg("hard_stop") = false, R"pbdoc(
     """
     Solves the differential equation y'' + 2gy' + w^2y = 0 over a given interval.
@@ -290,12 +330,69 @@ PYBIND11_MODULE(pyriccaticpp, m) {
         - numpy.ndarray[numpy.complex128[m, 1]]: Interpolated solution at the specified x_eval.
     """
           )pbdoc");
+
+    m.def(
+      "osc_evolve",
+      [](py::object& info, double xi, double xf, std::complex<double> yi,
+         std::complex<double> dyi, double eps, double epsilon_h,
+         double init_stepsize, py::object x_eval, bool hard_stop) {
+        if (py::isinstance<riccati::init_f64_i64>(info)) {
+          auto info_ = info.cast<riccati::init_f64_i64>();
+          if (x_eval.is_none()) {
+            auto ret = riccati::hard_copy_arena(riccati::osc_evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
+                                       init_stepsize, hard_stop));
+            info_.alloc_.recover_memory();
+            return ret;
+          } else {
+            auto ret = riccati::hard_copy_arena(riccati::osc_evolve(
+                info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize,
+                x_eval.cast<Eigen::VectorXd>(), hard_stop));
+            info_.alloc_.recover_memory();
+            return ret;
+          }
+        } else {
+          throw std::invalid_argument("Invalid SolverInfo object.");
+        }
+      },
+      py::arg("info"), py::arg("xi"), py::arg("xf"), py::arg("yi"),
+      py::arg("dyi"), py::arg("eps"), py::arg("epsilon_h"),
+      py::arg("init_stepsize") = 0.01, py::arg("x_eval") = py::none(),
+      py::arg("hard_stop") = false, R"pbdoc()pbdoc");
+
+    m.def(
+      "nonosc_evolve",
+      [](py::object& info, double xi, double xf, std::complex<double> yi,
+         std::complex<double> dyi, double eps, double epsilon_h,
+         double init_stepsize, py::object x_eval, bool hard_stop) {
+        if (py::isinstance<riccati::init_f64_i64>(info)) {
+          auto info_ = info.cast<riccati::init_f64_i64>();
+          if (x_eval.is_none()) {
+            auto ret = riccati::hard_copy_arena(riccati::nonosc_evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
+                                       init_stepsize, hard_stop));
+            info_.alloc_.recover_memory();
+            return ret;
+          } else {
+            auto ret = riccati::hard_copy_arena(riccati::nonosc_evolve(
+                info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize,
+                x_eval.cast<Eigen::VectorXd>(), hard_stop));
+            info_.alloc_.recover_memory();
+            return ret;
+          }
+        } else {
+          throw std::invalid_argument("Invalid SolverInfo object.");
+        }
+      },
+      py::arg("info"), py::arg("xi"), py::arg("xf"), py::arg("yi"),
+      py::arg("dyi"), py::arg("eps"), py::arg("epsilon_h"),
+      py::arg("init_stepsize") = 0.01, py::arg("x_eval") = py::none(),
+      py::arg("hard_stop") = false, R"pbdoc()pbdoc");
+
   m.def(
       "choose_osc_stepsize",
       [](py::object& info, double x0, double h, double epsilon_h) {
         if (py::isinstance<riccati::init_f64_i64>(info)) {
           auto info_ = info.cast<riccati::init_f64_i64>();
-          auto ret = riccati::choose_osc_stepsize(info_, x0, h, epsilon_h);
+          auto ret = riccati::hard_copy_arena(riccati::choose_osc_stepsize(info_, x0, h, epsilon_h));
           info_.alloc_.recover_memory();
           return ret;
         } else {
