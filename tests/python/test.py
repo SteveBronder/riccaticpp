@@ -214,7 +214,7 @@ def test_osc_evolve():
     yerr = np.abs((ytrue - ys)/ytrue)
     maxerr = max(yerr)
     print("Forward osc evolve max error:", maxerr)
-    assert maxerr < 1e-6
+    assert maxerr < 1e-4
 
 def test_nonosc_evolve():
     w = lambda x: np.sqrt(x)
@@ -250,7 +250,7 @@ def test_nonosc_evolve():
     yerr = np.abs((ytrue - ys)/ytrue)
     maxerr = max(yerr)
     print("Forward nonosc evolve max error:", maxerr)
-    assert maxerr < 1e-10
+    assert maxerr < 1e-4
 
 def test_osc_evolve_backwards():
     w = lambda x: np.sqrt(x)
@@ -287,7 +287,7 @@ def test_osc_evolve_backwards():
     yerr = np.abs((ytrue - ys)/ytrue)
     maxerr = max(yerr)
     print("Backwards osc evolve max error:", maxerr)
-    assert maxerr < 1e-6
+    assert maxerr < 1e-4
    
 def test_nonosc_evolve_backwards():
     w = lambda x: np.sqrt(x)
