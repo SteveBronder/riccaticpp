@@ -28,4 +28,4 @@ jobs:
     - name: Run Python tests
       run: |
         ls -R ${{ github.workspace }}
-        pytest ./tests/python/tests.py
+        pytest ${{ github.workspace }}/tests/python/
