@@ -43,7 +43,7 @@ function(add_gtest_grouped_test test_directory)
     # Add an executable for the individual test
     add_executable(${INDIVIDUAL_TEST_TARGET_NAME} ${TEST_SOURCE})
     if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(${INDIVIDUAL_TEST_TARGET_NAME} PRIVATE -Wno-deprecated-declarations)
+      target_compile_options(${INDIVIDUAL_TEST_TARGET_NAME} PRIVATE -Wno-deprecated-declarations)
     endif()
     # Add include directories, link libraries, and register the individual test
     target_include_directories(${INDIVIDUAL_TEST_TARGET_NAME} PRIVATE
