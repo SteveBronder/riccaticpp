@@ -16,8 +16,9 @@ else()
   set(CMAKE_VERBOSE_MAKEFILE YES)
 endif()
 
-
-add_compile_options(-Wno-deprecated-declarations)
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    add_compile_options(-Wno-deprecated-declarations)
+endif()
 # Build Types
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}
     CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel tsan asan lsan msan ubsan"
