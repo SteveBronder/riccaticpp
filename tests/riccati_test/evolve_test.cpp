@@ -232,7 +232,6 @@ TEST_F(Riccati, evolve_nondense_reverse_hardstop_airy) {
   auto epsh = 1e-13;
   auto yi = riccati::test::airy_i(xi);
   auto dyi = riccati::test::airy_i_prime(xi);
-  Eigen::Index Neval = 1e3;
   Eigen::Matrix<double, 0, 0> x_eval;
   auto res = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, -0.1,
    x_eval, true);
@@ -261,7 +260,6 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_airy) {
   auto epsh = 1e-13;
   auto yi = riccati::test::airy_i(xi);
   auto dyi = riccati::test::airy_i_prime(xi);
-  Eigen::Index Neval = 1e3;
   Eigen::Matrix<double, 0, 0> x_eval;
   auto res = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 0.1,
    x_eval, true);
@@ -295,7 +293,6 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_bremer) {
   auto epsh = 1e-13;
   std::complex<double> yi = 0.0;
   std::complex<double> dyi = l;
-  Eigen::Index Neval = 1e3;
   Eigen::Matrix<double, 0, 0> x_eval;
   auto res = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 0.1,
    x_eval, true);
