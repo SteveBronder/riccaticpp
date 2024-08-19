@@ -20,6 +20,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        ls -R ${{ github.workspace }}
         python -m pip install --upgrade pip
         pip install scikit-build-core numpy pytest scipy mpmath pybind11
         pip install .
