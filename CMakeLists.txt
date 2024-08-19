@@ -151,7 +151,9 @@ if (RICCATI_BUILD_PYTHON)
 
     # This is passing in the version as a define just as an example
     target_compile_definitions(pyriccaticpp PRIVATE VERSION_INFO=${PROJECT_VERSION})
-    target_compile_options(pyriccaticpp PRIVATE -Wno-deprecated-declarations)
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        target_compile_options(pyriccaticpp PRIVATE -Wno-deprecated-declarations)
+    endif()
     #target_compile_options(pyriccaticpp PRIVATE -Og -glldb)
     # The install directory is the output (wheel) directory
     install(TARGETS pyriccaticpp DESTINATION pyriccaticpp)

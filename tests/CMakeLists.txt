@@ -26,7 +26,9 @@ function(add_gtest_grouped_test test_directory)
     message("STATUS" "Adding grouped test: ${TEST_TARGET_NAME}")
     # Add an executable for the grouped tests
     add_executable(${TEST_TARGET_NAME} ${TEST_SOURCES})
-    target_compile_options(${TEST_TARGET_NAME} PRIVATE -Wno-deprecated-declarations)
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+      target_compile_options(${TEST_TARGET_NAME} PRIVATE -Wno-deprecated-declarations)
+    endif()
     # Add include directories, link libraries, and register tests as before
     target_include_directories(${TEST_TARGET_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR} ${boost_SOURCE_DIR})
@@ -40,7 +42,9 @@ function(add_gtest_grouped_test test_directory)
 
     # Add an executable for the individual test
     add_executable(${INDIVIDUAL_TEST_TARGET_NAME} ${TEST_SOURCE})
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(${INDIVIDUAL_TEST_TARGET_NAME} PRIVATE -Wno-deprecated-declarations)
+    endif()
     # Add include directories, link libraries, and register the individual test
     target_include_directories(${INDIVIDUAL_TEST_TARGET_NAME} PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR} ${boost_SOURCE_DIR})
