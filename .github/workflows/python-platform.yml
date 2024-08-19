@@ -27,5 +27,4 @@ jobs:
 
     - name: Run Python tests
       run: |
-        ls -R ${{ github.workspace }}
-        pytest ${{ github.workspace }}/tests/python/test.py
+        pytest -vv -ra -s --log-cli-level=DEBUG ${{ github.workspace }}/tests/python/test.py
