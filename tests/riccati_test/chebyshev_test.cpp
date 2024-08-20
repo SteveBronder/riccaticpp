@@ -159,15 +159,15 @@ TEST_F(Riccati, interpolate_test) {
 
 TEST_F(Riccati, spectral_chebyshev_test) {
   using namespace riccati::test;
-  using riccati::zero_like;
+  using riccati::array;
   using riccati::eval;
   using riccati::matrix;
-  using riccati::array;
+  using riccati::zero_like;
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
-  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16, 32,
-                                                 32, 32);
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
+                                           32, 32, 32);
   constexpr auto xi = 1.0;
   const auto h = 0.4880213350286135;
   const auto y0 = std::complex<double>(0.5355608832923522, 0.10399738949694468);

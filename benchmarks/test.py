@@ -1,7 +1,8 @@
 import time
 import subprocess
+
 N = 1000
-l = 100,
+l = (100,)
 eps = 1e-12
 epsh = 1e-13
 m = 32
@@ -11,8 +12,6 @@ for i in range(N):
     res = subprocess.run(bash_cmd, capture_output=True, shell=True)
 
 end = time.time_ns()
-runtime = (end - start)*1e-9/N
+runtime = (end - start) * 1e-9 / N
 
 print(runtime, "s")
-
-

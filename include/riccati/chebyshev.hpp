@@ -391,8 +391,8 @@ RICCATI_ALWAYS_INLINE auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
 template <typename SolverInfo, typename Scalar, typename YScalar,
           typename Integral>
 RICCATI_ALWAYS_INLINE auto spectral_chebyshev(SolverInfo&& info, Scalar x0,
-                                                  Scalar h, YScalar y0,
-                                                  YScalar dy0, Integral niter) {
+                                              Scalar h, YScalar y0, YScalar dy0,
+                                              Integral niter) {
   using complex_t = std::complex<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   auto x_scaled = eval(

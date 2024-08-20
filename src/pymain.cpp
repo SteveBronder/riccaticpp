@@ -100,22 +100,22 @@ inline auto evolve(SolverInfo& info, Scalar xi, Scalar xf,
 
 template <typename SolverInfo, typename Scalar>
 inline auto osc_evolve(SolverInfo& info, Scalar xi, Scalar xf,
-                   std::complex<Scalar> yi, std::complex<Scalar> dyi,
-                   Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
-                   bool hard_stop = false) {
+                       std::complex<Scalar> yi, std::complex<Scalar> dyi,
+                       Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
+                       bool hard_stop = false) {
   Eigen::Matrix<double, 0, 0> not_used;
-  return osc_evolve(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, not_used,
-                hard_stop);
+  return osc_evolve(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize,
+                    not_used, hard_stop);
 }
 
 template <typename SolverInfo, typename Scalar>
 inline auto nonosc_evolve(SolverInfo& info, Scalar xi, Scalar xf,
-                   std::complex<Scalar> yi, std::complex<Scalar> dyi,
-                   Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
-                   bool hard_stop = false) {
+                          std::complex<Scalar> yi, std::complex<Scalar> dyi,
+                          Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
+                          bool hard_stop = false) {
   Eigen::Matrix<double, 0, 0> not_used;
-  return nonosc_evolve(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, not_used,
-                hard_stop);
+  return nonosc_evolve(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize,
+                       not_used, hard_stop);
 }
 
 template <typename SolverInfo, typename Scalar>
@@ -158,7 +158,8 @@ template <typename Tuple>
 auto hard_copy_arena(std::tuple<Tuple>&& tup) {
   return std::apply(
       [](auto&&... args) {
-        return std::make_tuple(hard_copy_arena(std::forward<decltype(args)>(args))...);
+        return std::make_tuple(
+            hard_copy_arena(std::forward<decltype(args)>(args))...);
       },
       std::move(tup));
 }
@@ -331,7 +332,7 @@ PYBIND11_MODULE(pyriccaticpp, m) {
     """
           )pbdoc");
 
-    m.def(
+  m.def(
       "osc_evolve",
       [](py::object& info, double xi, double xf, std::complex<double> yi,
          std::complex<double> dyi, double eps, double epsilon_h,
@@ -339,8 +340,9 @@ PYBIND11_MODULE(pyriccaticpp, m) {
         if (py::isinstance<riccati::init_f64_i64>(info)) {
           auto info_ = info.cast<riccati::init_f64_i64>();
           if (x_eval.is_none()) {
-            auto ret = riccati::hard_copy_arena(riccati::osc_evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
-                                       init_stepsize, hard_stop));
+            auto ret = riccati::hard_copy_arena(
+                riccati::osc_evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
+                                    init_stepsize, hard_stop));
             info_.alloc_.recover_memory();
             return ret;
           } else {
@@ -359,7 +361,7 @@ PYBIND11_MODULE(pyriccaticpp, m) {
       py::arg("init_stepsize") = 0.01, py::arg("x_eval") = py::none(),
       py::arg("hard_stop") = false, R"pbdoc()pbdoc");
 
-    m.def(
+  m.def(
       "nonosc_evolve",
       [](py::object& info, double xi, double xf, std::complex<double> yi,
          std::complex<double> dyi, double eps, double epsilon_h,
@@ -367,7 +369,8 @@ PYBIND11_MODULE(pyriccaticpp, m) {
         if (py::isinstance<riccati::init_f64_i64>(info)) {
           auto info_ = info.cast<riccati::init_f64_i64>();
           if (x_eval.is_none()) {
-            auto ret = riccati::hard_copy_arena(riccati::nonosc_evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
+            auto ret = riccati::hard_copy_arena(
+                riccati::nonosc_evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
                                        init_stepsize, hard_stop));
             info_.alloc_.recover_memory();
             return ret;
@@ -392,7 +395,8 @@ PYBIND11_MODULE(pyriccaticpp, m) {
       [](py::object& info, double x0, double h, double epsilon_h) {
         if (py::isinstance<riccati::init_f64_i64>(info)) {
           auto info_ = info.cast<riccati::init_f64_i64>();
-          auto ret = riccati::hard_copy_arena(riccati::choose_osc_stepsize(info_, x0, h, epsilon_h));
+          auto ret = riccati::hard_copy_arena(
+              riccati::choose_osc_stepsize(info_, x0, h, epsilon_h));
           info_.alloc_.recover_memory();
           return ret;
         } else {

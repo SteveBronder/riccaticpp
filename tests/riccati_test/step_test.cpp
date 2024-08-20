@@ -9,15 +9,15 @@
 
 TEST_F(Riccati, osc_step_test) {
   using namespace riccati::test;
-  using riccati::zero_like;
+  using riccati::array;
   using riccati::eval;
   using riccati::matrix;
-  using riccati::array;
+  using riccati::zero_like;
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
-  auto info = riccati::make_solver< double>(omega_fun, gamma_fun, allocator, 16, 32,
-                                                 32, 32);
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
+                                           32, 32, 32);
   auto x0 = 10.0;
   auto h = 20.0;
   auto eps = 1e-12;
@@ -26,7 +26,8 @@ TEST_F(Riccati, osc_step_test) {
   auto gamma_n = info.gamma_fun_(xscaled).eval();
   auto y0 = airy_ai(-x0);
   auto dy0 = -airy_ai_prime(-x0);
-  auto res = riccati::osc_step<false>(info, omega_n, gamma_n, x0, h, y0, dy0, eps);
+  auto res
+      = riccati::osc_step<false>(info, omega_n, gamma_n, x0, h, y0, dy0, eps);
   auto y_ana = airy_ai(-(x0 + h));
   auto dy_ana = -airy_ai_prime(-(x0 + h));
   auto y_err = std::abs((std::get<1>(res) - y_ana) / y_ana);
@@ -37,14 +38,14 @@ TEST_F(Riccati, osc_step_test) {
 
 TEST_F(Riccati, nonosc_step_test) {
   using namespace riccati::test;
+  using riccati::array;
   using riccati::eval;
   using riccati::matrix;
-  using riccati::array;
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
-  auto info = riccati::make_solver< double>(omega_fun, gamma_fun, allocator, 16, 32,
-                                                 32, 32);
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
+                                           32, 32, 32);
   auto xi = 1e0;
   auto h = 0.5;
   auto yi = airy_bi(-xi);

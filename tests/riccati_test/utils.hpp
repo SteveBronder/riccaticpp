@@ -12,12 +12,8 @@ struct Riccati : public testing::Test {
   void SetUp() override {
     // make sure memory's clean before starting each test
   }
-  void TearDown() override {
-    allocator.recover_memory();
-  }
-  ~Riccati() {
-    delete arena;
-  }
+  void TearDown() override { allocator.recover_memory(); }
+  ~Riccati() { delete arena; }
 };
 
 namespace riccati {
@@ -49,7 +45,6 @@ template <typename T>
 using require_not_floating_point_or_complex
     = std::enable_if_t<!std::is_floating_point<std::decay_t<T>>::value
                        && !is_complex<std::decay_t<T>>::value>;
-
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
 inline auto eval(T x) {
@@ -117,16 +112,16 @@ template <typename T>
 struct value_type_impl {
   using type = double;
 };
-template<>
+template <>
 struct value_type_impl<double> {
   using type = double;
 };
 
-template<typename T, int R, int C>
+template <typename T, int R, int C>
 struct value_type_impl<Eigen::Matrix<T, R, C>> {
   using type = T;
 };
-template<typename T, int R, int C>
+template <typename T, int R, int C>
 struct value_type_impl<Eigen::Array<T, R, C>> {
   using type = T;
 };
