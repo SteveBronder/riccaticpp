@@ -11,16 +11,16 @@
 
 TEST_F(Riccati, osc_stepsize_dense_output) {
   using namespace riccati::test;
+  using riccati::array;
   using riccati::eval;
   using riccati::matrix;
-  using riccati::array;
   using riccati::zero_like;
 
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
-  auto info = riccati::make_solver< double>(omega_fun, gamma_fun, allocator, 16, 32,
-                                                 32, 32);
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
+                                           32, 32, 32);
   auto xi = 1e2;
   auto epsh = 1e-13;
   auto hi = 2.0 * xi;
@@ -30,16 +30,16 @@ TEST_F(Riccati, osc_stepsize_dense_output) {
 
 TEST_F(Riccati, osc_stepsize_nondense_output) {
   using namespace riccati::test;
+  using riccati::array;
   using riccati::eval;
   using riccati::matrix;
-  using riccati::array;
   using riccati::zero_like;
 
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
-  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16, 32,
-                                                  32, 32);
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
+                                           32, 32, 32);
   auto xi = 1e2;
   auto epsh = 1e-13;
   auto hi = 2.0 * xi;
@@ -49,16 +49,16 @@ TEST_F(Riccati, osc_stepsize_nondense_output) {
 
 TEST_F(Riccati, nonosc_stepsize_dense_output) {
   using namespace riccati::test;
+  using riccati::array;
   using riccati::eval;
   using riccati::matrix;
-  using riccati::array;
   using riccati::zero_like;
 
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
-  auto info = riccati::make_solver< double>(omega_fun, gamma_fun, allocator, 16, 32,
-                                                 32, 32);
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
+                                           32, 32, 32);
   auto xi = 1e0;
   auto epsh = 2e-1;
   auto hi = 1.0 / omega_fun(xi);
@@ -68,16 +68,16 @@ TEST_F(Riccati, nonosc_stepsize_dense_output) {
 
 TEST_F(Riccati, nonosc_stepsize_nondense_output) {
   using namespace riccati::test;
+  using riccati::array;
   using riccati::eval;
   using riccati::matrix;
-  using riccati::array;
   using riccati::zero_like;
 
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
-  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16, 32,
-                                                  32, 32);
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
+                                           32, 32, 32);
   auto xi = 1e0;
   auto epsh = 2e-1;
   auto hi = 1.0 / omega_fun(xi);
