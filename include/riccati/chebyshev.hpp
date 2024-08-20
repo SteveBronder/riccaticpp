@@ -10,7 +10,7 @@ namespace riccati {
 
 namespace internal {
 template <bool Fwd, typename T>
-inline auto fft(T&& x) {
+RICCATI_ALWAYS_INLINE auto fft(T&& x) {
   using Scalar = typename std::decay_t<T>::Scalar;
   Eigen::FFT<Scalar> fft;
   using T_t = std::decay_t<T>;
@@ -55,7 +55,7 @@ inline auto fft(T&& x) {
  * Chebyshev node.
  */
 template <typename Mat>
-inline auto coeffs_to_cheby_nodes(Mat&& coeffs) {
+RICCATI_ALWAYS_INLINE auto coeffs_to_cheby_nodes(Mat&& coeffs) {
   using Scalar = typename std::decay_t<Mat>::Scalar;
   const auto n = coeffs.rows();
   using Mat_t = matrix_t<Scalar>;
@@ -102,7 +102,7 @@ inline auto coeffs_to_cheby_nodes(Mat&& coeffs) {
  * interpolating the j-th input polynomial.
  */
 template <typename Mat>
-inline auto cheby_nodes_to_coeffs(Mat&& values) {
+RICCATI_ALWAYS_INLINE auto cheby_nodes_to_coeffs(Mat&& values) {
   using Scalar = typename std::decay_t<Mat>::Scalar;
   using Mat_t = matrix_t<Scalar>;
   const auto n = values.rows();
@@ -129,7 +129,7 @@ inline auto cheby_nodes_to_coeffs(Mat&& values) {
  * Chebyshev node.
  */
 template <typename Mat>
-inline auto coeffs_and_cheby_nodes(Mat&& values) {
+RICCATI_ALWAYS_INLINE auto coeffs_and_cheby_nodes(Mat&& values) {
   using Scalar = typename std::decay_t<Mat>::Scalar;
   using Mat_t = matrix_t<Scalar>;
   const auto n = values.rows();
@@ -175,7 +175,7 @@ inline auto coeffs_and_cheby_nodes(Mat&& values) {
  * nodes (the last value being zero by definition).
  */
 template <typename Scalar, typename Integral>
-inline auto integration_matrix(Integral n) {
+RICCATI_ALWAYS_INLINE auto integration_matrix(Integral n) {
   auto ident = matrix_t<Scalar>::Identity(n, n).eval();
   auto coeffs_pair = coeffs_and_cheby_nodes(ident);
   auto&& T = coeffs_pair.first;
@@ -222,7 +222,7 @@ inline auto integration_matrix(Integral n) {
  * applied mathematics, 2000.
  */
 template <typename Scalar, typename Integral>
-inline auto quad_weights(Integral n) {
+RICCATI_ALWAYS_INLINE auto quad_weights(Integral n) {
   vector_t<Scalar> w = vector_t<Scalar>::Zero(n + 1);
   if (n == 0) {
     return w;
@@ -275,7 +275,7 @@ inline auto quad_weights(Integral n) {
  * (n+1), ordered in descending order from 1 to -1.
  */
 template <typename Scalar, typename Integral>
-inline auto chebyshev(Integral n) {
+RICCATI_ALWAYS_INLINE auto chebyshev(Integral n) {
   if (n == 0) {
     return std::make_pair(matrix_t<Scalar>::Zero(1, 1).eval(),
                           vector_t<Scalar>::Ones(1).eval());
@@ -329,7 +329,7 @@ inline auto chebyshev(Integral n) {
  * points `t`.
  */
 template <typename Vec1, typename Vec2, typename Allocator>
-inline auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
+RICCATI_ALWAYS_INLINE auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
   const auto r = s.size();
   const auto q = t.size();
   auto V
@@ -390,7 +390,7 @@ inline auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
  */
 template <typename SolverInfo, typename Scalar, typename YScalar,
           typename Integral>
-__attribute__((noinline)) auto spectral_chebyshev(SolverInfo&& info, Scalar x0,
+RICCATI_ALWAYS_INLINE auto spectral_chebyshev(SolverInfo&& info, Scalar x0,
                                                   Scalar h, YScalar y0,
                                                   YScalar dy0, Integral niter) {
   using complex_t = std::complex<Scalar>;
