@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['integration_5fmatrix_5f_0',['integration_matrix_',['../classriccati_1_1SolverInfo.html#ae97f6b8de1a6519aa7754b0bf9af24c2',1,'riccati::SolverInfo']]]
+  ['gamma_5ffun_5f_0',['gamma_fun_',['../classriccati_1_1_solver_info.html#a6bde4b109842756fc810c6ccdca050e7',1,'riccati::SolverInfo']]]
 ];

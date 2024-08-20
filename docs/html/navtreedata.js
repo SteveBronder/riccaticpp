@@ -27,11 +27,13 @@ var NAVTREE =
   [ "riccaticpp", "index.html", [
     [ "riccati", "index.html#autotoc_md0", [
       [ "About", "index.html#autotoc_md1", null ],
-      [ "Documentation", "index.html#autotoc_md2", null ],
-      [ "Attribution", "index.html#autotoc_md3", null ],
-      [ "License", "index.html#autotoc_md4", null ],
-      [ "Building Tests", "index.html#autotoc_md5", null ],
-      [ "Including", "index.html#autotoc_md6", null ]
+      [ "Benchmarks", "index.html#autotoc_md2", null ],
+      [ "Documentation", "index.html#autotoc_md3", null ],
+      [ "Attribution", "index.html#autotoc_md4", null ],
+      [ "License", "index.html#autotoc_md5", null ],
+      [ "Building Tests", "index.html#autotoc_md6", null ],
+      [ "Including", "index.html#autotoc_md7", null ],
+      [ "Python", "index.html#autotoc_md8", null ]
     ] ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
@@ -67,7 +69,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"structriccati_1_1arena__allocator.html#a50ac530682727d600c714d7115e1005f"
+"namespacericcati.html#a8fd51f368baa2f7a38ff1d062e7765cd"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

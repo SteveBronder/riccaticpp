@@ -101,3 +101,38 @@ FetchContent_MakeAvailable(riccaticpp)
 # For your target
 target_link_libraries(target_name riccati)
 ```
+
+
+## Python
+
+`pyriccaticpp` is a pybind11 wrapper that uses `scikit-build-core` for building. It can be installed from source using
+
+```bash
+git clone https://github.com/SteveBronder/riccaticpp
+pip install ./riccaticpp
+# optionally run tests
+cd ./riccaticpp
+pytest ./tests/python/test.py
+```
+
+Below is an example of calling the solver for the airy equation
+
+```python
+import pyriccaticpp as ric
+import numpy as np
+import scipy.special as sp
+w = lambda x: np.sqrt(x)
+g = lambda x: np.zeros_like(x)
+info = ric.Init(w, g, 16, 32, 32, 32)
+xi = 1e0
+xf = 1e6
+eps = 1e-12
+epsh = 1e-13
+yi = complex(sp.airy(-xi)[0] + 1j * sp.airy(-xi)[2])
+dyi = complex(-sp.airy(-xi)[1] - 1j * sp.airy(-xi)[3])
+Neval = int(1e2)
+xeval = np.linspace(xf, xi, Neval)
+xs, ys, dys, ss, ps, stypes, yeval, dyeval = ric.evolve(
+    info, xi, xf, yi, dyi, eps, epsh, init_stepsize=0.01, x_eval=xeval
+)
+```
