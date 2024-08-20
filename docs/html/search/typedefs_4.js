@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['matrix_5ft_0',['matrix_t',['../namespacericcati.html#a810fedf0698438b591127e42f975f7a6',1,'riccati']]],
-  ['matrixd_5ft_1',['matrixd_t',['../classriccati_1_1SolverInfo.html#ae45222d0bd54e7dd3f5a6a6825cad2d9',1,'riccati::SolverInfo']]]
+  ['integral_0',['Integral',['../classriccati_1_1_solver_info.html#a9cd504fd9290dba047ef19b693fa4675',1,'riccati::SolverInfo']]]
 ];

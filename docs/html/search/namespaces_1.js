@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['internal_0',['internal',['../namespacericcati_1_1internal.html',1,'riccati']]],
-  ['riccati_1',['riccati',['../namespacericcati.html',1,'']]]
+  ['pybind11_0',['pybind11',['../namespacepybind11.html',1,'']]]
 ];

@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['eigen_0',['Eigen',['../namespaceEigen.html',1,'']]],
-  ['internal_1',['internal',['../namespaceEigen_1_1internal.html',1,'Eigen']]]
+  ['eigen_0',['Eigen',['../namespace_eigen.html',1,'']]],
+  ['eigen_3a_3ainternal_1',['internal',['../namespace_eigen_1_1internal.html',1,'Eigen']]]
 ];

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['rowsatcompiletime_0',['RowsAtCompileTime',['../classriccati_1_1arena__matrix.html#a05ec3c4524df0c14441146f81554b746',1,'riccati::arena_matrix']]]
+  ['quadwts_5f_0',['quadwts_',['../classriccati_1_1_solver_info.html#a4710caeab303ddc65e5b8d73c9655b57',1,'riccati::SolverInfo']]]
 ];

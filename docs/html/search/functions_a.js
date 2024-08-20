@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['nonosc_5fevolve_0',['nonosc_evolve',['../namespacericcati.html#a4c1b67dc1e45892f2d3f8b729362362b',1,'riccati']]],
-  ['nonosc_5fstep_1',['nonosc_step',['../namespacericcati.html#a783cb34bf5100dbe3c19e54012df4c47',1,'riccati']]]
+  ['nonosc_5fevolve_0',['nonosc_evolve',['../namespacericcati.html#afb91d0ecf98e388ca1958e93927df755',1,'riccati']]],
+  ['nonosc_5fstep_1',['nonosc_step',['../namespacericcati.html#a6746c45b08db8efec5b77a207596aa35',1,'riccati']]]
 ];

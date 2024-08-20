@@ -2,7 +2,7 @@ var classriccati_1_1arena__matrix =
 [
     [ "allocator_t", "classriccati_1_1arena__matrix.html#ae8b032273a60e77644b8147abc0ad448", null ],
     [ "Base", "classriccati_1_1arena__matrix.html#a73727619d9f95197c834c9ae8744bcc6", null ],
-    [ "NestedExpression", "classriccati_1_1arena__matrix.html#ae9096c3b6d0d8342cadb401c244ee16c", null ],
+    [ "NestedExpression", "classriccati_1_1arena__matrix.html#ace2f34b2b0ad06de37673891d22fc4b7", null ],
     [ "PlainObject", "classriccati_1_1arena__matrix.html#a913eb7ac56e62131e7ed028656c5376a", null ],
     [ "Scalar", "classriccati_1_1arena__matrix.html#a249a85c19ff2fd3d940ca09aeeb677ab", null ],
     [ "arena_matrix", "classriccati_1_1arena__matrix.html#ab6276eea99e47c37963657b6472b6c24", null ],

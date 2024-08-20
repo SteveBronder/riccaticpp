@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['gamma_5ffun_5f_0',['gamma_fun_',['../classriccati_1_1SolverInfo.html#aef3d505a96bf27092223464f3d379200',1,'riccati::SolverInfo']]]
+  ['default_5finitial_5fnbytes_0',['DEFAULT_INITIAL_NBYTES',['../namespacericcati_1_1internal.html#a20aac1321fcad0ffc2f7f35a5876b0f9',1,'riccati::internal']]]
 ];

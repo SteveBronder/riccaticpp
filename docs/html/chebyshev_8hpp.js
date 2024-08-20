@@ -1,12 +1,12 @@
 var chebyshev_8hpp =
 [
-    [ "cheby_nodes_to_coeffs", "chebyshev_8hpp.html#a9af7ef21035acb8eff0f1063a6bb18cb", null ],
-    [ "chebyshev", "chebyshev_8hpp.html#aebaba60f9268da5e60418c639d54f020", null ],
-    [ "coeffs_and_cheby_nodes", "chebyshev_8hpp.html#a63e66696693d8c978a28cd72a8986730", null ],
-    [ "coeffs_to_cheby_nodes", "chebyshev_8hpp.html#aec59fbd42b7809fd5b986e1842bc4b52", null ],
-    [ "fft", "chebyshev_8hpp.html#a871bab1fc58987f55eb5e629f5312b3d", null ],
-    [ "integration_matrix", "chebyshev_8hpp.html#a777ba0e4848dd4435e86a9fb942d86b3", null ],
-    [ "interpolate", "chebyshev_8hpp.html#a4264f051dce0c930c30de687d875d9f5", null ],
-    [ "quad_weights", "chebyshev_8hpp.html#a3da70c8e2a51143d9ff6181b49ca924b", null ],
-    [ "spectral_chebyshev", "chebyshev_8hpp.html#ad9de8b25a572dc23c4d9a48af37d272c", null ]
+    [ "cheby_nodes_to_coeffs", "chebyshev_8hpp.html#aaefafe8b96e50bff0f6ef21e790c1519", null ],
+    [ "chebyshev", "chebyshev_8hpp.html#add621530b83f84d198ba19c9870a0719", null ],
+    [ "coeffs_and_cheby_nodes", "chebyshev_8hpp.html#af335d7d065ed34e237032869aeddd11a", null ],
+    [ "coeffs_to_cheby_nodes", "chebyshev_8hpp.html#a1fbb215159bab495f0d59a8a7d177d95", null ],
+    [ "fft", "chebyshev_8hpp.html#a63f59e53f29ad9263ac44a586598df4b", null ],
+    [ "integration_matrix", "chebyshev_8hpp.html#a608ca744b02401f65b047bd8add488e1", null ],
+    [ "interpolate", "chebyshev_8hpp.html#af9e067e2d30347e4e25231dc60c17aec", null ],
+    [ "quad_weights", "chebyshev_8hpp.html#a4ab3906d5f1bc165f42817dabd8c16a3", null ],
+    [ "spectral_chebyshev", "chebyshev_8hpp.html#a435f09fff5a43d8069816b2602a4ec79", null ]
 ];
