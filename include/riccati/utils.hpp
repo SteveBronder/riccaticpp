@@ -9,6 +9,10 @@
 #endif
 namespace riccati {
 
+template <typename T>
+constexpr Eigen::Index compile_size_v
+    = std::decay_t<T>::RowsAtCompileTime * std::decay_t<T>::ColsAtCompileTime;
+
 /**
  * @brief Scales and shifts a vector of Chebyshev nodes.
  *
@@ -109,6 +113,9 @@ template <typename T, typename Scalar>
 auto get_slice(T&& x_eval, Scalar start, Scalar end) {
   Eigen::Index i = 0;
   Eigen::Index dense_start = 0;
+  if (start > end) {
+    std::swap(start, end);
+  }
   for (; i < x_eval.size(); ++i) {
     if ((x_eval[i] >= start && x_eval[i] <= end)) {
       dense_start = i;

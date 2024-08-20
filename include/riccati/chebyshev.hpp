@@ -10,7 +10,7 @@ namespace riccati {
 
 namespace internal {
 template <bool Fwd, typename T>
-inline auto fft(T&& x) {
+RICCATI_ALWAYS_INLINE auto fft(T&& x) {
   using Scalar = typename std::decay_t<T>::Scalar;
   Eigen::FFT<Scalar> fft;
   using T_t = std::decay_t<T>;
@@ -55,7 +55,7 @@ inline auto fft(T&& x) {
  * Chebyshev node.
  */
 template <typename Mat>
-inline auto coeffs_to_cheby_nodes(Mat&& coeffs) {
+RICCATI_ALWAYS_INLINE auto coeffs_to_cheby_nodes(Mat&& coeffs) {
   using Scalar = typename std::decay_t<Mat>::Scalar;
   const auto n = coeffs.rows();
   using Mat_t = matrix_t<Scalar>;
@@ -102,7 +102,7 @@ inline auto coeffs_to_cheby_nodes(Mat&& coeffs) {
  * interpolating the j-th input polynomial.
  */
 template <typename Mat>
-inline auto cheby_nodes_to_coeffs(Mat&& values) {
+RICCATI_ALWAYS_INLINE auto cheby_nodes_to_coeffs(Mat&& values) {
   using Scalar = typename std::decay_t<Mat>::Scalar;
   using Mat_t = matrix_t<Scalar>;
   const auto n = values.rows();
@@ -129,7 +129,7 @@ inline auto cheby_nodes_to_coeffs(Mat&& values) {
  * Chebyshev node.
  */
 template <typename Mat>
-inline auto coeffs_and_cheby_nodes(Mat&& values) {
+RICCATI_ALWAYS_INLINE auto coeffs_and_cheby_nodes(Mat&& values) {
   using Scalar = typename std::decay_t<Mat>::Scalar;
   using Mat_t = matrix_t<Scalar>;
   const auto n = values.rows();
@@ -175,7 +175,7 @@ inline auto coeffs_and_cheby_nodes(Mat&& values) {
  * nodes (the last value being zero by definition).
  */
 template <typename Scalar, typename Integral>
-inline auto integration_matrix(Integral n) {
+RICCATI_ALWAYS_INLINE auto integration_matrix(Integral n) {
   auto ident = matrix_t<Scalar>::Identity(n, n).eval();
   auto coeffs_pair = coeffs_and_cheby_nodes(ident);
   auto&& T = coeffs_pair.first;
@@ -188,7 +188,7 @@ inline auto integration_matrix(Integral n) {
   matrix_t<Scalar> B = matrix_t<Scalar>::Zero(n + 1, n + 1);
   B.diagonal(-1).array() = 1.0 / (2.0 * k).array();
   B.diagonal(1).array() = -1.0 / k2.array();
-  vector_t<Scalar> v = Eigen::VectorXd::Ones(n);
+  vector_t<Scalar> v = vector_t<Scalar>::Ones(n);
   for (Integral i = 1; i < n; i += 2) {
     v.coeffRef(i) = -1;
   }
@@ -222,7 +222,7 @@ inline auto integration_matrix(Integral n) {
  * applied mathematics, 2000.
  */
 template <typename Scalar, typename Integral>
-inline auto quad_weights(Integral n) {
+RICCATI_ALWAYS_INLINE auto quad_weights(Integral n) {
   vector_t<Scalar> w = vector_t<Scalar>::Zero(n + 1);
   if (n == 0) {
     return w;
@@ -275,7 +275,7 @@ inline auto quad_weights(Integral n) {
  * (n+1), ordered in descending order from 1 to -1.
  */
 template <typename Scalar, typename Integral>
-inline auto chebyshev(Integral n) {
+RICCATI_ALWAYS_INLINE auto chebyshev(Integral n) {
   if (n == 0) {
     return std::make_pair(matrix_t<Scalar>::Zero(1, 1).eval(),
                           vector_t<Scalar>::Ones(1).eval());
@@ -329,13 +329,13 @@ inline auto chebyshev(Integral n) {
  * points `t`.
  */
 template <typename Vec1, typename Vec2, typename Allocator>
-inline auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
+RICCATI_ALWAYS_INLINE auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
   const auto r = s.size();
   const auto q = t.size();
-  auto V = eval(alloc,
-                    matrix_t<typename std::decay_t<Vec1>::Scalar>::Ones(r, r));
-  auto R = eval(alloc,
-                    matrix_t<typename std::decay_t<Vec1>::Scalar>::Ones(q, r));
+  auto V
+      = eval(alloc, matrix_t<typename std::decay_t<Vec1>::Scalar>::Ones(r, r));
+  auto R
+      = eval(alloc, matrix_t<typename std::decay_t<Vec1>::Scalar>::Ones(q, r));
   for (std::size_t i = 1; i < static_cast<std::size_t>(r); ++i) {
     V.col(i).array() = V.col(i - 1).array() * s.array();
     R.col(i).array() = R.col(i - 1).array() * t.array();
@@ -379,42 +379,42 @@ inline auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
  * collocation step performed.
  * @param alloc An allocator for the Eigen objects.
  * @return A tuple containing:
- *         1. Eigen::Vector<std::complex<Scalar>, Eigen::Dynamic, 1> - Numerical estimate of the
- * solution at the end of the step, at `x0 + h`.
- *         2. Eigen::Vector<std::complex<Scalar>, Eigen::Dynamic, 1> - Numerical estimate of the
- * derivative of the solution at the end of the step, at `x0 + h`.
+ *         1. Eigen::Vector<std::complex<Scalar>, Eigen::Dynamic, 1> - Numerical
+ * estimate of the solution at the end of the step, at `x0 + h`.
+ *         2. Eigen::Vector<std::complex<Scalar>, Eigen::Dynamic, 1> - Numerical
+ * estimate of the derivative of the solution at the end of the step, at `x0 +
+ * h`.
  *         3. Eigen::VectorXd (real) - Chebyshev nodes used for the current
  * iteration of the spectral collocation method, scaled to lie in the interval
  * `[x0, x0 + h]`.
  */
 template <typename SolverInfo, typename Scalar, typename YScalar,
-          typename Integral, typename Allocator>
-inline auto spectral_chebyshev(SolverInfo&& info, Scalar x0, Scalar h,
-                               YScalar y0, YScalar dy0, Integral niter,
-                               Allocator&& alloc) {
+          typename Integral>
+RICCATI_ALWAYS_INLINE auto spectral_chebyshev(SolverInfo&& info, Scalar x0,
+                                                  Scalar h, YScalar y0,
+                                                  YScalar dy0, Integral niter) {
   using complex_t = std::complex<Scalar>;
   using vectorc_t = vector_t<complex_t>;
-  auto x_scaled
-      = eval(alloc, riccati::scale(info.chebyshev_[niter].second, x0, h));
+  auto x_scaled = eval(
+      info.alloc_, riccati::scale(std::get<2>(info.chebyshev_[niter]), x0, h));
   auto&& D = info.Dn(niter);
-  auto ws = info.omega_fun_(x_scaled);
-  auto gs = info.gamma_fun_(x_scaled);
-  auto D2 = eval(
-      alloc, (4.0 / (h * h) * (D * D) + 4.0 / h * (gs.asDiagonal() * D)));
+  auto ws = omega(info, x_scaled);
+  auto gs = gamma(info, x_scaled);
+  auto D2 = eval(info.alloc_,
+                 (4.0 / (h * h) * (D * D) + 4.0 / h * (gs.asDiagonal() * D)));
   D2 += (ws.array().square()).matrix().asDiagonal();
-  const auto n = std::round(info.ns_[niter]);
-  auto D2ic = eval(alloc, matrix_t<complex_t>::Zero(n + 3, n + 1));
+  const auto n = std::round(std::get<0>(info.chebyshev_[niter]));
+  auto D2ic = eval(info.alloc_, matrix_t<complex_t>::Zero(n + 3, n + 1));
   D2ic.topRows(n + 1) = D2;
   D2ic.row(n + 1) = 2.0 / h * D.row(D.rows() - 1);
-  auto ic = eval(alloc, vectorc_t::Zero(n + 1));
+  auto ic = eval(info.alloc_, vectorc_t::Zero(n + 1));
   ic.coeffRef(n) = complex_t{1.0, 0.0};
   D2ic.row(n + 2) = ic;
-  auto rhs = eval(alloc, vectorc_t::Zero(n + 3));
+  auto rhs = eval(info.alloc_, vectorc_t::Zero(n + 3));
   rhs.coeffRef(n + 1) = dy0;
   rhs.coeffRef(n + 2) = y0;
-  auto y1 = eval(alloc, D2ic.colPivHouseholderQr().solve(rhs));
-  auto dy1 = eval(alloc, 2.0 / h * (D * y1));
-
+  auto y1 = eval(info.alloc_, D2ic.colPivHouseholderQr().solve(rhs));
+  auto dy1 = eval(info.alloc_, 2.0 / h * (D * y1));
   return std::make_tuple(std::move(y1), std::move(dy1), std::move(x_scaled));
 }
 

@@ -16,6 +16,9 @@ else()
   set(CMAKE_VERBOSE_MAKEFILE YES)
 endif()
 
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    add_compile_options(-Wno-deprecated-declarations)
+endif()
 # Build Types
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}
     CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel tsan asan lsan msan ubsan"
@@ -52,7 +55,7 @@ set(CMAKE_CXX_FLAGS_LSAN
     FORCE)
 
 set(CMAKE_CXX_FLAGS_DEBUG
-    "-fno-omit-frame-pointer -ggdb3 -Og -DRICCATI_DEBUG=true"
+    "-fno-omit-frame-pointer -glldb -Og -DRICCATI_DEBUG=true"
     CACHE STRING "Flags used by the C++ compiler during Debug builds."
     FORCE)
 
@@ -103,10 +106,13 @@ install(EXPORT ${PROJECT_NAME}Targets
     NAMESPACE riccaticpp::
     DESTINATION lib/cmake/${PROJECT_NAME}
 )
+if (RICCATI_BUILD_TESTING)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+endif()
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/python)
+if (RICCATI_BUILD_BENCHMARKS)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/benchmarks)
+endif()
 
 # Check if Doxygen is installed
 if (RICCATI_BUILD_DOXYGEN)
@@ -131,4 +137,25 @@ if (RICCATI_BUILD_DOXYGEN)
     else()
         message("Doxygen need to be installed to generate the doxygen documentation")
     endif()
+endif()
+
+if (RICCATI_BUILD_PYTHON) 
+    # Find the module development requirements (requires FindPython from 3.17 or
+    # scikit-build-core's built-in backport)
+    find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+    find_package(pybind11 CONFIG REQUIRED)
+
+    # Add a library using FindPython's tooling (pybind11 also provides a helper like
+    # this)
+    python_add_library(pyriccaticpp MODULE src/pymain.cpp WITH_SOABI)
+    target_link_libraries(pyriccaticpp PRIVATE pybind11::headers riccati Eigen3::Eigen)
+
+    # This is passing in the version as a define just as an example
+    target_compile_definitions(pyriccaticpp PRIVATE VERSION_INFO=${PROJECT_VERSION})
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        target_compile_options(pyriccaticpp PRIVATE -Wno-deprecated-declarations)
+    endif()
+    #target_compile_options(pyriccaticpp PRIVATE -Og -glldb)
+    # The install directory is the output (wheel) directory
+    install(TARGETS pyriccaticpp DESTINATION pyriccaticpp)
 endif()

@@ -27,9 +27,10 @@ template <typename SolverInfo, typename FloatingPoint>
 inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                             FloatingPoint h,
                                             FloatingPoint epsilon_h) {
-  auto ws = info.omega_fun_(riccati::scale(info.xp(), x0, h));
-  if (ws.maxCoeff() > (1 + epsilon_h) / std::abs(h)) {
-    return choose_nonosc_stepsize(info, x0, h / 2.0, epsilon_h);
+  auto ws = omega(info, riccati::scale(info.xp(), x0, h));
+  if (ws.maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
+    return choose_nonosc_stepsize(info, x0, static_cast<FloatingPoint>(h / 2.0),
+                                  epsilon_h);
   } else {
     return h;
   }
@@ -53,25 +54,23 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
  * interpolation matrices and node positions.
  * @param x0 float - The current value of the independent variable.
  * @param h float - The initial estimate of the step size.
- * @param epsilon_h float - Tolerance parameter defining the maximum relative error
- * allowed in the Chebyshev interpolation of `w(x)` and `g(x)` over the proposed
- * step.
- * @param alloc An allocator for the Eigen objects.
+ * @param epsilon_h float - Tolerance parameter defining the maximum relative
+ * error allowed in the Chebyshev interpolation of `w(x)` and `g(x)` over the
+ * proposed step.
  * @return float - The refined step size over which the Chebyshev interpolation
  * of `w(x)` and `g(x)` satisfies the relative error tolerance `epsh`.
  */
-template <typename SolverInfo, typename FloatingPoint, typename Allocator>
+template <typename SolverInfo, typename FloatingPoint>
 inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
-                                FloatingPoint h, FloatingPoint epsilon_h,
-                                Allocator&& alloc) {
-  auto t = eval(alloc, riccati::scale(info.xp_interp(), x0, h));
-  auto s = eval(alloc, riccati::scale(info.xp(), x0, h));
+                                FloatingPoint h, FloatingPoint epsilon_h) {
+  auto t = eval(info.alloc_, riccati::scale(info.xp_interp(), x0, h));
+  auto s = eval(info.alloc_, riccati::scale(info.xp(), x0, h));
   // TODO: Use a memory arena for these
-  auto ws = info.omega_fun_(s).eval();
-  auto gs = info.gamma_fun_(s).eval();
-  auto omega_analytic = eval(alloc, info.omega_fun_(t));
+  auto ws = omega(info, s).eval();
+  auto gs = gamma(info, s).eval();
+  auto omega_analytic = eval(info.alloc_, omega(info, t));
   auto omega_estimate = info.L() * ws;
-  auto gamma_analytic = eval(alloc, info.gamma_fun_(t));
+  auto gamma_analytic = eval(info.alloc_, gamma(info, t));
   auto gamma_estimate = info.L() * gs;
   FloatingPoint max_omega_err
       = (((omega_estimate - omega_analytic).array() / omega_analytic.array())
@@ -84,15 +83,15 @@ inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
   FloatingPoint max_err = std::max(max_omega_err, max_gamma_err);
   if (max_err <= epsilon_h) {
     if (info.p_ != info.n_) {
-      auto xn_scaled = eval(alloc, riccati::scale(info.xn(), x0, h));
-      ws = info.omega_fun_(xn_scaled);
-      gs = info.gamma_fun_(xn_scaled);
+      auto xn_scaled = eval(info.alloc_, riccati::scale(info.xn(), x0, h));
+      ws = omega(info, xn_scaled);
+      gs = gamma(info, xn_scaled);
     }
     return std::make_tuple(h, ws, gs);
   } else {
-    auto h_scaling = std::min(
-        0.7, 0.9 * std::pow(epsilon_h / max_err, (1.0 / (info.p_ - 1.0))));
-    return choose_osc_stepsize(info, x0, h * h_scaling, epsilon_h, alloc);
+    auto h_scaling = static_cast<FloatingPoint>(std::min(
+        0.7, 0.9 * std::pow(epsilon_h / max_err, (1.0 / (info.p_ - 1.0)))));
+    return choose_osc_stepsize(info, x0, h * h_scaling, epsilon_h);
   }
 }
 
