@@ -1,0 +1,13 @@
+# method, l, eps, relerr, tsolve, errlessref, params
+oscode, 10.0, 1e-12, 1.43e-12, 0.196, False, (nrk = default; nwkb = default)
+oscode, 10.0, 1e-06, 1.39e-06, 0.0162, False, (nrk = default; nwkb = default)
+oscode, 100.0, 1e-12, 1.41e-11, 2.0, False, (nrk = default; nwkb = default)
+oscode, 100.0, 1e-06, 7.42e-07, 0.00295, False, (nrk = default; nwkb = default)
+oscode, 1000.0, 1e-12, 1.13e-10, 10, False, (nrk = default; nwkb = default)
+oscode, 1000.0, 1e-06, 8.56e-09, 0.00374, False, (nrk = default; nwkb = default)
+oscode, 10000.0, 1e-12, 1.15e-11, 0.00867, True, (nrk = default; nwkb = default)
+oscode, 10000.0, 1e-06, 5.74e-11, 0.00459, False, (nrk = default; nwkb = default)
+oscode, 100000.0, 1e-12, 5.9e-11, 0.00825, True, (nrk = default; nwkb = default)
+oscode, 100000.0, 1e-06, 7.86e-11, 0.00591, True, (nrk = default; nwkb = default)
+oscode, 1000000.0, 1e-12, 1.06e-09, 0.0187, True, (nrk = default; nwkb = default)
+oscode, 1000000.0, 1e-06, 5.37e-10, 0.00932, True, (nrk = default; nwkb = default)

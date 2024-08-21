@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
     return eval(matrix(l * sqrt(1.0 - square(array(x)) * cos(3.0 * array(x)))));
   };
   auto gamma_fun = [](auto&& x) { return riccati::zero_like(x); };
-  auto info = riccati::make_solver<false, double>(omega_fun, gamma_fun,
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun,
                                                   allocator, 8, 32, N, N);
   Eigen::Index Neval = 1e3;
   riccati::vector_t<double> x_eval

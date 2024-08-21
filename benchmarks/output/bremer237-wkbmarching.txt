@@ -1,0 +1,13 @@
+# method, l, eps, relerr, tsolve, errlessref, params
+wkbmarching, 10, 1.000000e-12, 1.95e-11, 0.24, False, (nint = 20)
+wkbmarching, 10, 1.000000e-06, 1.37e-05, 0.0304, False, (nint = 20)
+wkbmarching, 100, 1.000000e-12, 2.78e-10, 3.06, False, (nint = 20)
+wkbmarching, 100, 1.000000e-06, 2.5e-08, 0.000474, False, (nint = 20)
+wkbmarching, 1000, 1.000000e-12, 8.11e-13, 1.19, True, (nint = 20)
+wkbmarching, 1000, 1.000000e-06, 4.84e-10, 0.000534, False, (nint = 20)
+wkbmarching, 10000, 1.000000e-12, 1.15e-08, 0.000528, False, (nint = 20)
+wkbmarching, 10000, 1.000000e-06, 1.15e-08, 0.000515, False, (nint = 20)
+wkbmarching, 100000, 1.000000e-12, 4.35e-08, 0.000498, False, (nint = 20)
+wkbmarching, 100000, 1.000000e-06, 4.35e-08, 0.000499, False, (nint = 20)
+wkbmarching, 1000000, 1.000000e-12, 1.14e-06, 0.000506, False, (nint = 20)
+wkbmarching, 1000000, 1.000000e-06, 1.14e-06, 0.000512, False, (nint = 20)

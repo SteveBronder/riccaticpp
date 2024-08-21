@@ -1,0 +1,13 @@
+# method, l, eps, relerr, tsolve, errlessref, params
+kummer, 10.0, 1e-12, 6.48e-15, 0.00708, True, ()
+kummer, 10.0, 1e-06, 8.82e-14, 0.00122, False, ()
+kummer, 100.0, 1e-12, 1.26e-13, 0.00395, True, ()
+kummer, 100.0, 1e-06, 3.48e-13, 0.000505, True, ()
+kummer, 1000.0, 1e-12, 5.64e-13, 0.00316, True, ()
+kummer, 1000.0, 1e-06, 1.11e-12, 0.000616, True, ()
+kummer, 10000.0, 1e-12, 1.18e-11, 0.00291, True, ()
+kummer, 10000.0, 1e-06, 1.18e-11, 0.000467, True, ()
+kummer, 100000.0, 1e-12, 3.58e-11, 0.00336, True, ()
+kummer, 100000.0, 1e-06, 9.55e-11, 0.000497, True, ()
+kummer, 1000000.0, 1e-12, 2.3e-16, 0.00394, True, ()
+kummer, 1000000.0, 1e-06, 2e-09, 0.000635, True, ()

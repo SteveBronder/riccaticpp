@@ -109,7 +109,7 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
         start = time.time_ns()
         info = ric.Init(w, g, 8, 32, n, p)
         for i in range(N):
-            xs, ys, dys, ss, ps, stypes, _ = ric.evolve(
+            xs, ys, dys, ss, ps, stypes, _, _ = ric.evolve(
                 info=info,
                 xi=xi,
                 xf=xf,

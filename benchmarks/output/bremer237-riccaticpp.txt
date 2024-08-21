@@ -1,0 +1,13 @@
+# method, l, eps, relerr, tsolve, errlessref, params
+riccaticpp, 10.0, 1e-12, 4.01e-12, 0.00232, [False], (n = 32; p = 32; epsh = 1e-13)
+riccaticpp, 10.0, 1e-06, 1.57e-12, 0.000852, [False], (n = 32; p = 32; epsh = 1e-09)
+riccaticpp, 100.0, 1e-12, 1.68e-13, 0.000337, [ True], (n = 32; p = 32; epsh = 1e-13)
+riccaticpp, 100.0, 1e-06, 1.99e-13, 0.00032, [ True], (n = 32; p = 32; epsh = 1e-09)
+riccaticpp, 1000.0, 1e-12, 9.39e-13, 0.000314, [ True], (n = 32; p = 32; epsh = 1e-13)
+riccaticpp, 1000.0, 1e-06, 1.33e-10, 0.000303, [False], (n = 32; p = 32; epsh = 1e-09)
+riccaticpp, 10000.0, 1e-12, 2.31e-12, 0.000301, [ True], (n = 32; p = 32; epsh = 1e-13)
+riccaticpp, 10000.0, 1e-06, 2.56e-09, 0.000306, [False], (n = 32; p = 32; epsh = 1e-09)
+riccaticpp, 100000.0, 1e-12, 4.39e-11, 0.000304, [ True], (n = 32; p = 32; epsh = 1e-13)
+riccaticpp, 100000.0, 1e-06, 9.69e-09, 0.000304, [False], (n = 32; p = 32; epsh = 1e-09)
+riccaticpp, 1000000.0, 1e-12, 1.31e-10, 0.000309, [ True], (n = 32; p = 32; epsh = 1e-13)
+riccaticpp, 1000000.0, 1e-06, 2.55e-07, 0.000307, [False], (n = 32; p = 32; epsh = 1e-09)
