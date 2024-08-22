@@ -541,10 +541,13 @@ def joss_fig(outdir):
 outdir = os.getcwd() + "/data/"
 epss, epshs, ns = [1e-12, 1e-6], [1e-13, 1e-9], [35, 20]
 
-for algo in Algo:
-    for m in np.logspace(1, 7, num=7):
-        print("Testing solver on Bremer 2018 Eq. (237) with lambda = {}".format(m))
-        for eps, epsh, n in zip(epss, epshs, ns):
-            if m < 1e7 and algo is not Algo.RK:
-                Bremer237(m, n, eps, epsh, outdir, algo)
+#Let the benchmark run 
+for x in range(30):
+    for algo in Algo:
+        for m in np.logspace(1, 7, num=7):
+            print("Testing solver on Bremer 2018 Eq. (237) with lambda = {}".format(m))
+            for eps, epsh, n in zip(epss, epshs, ns):
+                if m < 1e7 and algo is not Algo.RK:
+                    Bremer237(m, n, eps, epsh, outdir, algo)
+
 joss_fig(outdir)
