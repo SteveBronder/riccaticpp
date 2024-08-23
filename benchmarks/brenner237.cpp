@@ -27,9 +27,7 @@ int main(int argc, char* argv[]) {
   auto gamma_fun = [](auto&& x) { return riccati::zero_like(x); };
   auto info = riccati::make_solver<double>(omega_fun, gamma_fun,
                                                   allocator, 8, 32, N, N);
-  Eigen::Index Neval = 1e3;
-  riccati::vector_t<double> x_eval
-      = riccati::vector_t<double>::LinSpaced(Neval, -0.5, 0.5);
+  Eigen::Matrix<double, 0, 0> x_eval;
   std::vector<double> timings;
   for (int i = 0; i < iter_amt; ++i) {
     auto start = std::chrono::system_clock::now();
