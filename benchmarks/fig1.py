@@ -144,7 +144,7 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
                     "pyriccaticpp",
                     l,
                     eps,
-                    round_to_n(3, max(yerr)),
+                    max(yerr),
                     round_to_n(3, runtime),
                     (yerr < errref)[0],
                     "(n = {}; p = {}; epsh = {})".format(n, p, epsh),
