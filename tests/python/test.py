@@ -9,21 +9,22 @@ import os
 BREMER_DEBUG = True
 def test_bremer_nondense():
     cwd = os.getcwd()
+    print(cwd)
     bremer_reftable = cwd + "/tests/python/data/eq237.txt"
     bremer_refarray = np.genfromtxt(bremer_reftable, delimiter=",")
     ls = bremer_refarray[:, 0]
-    l_arr = np.logspace(1, 7, num=7)
+    lambda_arr = np.logspace(1, 7, num=7)
     xi = -1.0
     xf = 1.0
     epss, epshs, ns = [1e-12, 1e-8], [1e-13, 1e-9], [32, 20]
-    for l in l_arr:
+    for lambda_scalar in lambda_arr:
         for eps, epsh, n in zip(epss, epshs, ns):
-            ytrue = bremer_refarray[abs(ls - l) < 1e-8, 1]
-            errref = bremer_refarray[abs(ls - l) < 1e-8, 2]
-            w = lambda x : l * np.sqrt(1 - x**2 * np.cos(3.0 * x))
+            ytrue = bremer_refarray[abs(ls - lambda_scalar) < 1e-8, 1]
+            errref = bremer_refarray[abs(ls - lambda_scalar) < 1e-8, 2]
+            w = lambda x : lambda_scalar * np.sqrt(1 - x**2 * np.cos(3.0 * x))
             g = lambda x : np.zeros_like(x)
             yi = 0.0
-            dyi = l
+            dyi = lambda_scalar
             p = n
             info = ric.Init(w, g, 8, max(32, n), n, p)
             init_step = ric.choose_nonosc_stepsize(info, xi, .5, epsilon_h=epsh)
@@ -40,8 +41,11 @@ def test_bremer_nondense():
             )
             ys = np.array(ys)
             yerr = np.abs((ytrue - ys[-1]) / ytrue)
-            # Either 4e-10 or 4e-4
-            assert yerr <= (eps * 400)
+            # See Fig 5 from here https://arxiv.org/pdf/2212.06924
+            if eps == 1e-12:
+                assert yerr < eps * lambda_scalar
+            else:
+                assert yerr < eps * lambda_scalar * 1e-4
 
 
 
