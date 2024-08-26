@@ -6,6 +6,7 @@ import warnings
 import pytest
 import os
 
+
 def test_bremer_nondense():
     cwd = os.getcwd()
     bremer_reftable = cwd + "/tests/python/data/eq237.txt"
@@ -19,13 +20,13 @@ def test_bremer_nondense():
         for eps, epsh, n in zip(epss, epshs, ns):
             ytrue = bremer_refarray[abs(ls - lambda_scalar) < 1e-8, 1]
             errref = bremer_refarray[abs(ls - lambda_scalar) < 1e-8, 2]
-            w = lambda x : lambda_scalar * np.sqrt(1 - x**2 * np.cos(3.0 * x))
-            g = lambda x : np.zeros_like(x)
-            yi = 0.0
-            dyi = lambda_scalar
+            w = lambda x: lambda_scalar * np.sqrt(1 - x**2 * np.cos(3.0 * x))
+            g = lambda x: np.zeros_like(x)
+            yi = complex(0.0)
+            dyi = complex(lambda_scalar)
             p = n
             info = ric.Init(w, g, 8, max(32, n), n, p)
-            init_step = ric.choose_nonosc_stepsize(info, xi, .5, epsilon_h=epsh)
+            init_step = ric.choose_nonosc_stepsize(info, xi, 1, epsilon_h=epsh)
             xs, ys, dys, ss, ps, stypes, _, _ = ric.evolve(
                 info=info,
                 xi=xi,
@@ -46,7 +47,6 @@ def test_bremer_nondense():
             else:
                 err_val = eps * lambda_scalar * 1e-4
                 assert yerr < err_val
-
 
 
 def test_denseoutput():
