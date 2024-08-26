@@ -20,13 +20,13 @@ def test_bremer_nondense():
         for eps, epsh, n in zip(epss, epshs, ns):
             ytrue = bremer_refarray[abs(ls - lambda_scalar) < 1e-8, 1]
             errref = bremer_refarray[abs(ls - lambda_scalar) < 1e-8, 2]
-            w = lambda x: lambda_scalar * np.sqrt(1 - x**2 * np.cos(3.0 * x))
+            w = lambda x: lambda_scalar * np.sqrt(1.0 - x**2 * np.cos(3.0 * x))
             g = lambda x: np.zeros_like(x)
             yi = complex(0.0)
             dyi = complex(lambda_scalar)
             p = n
             info = ric.Init(w, g, 8, max(32, n), n, p)
-            init_step = ric.choose_nonosc_stepsize(info, xi, 1, epsilon_h=epsh)
+            init_step = ric.choose_nonosc_stepsize(info, xi, 1.0, epsilon_h=epsh)
             xs, ys, dys, ss, ps, stypes, _, _ = ric.evolve(
                 info=info,
                 xi=xi,
@@ -43,10 +43,9 @@ def test_bremer_nondense():
             # See Fig 5 from here https://arxiv.org/pdf/2212.06924
             if eps == 1e-12:
                 err_val = eps * lambda_scalar
-                assert yerr < err_val
             else:
                 err_val = eps * lambda_scalar * 1e-4
-                assert yerr < err_val
+            assert yerr < err_val
 
 
 def test_denseoutput():
