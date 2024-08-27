@@ -108,26 +108,6 @@ inline auto airy_bi_prime(T&& x) {
       .eval();
 }
 
-template <typename T>
-struct value_type_impl {
-  using type = double;
-};
-template <>
-struct value_type_impl<double> {
-  using type = double;
-};
-
-template <typename T, int R, int C>
-struct value_type_impl<Eigen::Matrix<T, R, C>> {
-  using type = T;
-};
-template <typename T, int R, int C>
-struct value_type_impl<Eigen::Array<T, R, C>> {
-  using type = T;
-};
-
-template <typename T>
-using value_type_t = typename value_type_impl<std::decay_t<T>>::type;
 
 template <typename T>
 inline auto airy_i(T&& xi) {

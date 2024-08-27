@@ -320,6 +320,8 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
                    std::complex<Scalar> yi, std::complex<Scalar> dyi,
                    Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
                    Vec &&x_eval, bool hard_stop = false) {
+  static_assert(std::is_floating_point<Scalar>::value,
+                "Scalar type must be a floating-point type.");
   using vectord_t = vector_t<Scalar>;
   Scalar direction = init_stepsize > 0 ? 1 : -1;
   if (init_stepsize * (xf - xi) < 0) {

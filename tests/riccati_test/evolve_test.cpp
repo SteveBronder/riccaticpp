@@ -1,6 +1,7 @@
 
 #include <riccati/evolve.hpp>
 #include <riccati/solver.hpp>
+#include <riccati/vectorizer.hpp>
 #include <riccati_test/utils.hpp>
 #include <gtest/gtest.h>
 #include <cmath>
@@ -346,6 +347,35 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_bremer) {
     return eval(matrix(l * sqrt(1.0 - square(array(x)) * cos(3.0 * array(x)))));
   };
   auto gamma_fun = [](auto&& x) { return riccati::zero_like(x); };
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 8,
+                                           32, 32, 32);
+  auto xi = -1.0;
+  auto xf = 1.0;
+  auto eps = 1e-12;
+  auto epsh = 1e-13;
+  std::complex<double> yi = 0.0;
+  std::complex<double> dyi = l;
+  Eigen::Matrix<double, 0, 0> x_eval;
+  auto res
+      = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 0.1, x_eval, true);
+  //  auto x_steps = Eigen::Map<Eigen::VectorXd>(std::get<0>(res).data(),
+  //  std::get<0>(res).size()); auto ytrue =
+  //  riccati::test::airy_i(x_steps.array()).matrix().eval();
+  auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
+      std::get<1>(res).data(), std::get<1>(res).size());
+  //  std::cout << y_est << std::endl;
+}
+
+TEST_F(Riccati, vectorizer_evolve_nondense_fwd_hardstop_bremer) {
+  using namespace riccati;
+  constexpr double l = 10.0;
+  auto omega_scalar = [l](auto&& x) {
+    using namespace ::riccati;
+    return l * std::sqrt(1.0 - x * x * std::cos(3.0 * x));
+  };
+  auto gamma_scalar = [](auto&& x) { return 0.0; };
+  auto omega_fun = riccati::vectorize(omega_scalar);
+  auto gamma_fun = riccati::vectorize(gamma_scalar);
   auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 8,
                                            32, 32, 32);
   auto xi = -1.0;

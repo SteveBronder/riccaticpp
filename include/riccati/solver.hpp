@@ -12,22 +12,19 @@
 #include <cmath>
 #include <vector>
 
-namespace pybind11 {
-class object;
-}
-
 namespace riccati {
 
 template <
-    typename SolverInfo, typename Scalar,
-    std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::funtype,
-                                   pybind11::object>::value>* = nullptr>
+    typename SolverInfo, typename Scalar, 
+    require_floating_point<value_type_t<Scalar>>* = nullptr,
+    require_not_same<typename std::decay_t<SolverInfo>::funtype, pybind11::object>* = nullptr>
 inline auto gamma(SolverInfo&& info, const Scalar& x) {
   return info.gamma_fun_(x);
 }
 
 template <
-    typename SolverInfo, typename Scalar,
+    typename SolverInfo, typename Scalar, 
+    require_floating_point<value_type_t<Scalar>>* = nullptr,
     std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::funtype,
                                    pybind11::object>::value>* = nullptr>
 inline auto omega(SolverInfo&& info, const Scalar& x) {
