@@ -390,7 +390,7 @@ TEST_F(Riccati, vectorizer_evolve_nondense_fwd_hardstop_bremer) {
   //  auto x_steps = Eigen::Map<Eigen::VectorXd>(std::get<0>(res).data(),
   //  std::get<0>(res).size()); auto ytrue =
   //  riccati::test::airy_i(x_steps.array()).matrix().eval();
-  auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
-      std::get<1>(res).data(), std::get<1>(res).size());
+  //auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
+  //    std::get<1>(res).data(), std::get<1>(res).size());
   //  std::cout << y_est << std::endl;
 }

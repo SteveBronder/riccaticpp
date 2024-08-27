@@ -84,6 +84,60 @@ cd build/tests
 make -j4 riccati_test && ctest
 ```
 
+## Example
+
+As an example we will solve Bremer's Eq. 237 where the omega and gamma functions are given by the following.
+
+$$
+l = 10
+\omega(x) = l \sqrt{1 - x^2 \cos(3x)}
+\gamma(x) = 0
+$$
+
+In the code we use the `riccati::vectorize` function to convert the scalar functions to vector functions. 
+We then use the `riccati::make_solver` function to create the solver object. 
+Finally we use the `riccati::evolve` function to solve the ODE.
+
+```cpp
+#include <riccati/riccati.hpp>
+using namespace riccati;
+int main() {
+  constexpr double l = 10.0;
+  // Set scalar omega function
+  auto omega_scalar = [l](auto&& x) {
+    using namespace ::riccati;
+    return l * std::sqrt(1.0 - x * x * std::cos(3.0 * x));
+  };
+  // Set scalar gamma function
+  auto gamma_scalar = [](auto&& x) { return 0.0; };
+  // Vectorize both so they can take in scalar or Eigen matrix types
+  auto omega_fun = riccati::vectorize(omega_scalar);
+  auto gamma_fun = riccati::vectorize(gamma_scalar);
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 8,
+                                            32, 32, 32);
+  auto xi = -1.0;
+  auto xf = 1.0;
+  auto eps = 1e-12;
+  auto epsh = 1e-13;
+  std::complex<double> yi = 0.0;
+  std::complex<double> dyi = l;
+  Eigen::Index Neval = 1000;
+  Eigen::Matrix<double, -1, 1> x_eval Eigen::Matrix<double, -1, 1>::LinSpaced(Neval, xi, xf);
+  auto res
+      = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 0.1, x_eval, true);
+  auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
+      std::get<1>(res).data(), std::get<1>(res).size());
+  auto airy_ai_scalar = [](auto x) {
+    return boost::math::airy_ai(x);
+  }
+  auto airy_ai = riccati::vectorize(airy_ai_scalar);
+  auto ytrue = airy_i(x_eval.array()).matrix().eval();
+  auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
+      std::get<6>(res).data(), std::get<6>(res).size());
+}
+
+```
+
 ## Including
 
 `riccaticpp` is a header only library and so any project can include it just by copy/pasting in the include folder. For cmake based projects
