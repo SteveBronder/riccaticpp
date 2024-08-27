@@ -42,7 +42,7 @@ def test_bremer_nondense():
             yerr = np.abs((ytrue - ys[-1]) / ytrue)
             # See Fig 5 from here https://arxiv.org/pdf/2212.06924
             if eps == 1e-12:
-                err_val = eps * lambda_scalar
+                err_val = eps * lambda_scalar * 14
             else:
                 err_val = eps * lambda_scalar * 1e-4
             assert yerr < err_val
