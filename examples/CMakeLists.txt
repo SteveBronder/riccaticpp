@@ -25,13 +25,12 @@ include(FetchContent)
 
 FetchContent_Declare(
   riccaticpp
-  URL file:///Users/sbronder/opensource/riccaticpp/
-#  main # Use a specific version or commit
+  https://github.com/SteveBronder/riccaticpp
+  examplecheck # Use a specific version or commit
 )
 FetchContent_MakeAvailable(riccaticpp)
 
 # For your target
-target_link_libraries(target_name riccati)
 
 add_executable(airy_eq ${CMAKE_CURRENT_SOURCE_DIR}/airy.cpp)
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")

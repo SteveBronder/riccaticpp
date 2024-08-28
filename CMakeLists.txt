@@ -79,33 +79,35 @@ if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 
-# Define the include directory for this library
-add_library(${PROJECT_NAME} INTERFACE)
-target_include_directories(${PROJECT_NAME} INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+# Create and install the CMake configuration files for your library
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+    INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
 )
 
-# Optionally, specify install rules for your library
-# This is necessary for FetchContent to work properly
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    DESTINATION lib/cmake/${PROJECT_NAME}
+)
 install(TARGETS ${PROJECT_NAME}
     EXPORT ${PROJECT_NAME}Targets
     INCLUDES DESTINATION include
 )
 install(DIRECTORY include/ DESTINATION include)
-
-# Create and install the CMake configuration files for your library
-include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-    "${PROJECT_NAME}ConfigVersion.cmake"
-    VERSION ${VERSION}
-    COMPATIBILITY SameMajorVersion
-)
 install(EXPORT ${PROJECT_NAME}Targets
-    FILE ${PROJECT_NAME}Config.cmake
-    NAMESPACE riccaticpp::
+    FILE ${PROJECT_NAME}Targets.cmake
+    NAMESPACE riccati::
     DESTINATION lib/cmake/${PROJECT_NAME}
 )
+
 if (RICCATI_BUILD_TESTING)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 endif()
