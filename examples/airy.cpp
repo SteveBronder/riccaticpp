@@ -19,7 +19,7 @@ int main() {
   using namespace riccati;
   // Build omega and gamma functions
   auto omega_scalar
-      = [](auto&& x) { return std::sqrt(array(x)); };
+      = [](auto&& x) { return std::sqrt(x); };
   auto gamma_scalar = [](auto&& x) { return 0.0; };
   // Vectorize the functions
   auto omega_fun = vectorize(omega_scalar);
@@ -45,8 +45,8 @@ int main() {
   // Check the results
   auto airy_i = riccati::vectorize([](auto x) {return airy_i_scalar(x);});
   auto airy_i_prime = riccati::vectorize([](auto x) {return airy_i_prime_scalar(x);});
-  auto ytrue = airy_i(x_eval.array()).matrix().eval();
-  auto dytrue = airy_i_prime(x_eval.array()).matrix().eval();
+  auto ytrue = airy_i(x_eval).matrix().eval();
+  auto dytrue = airy_i_prime(x_eval).matrix().eval();
   auto y_err
       = ((std::get<6>(res) - ytrue).array() / ytrue.array()).abs().eval();
   auto dy_err
