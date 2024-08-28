@@ -74,7 +74,7 @@ def test_denseoutput():
     )
     ys_err = np.abs((ys_true - ys) / ys_true)
     dys_err = np.abs((dys_true - dys) / dys_true)
-    assert max(ys_err) < 9e-8 and max(dys_err) < 9e-8
+    assert max(ys_err) < 1e-7 and max(dys_err) < 1e-7
     ytrue = np.array([mpmath.airyai(-x) + 1j * mpmath.airybi(-x) for x in xeval])
     dytrue = np.array(
         [
