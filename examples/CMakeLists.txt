@@ -21,9 +21,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(boost)
 
-include(FetchContent)
 
-if(NOT "${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
+message(STATUS "CMAKE_CURRENT_LIST_DIR: ${CMAKE_CURRENT_LIST_DIR}")
+message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
+
+if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
 FetchContent_Declare(
   riccaticpp
   https://github.com/SteveBronder/riccaticpp
