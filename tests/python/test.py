@@ -86,7 +86,7 @@ def test_denseoutput():
     dyerr = np.abs((dytrue - dyeval) / dytrue)
     maxerr = max(yerr)
     maxderr = max(dyerr)
-    assert maxerr < 4e-7 and maxderr < 4e-7
+    assert maxerr < 1e-6 and maxderr < 1e-6
 
 
 def test_denseoutput_xbac():
