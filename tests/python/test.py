@@ -60,9 +60,21 @@ def test_denseoutput():
     dyi = complex(-sp.airy(-xi)[1] - 1j * sp.airy(-xi)[3])
     Neval = int(1e2)
     xeval = np.linspace(xi, xf, Neval)
+    hi = 2.0 * xi
+    hi = ric.choose_osc_stepsize(info, xi, hi, epsh)[0]
     xs, ys, dys, ss, ps, stypes, yeval, dyeval = ric.evolve(
-        info, xi, xf, yi, dyi, eps, epsh, init_stepsize=0.01, x_eval=xeval
+        info, xi, xf, yi, dyi, eps, epsh, init_stepsize=hi, x_eval=xeval
     )
+    ys_true = np.array([mpmath.airyai(-x) + 1j * mpmath.airybi(-x) for x in xs])
+    dys_true = np.array(
+        [
+            -mpmath.airyai(-x, derivative=1) - 1j * mpmath.airybi(-x, derivative=1)
+            for x in xs
+        ]
+    )
+    ys_err = np.abs((ys_true - ys) / ys_true)
+    dys_err = np.abs((dys_true - dys) / dys_true)
+    assert max(ys_err) < 7e-9 and max(dys_err) < 7e-9
     ytrue = np.array([mpmath.airyai(-x) + 1j * mpmath.airybi(-x) for x in xeval])
     dytrue = np.array(
         [
@@ -72,11 +84,9 @@ def test_denseoutput():
     )
     yerr = np.abs((ytrue - yeval) / ytrue)
     dyerr = np.abs((dytrue - dyeval) / dytrue)
-    print("Dense output", yeval, ytrue)
-    print("Dense output derivative", dyeval, dytrue)
     maxerr = max(yerr)
     maxderr = max(dyerr)
-    assert maxerr < 1e-6 and maxderr < 1e-6
+    assert maxerr < 4e-7 and maxderr < 4e-7
 
 
 def test_denseoutput_xbac():
@@ -282,7 +292,7 @@ def test_solve_burst():
     ytrue = bursty(xs)
     yerr = np.abs((ytrue - ys)) / np.abs(ytrue)
     maxerr = max(yerr)
-    assert maxerr < 2e-7
+    assert maxerr < 1e-8
 
 
 def test_osc_evolve():
@@ -402,7 +412,7 @@ def test_osc_evolve_backwards():
     yerr = np.abs((ytrue - ys) / ytrue)
     maxerr = max(yerr)
     print("Backwards osc evolve max error:", maxerr)
-    assert maxerr < 1e-4
+    assert maxerr < 1.5e-7
 
 
 def test_nonosc_evolve_backwards():

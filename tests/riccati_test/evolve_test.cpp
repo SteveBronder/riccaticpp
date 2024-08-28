@@ -358,12 +358,14 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_bremer) {
   Eigen::Matrix<double, 0, 0> x_eval;
   auto res
       = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 0.1, x_eval, true);
-  //  auto x_steps = Eigen::Map<Eigen::VectorXd>(std::get<0>(res).data(),
-  //  std::get<0>(res).size()); auto ytrue =
-  //  riccati::test::airy_i(x_steps.array()).matrix().eval();
+  auto x_steps = Eigen::Map<Eigen::VectorXd>(std::get<0>(res).data(),
+    std::get<0>(res).size()); 
+
+  auto ytrue = 0.2913132934408612;
   auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
       std::get<1>(res).data(), std::get<1>(res).size());
-  //  std::cout << y_est << std::endl;
+  auto y_err = std::abs((ytrue - y_est(y_est.size() - 1)) / ytrue);
+  EXPECT_LE(y_err, 9e-12);
 }
 
 TEST_F(Riccati, vectorizer_evolve_nondense_fwd_hardstop_bremer) {
@@ -386,11 +388,12 @@ TEST_F(Riccati, vectorizer_evolve_nondense_fwd_hardstop_bremer) {
   std::complex<double> dyi = l;
   Eigen::Matrix<double, 0, 0> x_eval;
   auto res
-      = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 0.1, x_eval, true);
-  //  auto x_steps = Eigen::Map<Eigen::VectorXd>(std::get<0>(res).data(),
-  //  std::get<0>(res).size()); auto ytrue =
-  //  riccati::test::airy_i(x_steps.array()).matrix().eval();
-  //auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
-  //    std::get<1>(res).data(), std::get<1>(res).size());
-  //  std::cout << y_est << std::endl;
+      = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 1.0, x_eval, true);
+  auto x_steps = Eigen::Map<Eigen::VectorXd>(std::get<0>(res).data(),
+    std::get<0>(res).size()); 
+  auto ytrue = 0.2913132934408612;
+  auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
+      std::get<1>(res).data(), std::get<1>(res).size());
+  auto y_err = std::abs((ytrue - y_est(y_est.size() - 1)) / ytrue);
+  EXPECT_LE(y_err, 9e-12);
 }
