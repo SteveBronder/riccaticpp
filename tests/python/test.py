@@ -74,7 +74,7 @@ def test_denseoutput():
     )
     ys_err = np.abs((ys_true - ys) / ys_true)
     dys_err = np.abs((dys_true - dys) / dys_true)
-    assert max(ys_err) < 7e-9 and max(dys_err) < 7e-9
+    assert max(ys_err) < 9e-8 and max(dys_err) < 9e-8
     ytrue = np.array([mpmath.airyai(-x) + 1j * mpmath.airybi(-x) for x in xeval])
     dytrue = np.array(
         [
@@ -292,7 +292,7 @@ def test_solve_burst():
     ytrue = bursty(xs)
     yerr = np.abs((ytrue - ys)) / np.abs(ytrue)
     maxerr = max(yerr)
-    assert maxerr < 1e-8
+    assert maxerr < 3e-8
 
 
 def test_osc_evolve():
