@@ -23,6 +23,7 @@ FetchContent_MakeAvailable(boost)
 
 include(FetchContent)
 
+if(NOT "${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
 FetchContent_Declare(
   riccaticpp
   https://github.com/SteveBronder/riccaticpp
@@ -40,3 +41,4 @@ endif()
 target_include_directories(airy_eq PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR} ${boost_SOURCE_DIR})
 target_link_libraries(airy_eq riccati Eigen3::Eigen)
+endif()
