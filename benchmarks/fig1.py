@@ -107,17 +107,18 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
         n = n
         p = n
         start = time.time_ns()
-        info = ric.Init(w, g, 8, 32, n, p)
+        info = ric.Init(w, g, 8, max(32, n), n, p)
+        init_step = ric.choose_nonosc_stepsize(info, xi, 1.0, epsilon_h=epsh)
         for i in range(N):
-            xs, ys, dys, ss, ps, stypes, _, _ = ric.evolve(
+            _, ys, _, _, _, _, _, _ = ric.evolve(
                 info=info,
                 xi=xi,
                 xf=xf,
-                yi=yi,
-                dyi=dyi,
+                yi=complex(yi),
+                dyi=complex(dyi),
                 eps=eps,
                 epsilon_h=epsh,
-                init_stepsize=0.1,
+                init_stepsize=init_step,
                 hard_stop=True,
             )
         end = time.time_ns()
@@ -144,7 +145,7 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
                     "pyriccaticpp",
                     l,
                     eps,
-                    round_to_n(3, max(yerr)),
+                    max(yerr),
                     round_to_n(3, runtime),
                     (yerr < errref)[0],
                     "(n = {}; p = {}; epsh = {})".format(n, p, epsh),

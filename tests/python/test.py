@@ -4,6 +4,48 @@ import scipy.special as sp
 import mpmath
 import warnings
 import pytest
+import os
+
+
+def test_bremer_nondense():
+    cwd = os.getcwd()
+    bremer_reftable = cwd + "/tests/python/data/eq237.txt"
+    bremer_refarray = np.genfromtxt(bremer_reftable, delimiter=",")
+    ls = bremer_refarray[:, 0]
+    lambda_arr = np.logspace(1, 7, num=7)
+    xi = -1.0
+    xf = 1.0
+    epss, epshs, ns = [1e-12, 1e-8], [1e-13, 1e-9], [32, 20]
+    for lambda_scalar in lambda_arr:
+        for eps, epsh, n in zip(epss, epshs, ns):
+            ytrue = bremer_refarray[abs(ls - lambda_scalar) < 1e-8, 1]
+            errref = bremer_refarray[abs(ls - lambda_scalar) < 1e-8, 2]
+            w = lambda x: lambda_scalar * np.sqrt(1.0 - x**2 * np.cos(3.0 * x))
+            g = lambda x: np.zeros_like(x)
+            yi = complex(0.0)
+            dyi = complex(lambda_scalar)
+            p = n
+            info = ric.Init(w, g, 8, max(32, n), n, p)
+            init_step = ric.choose_nonosc_stepsize(info, xi, 1.0, epsilon_h=epsh)
+            xs, ys, dys, ss, ps, stypes, _, _ = ric.evolve(
+                info=info,
+                xi=xi,
+                xf=xf,
+                yi=yi,
+                dyi=dyi,
+                eps=eps,
+                epsilon_h=epsh,
+                init_stepsize=init_step,
+                hard_stop=True,
+            )
+            ys = np.array(ys)
+            yerr = np.abs((ytrue - ys[-1]) / ytrue)
+            # See Fig 5 from here https://arxiv.org/pdf/2212.06924
+            if eps == 1e-12:
+                err_val = eps * lambda_scalar * 14
+            else:
+                err_val = eps * lambda_scalar * 1e-4
+            assert yerr < err_val
 
 
 def test_denseoutput():
@@ -18,9 +60,21 @@ def test_denseoutput():
     dyi = complex(-sp.airy(-xi)[1] - 1j * sp.airy(-xi)[3])
     Neval = int(1e2)
     xeval = np.linspace(xi, xf, Neval)
+    hi = 2.0 * xi
+    hi = ric.choose_osc_stepsize(info, xi, hi, epsh)[0]
     xs, ys, dys, ss, ps, stypes, yeval, dyeval = ric.evolve(
-        info, xi, xf, yi, dyi, eps, epsh, init_stepsize=0.01, x_eval=xeval
+        info, xi, xf, yi, dyi, eps, epsh, init_stepsize=hi, x_eval=xeval
     )
+    ys_true = np.array([mpmath.airyai(-x) + 1j * mpmath.airybi(-x) for x in xs])
+    dys_true = np.array(
+        [
+            -mpmath.airyai(-x, derivative=1) - 1j * mpmath.airybi(-x, derivative=1)
+            for x in xs
+        ]
+    )
+    ys_err = np.abs((ys_true - ys) / ys_true)
+    dys_err = np.abs((dys_true - dys) / dys_true)
+    assert max(ys_err) < 1e-6 and max(dys_err) < 1e-6
     ytrue = np.array([mpmath.airyai(-x) + 1j * mpmath.airybi(-x) for x in xeval])
     dytrue = np.array(
         [
@@ -30,8 +84,6 @@ def test_denseoutput():
     )
     yerr = np.abs((ytrue - yeval) / ytrue)
     dyerr = np.abs((dytrue - dyeval) / dytrue)
-    print("Dense output", yeval, ytrue)
-    print("Dense output derivative", dyeval, dytrue)
     maxerr = max(yerr)
     maxderr = max(dyerr)
     assert maxerr < 1e-6 and maxderr < 1e-6
@@ -240,7 +292,7 @@ def test_solve_burst():
     ytrue = bursty(xs)
     yerr = np.abs((ytrue - ys)) / np.abs(ytrue)
     maxerr = max(yerr)
-    assert maxerr < 2e-7
+    assert maxerr < 3e-8
 
 
 def test_osc_evolve():
@@ -360,7 +412,7 @@ def test_osc_evolve_backwards():
     yerr = np.abs((ytrue - ys) / ytrue)
     maxerr = max(yerr)
     print("Backwards osc evolve max error:", maxerr)
-    assert maxerr < 1e-4
+    assert maxerr < 1.5e-7
 
 
 def test_nonosc_evolve_backwards():

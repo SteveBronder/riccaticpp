@@ -7,6 +7,10 @@
 #include <iostream>
 #include <iomanip>
 #endif
+namespace pybind11 {
+class object;
+}
+
 namespace riccati {
 
 template <typename T>
@@ -141,6 +145,39 @@ template <typename T>
 using require_floating_point
     = std::enable_if_t<std::is_floating_point<std::decay_t<T>>::value>;
 
+template <typename T1, typename T2>
+using require_same
+    = std::enable_if_t<std::is_same<std::decay_t<T1>, std::decay_t<T2>>::value>;
+
+template <typename T1, typename T2>
+using require_not_same
+    = std::enable_if_t<!std::is_same<std::decay_t<T1>, std::decay_t<T2>>::value>;
+
+namespace internal {
+template <typename T>
+struct value_type_impl {
+  using type = double;
+};
+template <>
+struct value_type_impl<double> {
+  using type = double;
+};
+
+template <typename T, int R, int C>
+struct value_type_impl<Eigen::Matrix<T, R, C>> {
+  using type = T;
+};
+template <typename T, int R, int C>
+struct value_type_impl<Eigen::Array<T, R, C>> {
+  using type = T;
+};
+
+}
+
+template <typename T>
+using value_type_t = typename internal::value_type_impl<std::decay_t<T>>::type;
+
+
 namespace internal {
 template <typename T>
 struct is_complex_impl : std::false_type {};
@@ -223,7 +260,7 @@ inline auto matrix(T&& x) {
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
 inline constexpr T zero_like(T x) {
-  return static_cast<T>(0);
+  return static_cast<T>(0.0);
 }
 
 template <typename T, require_not_floating_point<T>* = nullptr>

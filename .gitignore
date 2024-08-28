@@ -2,3 +2,4 @@ build/*
 riccati/__pycache__/*
 .vscode/*
 env/*
+tests/python/__pycache__/test*
