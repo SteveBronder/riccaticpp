@@ -11,6 +11,6 @@ From the top level folder we can call the following to run cmake, make, and run 
 
 ```bash
 cmake -S . -B "build" -DCMAKE_BUILD_TYPE=RELEASE  -DRICCATI_BUILD_EXAMPLES=ON 
-cd build/examples
+cd build
 make airy_eq && ./airy_eq
 ```

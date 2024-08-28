@@ -159,7 +159,3 @@ if (RICCATI_BUILD_PYTHON)
     # The install directory is the output (wheel) directory
     install(TARGETS pyriccaticpp DESTINATION pyriccaticpp)
 endif()
-
-if (RICCATI_BUILD_EXAMPLES)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/examples)
-endif()

@@ -1,0 +1,8 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
+
+# Optionally, you can also set additional variables like `@PROJECT_NAME@_INCLUDE_DIRS`
+# to help users discover the include directories if needed.
+
+set(@PROJECT_NAME@_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../../include")
