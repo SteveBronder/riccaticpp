@@ -79,50 +79,38 @@ if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 
-install(DIRECTORY riccati DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel)
-
-install(TARGETS riccati EXPORT riccatiTargets)
-
-include (CMakePackageConfigHelpers)
-configure_package_config_file (
-${CMAKE_CURRENT_SOURCE_DIR}/cmake/riccatiConfig.cmake.in
-${CMAKE_CURRENT_BINARY_DIR}/riccatiConfig.cmake
-INSTALL_DESTINATION ${CMAKEPACKAGE_INSTALL_DIR}
-NO_SET_AND_CHECK_MACRO # Eigen does not provide legacy style defines
-NO_CHECK_REQUIRED_COMPONENTS_MACRO # Eigen does not provide components
+# Define the include directory for this library
+add_library(${PROJECT_NAME} INTERFACE)
+target_include_directories(${PROJECT_NAME} INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
 )
 
-# NOTE Remove the first code path once the minimum required CMake version is
-# bumped to 3.14 or above.
-if (CMAKE_VERSION VERSION_LESS 3.14)
-# Remove CMAKE_SIZEOF_VOID_P from riccatiConfigVersion.cmake since Eigen does
-# not depend on architecture specific settings or libraries. More
-# specifically, an riccatiConfig.cmake generated from a 64 bit target can be
-# used for 32 bit targets as well (and vice versa).
-set (_riccati_CMAKE_SIZEOF_VOID_P ${CMAKE_SIZEOF_VOID_P})
-unset (CMAKE_SIZEOF_VOID_P)
-write_basic_package_version_file (riccatiConfigVersion.cmake)
-set (CMAKE_SIZEOF_VOID_P ${_riccati_CMAKE_SIZEOF_VOID_P})
-else (CMAKE_VERSION VERSION_LESS 3.14)
-write_basic_package_version_file (riccatiConfigVersion.cmake
-                                    ARCH_INDEPENDENT)
-endif (CMAKE_VERSION VERSION_LESS 3.14)
+# Optionally, specify install rules for your library
+# This is necessary for FetchContent to work properly
+install(TARGETS ${PROJECT_NAME}
+    EXPORT ${PROJECT_NAME}Targets
+    INCLUDES DESTINATION include
+)
+install(DIRECTORY include/ DESTINATION include)
 
-# The Eigen target will be located in the riccati namespace. Other CMake
-# targets can refer to it using riccati::Eigen.
-export (TARGETS eigen NAMESPACE riccati:: FILE riccatiTargets.cmake)
-# Export riccati package to CMake registry such that it can be easily found by
-# CMake even if it has not been installed to a standard directory.
-export (PACKAGE riccati)
-
-install (EXPORT riccatiTargets NAMESPACE riccati:: DESTINATION ${CMAKEPACKAGE_INSTALL_DIR})
-
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/riccatiConfig.cmake
-        DESTINATION ${CMAKEPACKAGE_INSTALL_DIR})
-
-
-
-
+# Create and install the CMake configuration files for your library
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+    INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
+)
+install(EXPORT ${PROJECT_NAME}Targets
+    FILE ${PROJECT_NAME}Config.cmake
+    NAMESPACE riccaticpp::
+    DESTINATION lib/cmake/${PROJECT_NAME}
+)
 if (RICCATI_BUILD_TESTING)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 endif()
@@ -133,7 +121,7 @@ endif()
 
 # Check if Doxygen is installed
 if (RICCATI_BUILD_DOXYGEN)
-    set(Eigen_INCLUDE_DIR "${riccati_SOURCE_DIR}")
+    set(Eigen_INCLUDE_DIR "${Eigen3_SOURCE_DIR}")
     find_package(Doxygen)
     if(DOXYGEN_FOUND)
         # Set input and output files
@@ -165,7 +153,7 @@ if (RICCATI_BUILD_PYTHON)
     # Add a library using FindPython's tooling (pybind11 also provides a helper like
     # this)
     python_add_library(pyriccaticpp MODULE src/pymain.cpp WITH_SOABI)
-    target_link_libraries(pyriccaticpp PRIVATE pybind11::headers riccati riccati::Eigen)
+    target_link_libraries(pyriccaticpp PRIVATE pybind11::headers riccati Eigen3::Eigen)
 
     # This is passing in the version as a define just as an example
     target_compile_definitions(pyriccaticpp PRIVATE VERSION_INFO=${PROJECT_VERSION})
