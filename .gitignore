@@ -1,4 +1,5 @@
 build/*
+examples/build/*
 riccati/__pycache__/*
 .vscode/*
 env/*
