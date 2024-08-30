@@ -110,17 +110,8 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
         info = ric.Init(w, g, 8, max(32, n), n, p)
         init_step = ric.choose_nonosc_stepsize(info, xi, 1.0, epsilon_h=epsh)
         for i in range(N):
-            _, ys, _, _, _, _, _, _ = ric.evolve(
-                info=info,
-                xi=xi,
-                xf=xf,
-                yi=complex(yi),
-                dyi=complex(dyi),
-                eps=eps,
-                epsilon_h=epsh,
-                init_stepsize=init_step,
-                hard_stop=True,
-            )
+xs, ys, _, _, _, _, _, _ = ric.evolve(info=info, xi=xi, xf=xf, yi=yi, dyi=dyi, eps=eps, epsilon_h=epsh, init_stepsize=init_step, hard_stop=True)
+        import pdb; pdb.set_trace()
         end = time.time_ns()
         ys = np.array(ys)
         # Compute statistics
@@ -137,7 +128,7 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
                 lines = f.readlines()
         with open(outputf, "w") as f:
             if lines == "":
-                f.write("# method, l, eps, relerr, tsolve, errlessref, params\n")
+                f.write("method, l, eps, relerr, tsolve, errlessref, params\n")
             for line in lines:
                 f.write(line)
             f.write(
@@ -162,7 +153,7 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
         print(bash_cmd)
         res = subprocess.run(bash_cmd, capture_output=True, shell=True)
         runtime, yi_real, yi_imag = [float(x) for x in res.stdout.split()]
-        yerr = np.abs((yi_real - ytrue) / ytrue)[0]
+        yerr = np.abs((ytrue - complex(yi_real, yi_imag)) / ytrue)
         outputf = outdir + "bremer237-riccaticpp.txt"
         outputpath = Path(outputf)
         outputpath.touch(exist_ok=True)
@@ -172,7 +163,7 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
                 lines = f.readlines()
         with open(outputf, "w") as f:
             if lines == "":
-                f.write("# method, l, eps, relerr, tsolve, errlessref, params\n")
+                f.write("method, l, eps, relerr, tsolve, errlessref, params\n")
             for line in lines:
                 f.write(line)
             f.write(
@@ -180,7 +171,7 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
                     "riccaticpp",
                     l,
                     eps,
-                    round_to_n(3, yerr),
+                    max(yerr),
                     round_to_n(3, runtime),
                     (yerr < errref),
                     "(n = {}; p = {}; epsh = {})".format(n, p, epsh),
@@ -215,7 +206,7 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
                 lines = f.readlines()
         with open(outputf, "w") as f:
             if lines == "":
-                f.write("# method, l, eps, relerr, tsolve, errlessref, params\n")
+                f.write("method, l, eps, relerr, tsolve, errlessref, params\n")
             for line in lines:
                 f.write(line)
             f.write(
@@ -223,7 +214,7 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
                     "rdc",
                     l,
                     eps,
-                    round_to_n(3, max(yerr)),
+                    max(yerr),
                     round_to_n(3, runtime),
                     (yerr < errref)[0],
                     "(n = {}; p = {}; epsh = {})".format(n, p, epsh),
@@ -265,7 +256,7 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
                 lines = f.readlines()
         with open(outputf, "w") as f:
             if lines == "":
-                f.write("# method, l, eps, relerr, tsolve, errlessref, params\n")
+                f.write("method, l, eps, relerr, tsolve, errlessref, params\n")
             for line in lines:
                 f.write(line)
             f.write(
@@ -301,7 +292,7 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
                 lines = f.readlines()
         with open(outputf, "w") as f:
             if lines == "":
-                f.write("# method, l, eps, relerr, tsolve, errlessref, params\n")
+                f.write("method, l, eps, relerr, tsolve, errlessref, params\n")
             for line in lines:
                 f.write(line)
             f.write(
@@ -341,7 +332,7 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
                 lines = f.readlines()
         with open(outputf, "w") as f:
             if lines == "":
-                f.write("# method, l, eps, relerr, tsolve, errlessref, params\n")
+                f.write("method, l, eps, relerr, tsolve, errlessref, params\n")
             for line in lines:
                 f.write(line)
             f.write(
@@ -420,7 +411,7 @@ def joss_fig(outdir):
     print(data)
     print(data.columns)
 
-    solvernames = data["# method"]
+    solvernames = data["method"]
     epss = data["eps"]
     oscodes = data.loc[solvernames == "oscode"]
     rks = data.loc[solvernames == "rk"]

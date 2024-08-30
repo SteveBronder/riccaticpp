@@ -25,7 +25,7 @@ TEST_F(Riccati, bremer_nondense_output) {
     double xf = 1.0;
     std::vector<double> epss = {1e-12, 1e-8};
     std::vector<double> epshs = {1e-13, 1e-9};
-    std::vector<int> ns = {32, 20};
+    std::vector<int> ns = {35, 20};
 
     for (int j = 0; j < bremer_table.rows(); ++j) {
         double lambda_scalar = bremer_table(j, 0);
