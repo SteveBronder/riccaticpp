@@ -78,8 +78,8 @@ if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
       -Wall)
 endif()
 
-
-# Define the include directory for this library
+### Cmake Include Interface
+# Define the include directory for this header-only library
 add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME} INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -98,7 +98,7 @@ install(DIRECTORY include/ DESTINATION include)
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
     "${PROJECT_NAME}ConfigVersion.cmake"
-    VERSION ${VERSION}
+    VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
 install(EXPORT ${PROJECT_NAME}Targets
@@ -106,6 +106,10 @@ install(EXPORT ${PROJECT_NAME}Targets
     NAMESPACE riccaticpp::
     DESTINATION lib/cmake/${PROJECT_NAME}
 )
+
+
+## Testing
+
 if (RICCATI_BUILD_TESTING)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 endif()
