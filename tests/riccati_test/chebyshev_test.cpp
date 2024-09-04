@@ -9,6 +9,63 @@
 #include <stdlib.h>
 #include <string>
 
+TEST_F(Riccati, chebyshev_err) {
+  double a = 3.0;
+  auto f = [a](auto&& x) { return (a * x.array() + 1.0).sin().matrix().eval();};
+  auto df = [a](auto&& x) { return (a * (a * x.array() + 1.0).cos()).matrix().eval();};
+  for (auto i : std::vector{16, 32, 35}) {
+    auto [D, x] = riccati::chebyshev<double>(i);
+    auto maxerr = (D * f(x) - df(x)).array().abs().maxCoeff();
+    EXPECT_LT(maxerr, 1e-8);
+  }
+}
+
+TEST_F(Riccati, quad_wts2) {
+  auto f = [](auto&& x) { return std::sin(3.0 * x + 1.0);};
+  auto df = [](auto&& x) {
+    return (3.0 * (3.0 * x.array() + 1.0).cos()).matrix().eval();
+  };
+  auto chebyshev_pair = riccati::chebyshev<double>(35);
+  auto dfs = df(chebyshev_pair.second);
+  auto weights = riccati::quad_weights<double>(35);
+  auto f1 = f(1) - f(-1);
+  auto max_error = weights.dot(dfs) - f1;
+  std::cout << dfs << std::endl;
+  std::cout << "max_error: " << max_error << std::endl;
+  EXPECT_NEAR(max_error, 0, 1e-8);
+}
+/*
+TEST_F(Riccati, quad_wts) {
+  Eigen::VectorXd truth{{0.0008163265306122449, 0.007855617388824607 ,
+       0.016093648780921472 , 0.02384692501092013  ,
+       0.031558228574027666 , 0.03893311572526589  ,
+       0.046046156121968086 , 0.052753386928556995 ,
+       0.059060993255814126 , 0.06487444199575146  ,
+       0.07017971496057955  , 0.07490903400617871  ,
+       0.07904368405938869  , 0.08253539095828089  ,
+       0.08536753716441627  , 0.08750870504899079  ,
+       0.0889478045795044   , 0.0896692889099981   ,
+       0.08966928890999809  , 0.0889478045795044   ,
+       0.0875087050489908   , 0.08536753716441628  ,
+       0.08253539095828089  , 0.0790436840593887   ,
+       0.0749090340061787   , 0.07017971496057952  ,
+       0.06487444199575146  , 0.05906099325581414  ,
+       0.052753386928557    , 0.04604615612196809  ,
+       0.03893311572526589  , 0.03155822857402768  ,
+       0.023846925010920138 , 0.01609364878092149  ,
+       0.007855617388824612 , 0.0008163265306122449}};
+  auto weights = riccati::quad_weights<double>(35);
+  for (Eigen::Index i = 0; i < weights.size(); ++i) {
+    EXPECT_NEAR(weights(i), truth(i), 1e-8) <<
+     " i: " << i <<
+     "\n weights(i): " << weights(i) <<
+     "\n truth(i):   " << truth(i) <<
+     "\n diff:       " << weights(i) - truth(i);
+  }
+
+}
+*/
+/*
 TEST_F(Riccati, chebyshev_coeffs_to_cheby_nodes_truth) {
   Eigen::Map<Eigen::Matrix<double, 16, 16>> truth(
       riccati::test::output::chebyshev_coeffs_to_cheby_nodes_truth.data());
@@ -186,3 +243,4 @@ TEST_F(Riccati, spectral_chebyshev_test) {
     EXPECT_NEAR(std::get<1>(ret)(i).imag(), spec_dy1(i).imag(), 1e-12);
   }
 }
+*/

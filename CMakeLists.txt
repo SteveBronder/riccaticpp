@@ -53,11 +53,17 @@ set(CMAKE_CXX_FLAGS_LSAN
     "-fsanitize=leak -fno-omit-frame-pointer -ggdb3 -O1"
     CACHE STRING "Flags used by the C++ compiler during LeakSanitizer builds."
     FORCE)
-
-set(CMAKE_CXX_FLAGS_DEBUG
-    "-fno-omit-frame-pointer -glldb -Og -DRICCATI_DEBUG=true"
-    CACHE STRING "Flags used by the C++ compiler during Debug builds."
-    FORCE)
+if(APPLE)
+    set(CMAKE_CXX_FLAGS_DEBUG
+        "-fno-omit-frame-pointer -glldb -Og -DRICCATI_DEBUG=true"
+        CACHE STRING "Flags used by the C++ compiler during Debug builds."
+        FORCE)
+else()
+    set(CMAKE_CXX_FLAGS_DEBUG
+        "-fno-omit-frame-pointer -ggdb3 -Og -DRICCATI_DEBUG=true"
+        CACHE STRING "Flags used by the C++ compiler during Debug builds."
+        FORCE)
+endif()
 
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   set(CMAKE_CXX_FLAGS_RELEASE
@@ -139,7 +145,7 @@ if (RICCATI_BUILD_DOXYGEN)
     endif()
 endif()
 
-if (RICCATI_BUILD_PYTHON) 
+if (RICCATI_BUILD_PYTHON)
     # Find the module development requirements (requires FindPython from 3.17 or
     # scikit-build-core's built-in backport)
     find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)

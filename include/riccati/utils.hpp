@@ -282,7 +282,19 @@ template <typename T, int R, int C>
 inline void print(const char* name, const Eigen::Matrix<T, R, C>& x) {
 #ifdef RICCATI_DEBUG
   std::cout << name << "(" << x.rows() << ", " << x.cols() << ")" << std::endl;
-  std::cout << x << std::endl;
+  if (R == 1 || C == 1) {
+  Eigen::IOFormat
+    numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
+    ", ", ", ", "", "",
+     "np.array([", "])");
+    std::cout << x.transpose().eval().format(numpyFormat) << std::endl;
+  } else {
+  Eigen::IOFormat
+    numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
+    ", ", ", ", "[", "]",
+     "np.array([", "])");
+    std::cout << x.format(numpyFormat) << std::endl;
+  }
 #endif
 }
 
@@ -290,7 +302,19 @@ template <typename T, int R, int C>
 inline void print(const char* name, const Eigen::Array<T, R, C>& x) {
 #ifdef RICCATI_DEBUG
   std::cout << name << "(" << x.rows() << ", " << x.cols() << ")" << std::endl;
-  std::cout << x << std::endl;
+  if (R == 1 || C == 1) {
+  Eigen::IOFormat
+    numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
+    ", ", ", ", "", "",
+     "np.array([", "])");
+    std::cout << x.transpose().eval().format(numpyFormat) << std::endl;
+  } else {
+  Eigen::IOFormat
+    numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
+    ", ", ", ", "[", "]",
+     "np.array([", "])");
+    std::cout << x.format(numpyFormat) << std::endl;
+  }
 #endif
 }
 
@@ -313,6 +337,13 @@ inline void print(const char* name, const std::complex<T>& x) {
   std::cout << name << ": (" << std::setprecision(16) << x.real() << ", "
             << x.imag() << ")" << std::endl;
 #endif
+}
+
+template <typename T>
+inline void print(const char* name, const std::vector<T>& x) {
+  for (int i = 0; i < x.size(); ++i) {
+    print((std::string(name) + std::string("[") + std::to_string(i) + "]").c_str(), x[i]);
+  }
 }
 
 }  // namespace riccati

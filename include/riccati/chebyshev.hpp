@@ -227,27 +227,26 @@ RICCATI_ALWAYS_INLINE auto quad_weights(Integral n) {
   if (n == 0) {
     return w;
   } else {
-    auto a = vector_t<Scalar>::LinSpaced(n + 1, 0, pi<Scalar>()).eval();
+    auto a = vector_t<Scalar>::LinSpaced(n + 1, 0, M_PI).eval();
     auto v = vector_t<Scalar>::Ones(n - 1).eval();
     // TODO: Smarter way to do this
-    if (n % 2 == 0) {
-      w.coeffRef(0) = 1.0 / static_cast<Scalar>(n * n - 1);
-      w.coeffRef(n) = w.coeff(0);
-      for (Integral i = 1; i < n / 2; ++i) {
-        v.array() -= 2.0 * (2.0 * i * a.segment(1, n - 1).array()).cos()
-                     / (4.0 * i * i - 1);
-      }
-      v.array() -= (n * a.segment(1, n - 1).array()).cos() / (n * n - 1);
-    } else {
-      w.coeffRef(0) = 1.0 / static_cast<Scalar>(n * n);
-      w.coeffRef(n) = w.coeff(0);
-      for (std::size_t i = 0; i < std::floor((n + 1) / 2.0); ++i) {
-        v.array() -= 2.0 * (2.0 * i * a.segment(1, n - 1).array()).cos()
-                     / (4.0 * i * i - 1);
-      }
-      v.array() -= (n * a.segment(1, n - 1).array()).cos() / (n * n - 1);
+    if (n % 2 == 0) {  // Check if n is even
+        w[0] = 1.0 / (std::pow(n, 2) - 1);
+        w[n] = w[0];
+        for (int k = 1; k < std::floor(n / 2.0); ++k) {
+            v.array() -= 2.0 * ((2.0 * static_cast<Scalar>(k) * a.segment(1, n - 1)).array().cos()).array() / (4.0 * k * k - 1);
+        }
+        v.array() -= ((n * a.segment(1, n - 1)).array().cos())
+          / (std::pow(n, 2) - 1);
+    } else {  // If n is odd
+        w[0] = 1.0 / std::pow(n, 2);
+        w[n] = w[0];
+        for (int k = 1; k <= std::floor((n + 1) / 2.0); ++k) {
+            v.array() -= 2.0 * ((2 * k * a.segment(1, n - 1)).array().cos()).array() / (4.0 * k * k - 1);
+        }
     }
-    w.segment(1, n - 1).array() = (2.0 * v.array()) / n;
+
+    w.segment(1, n - 1) = (2.0 * v / n).array();  // Set weights
     return w;
   }
 }
@@ -276,32 +275,47 @@ RICCATI_ALWAYS_INLINE auto quad_weights(Integral n) {
  */
 template <typename Scalar, typename Integral>
 RICCATI_ALWAYS_INLINE auto chebyshev(Integral n) {
-  if (n == 0) {
-    return std::make_pair(matrix_t<Scalar>::Zero(1, 1).eval(),
-                          vector_t<Scalar>::Ones(1).eval());
-  } else {
-    auto a = vector_t<Scalar>::LinSpaced(n + 1, 0.0, pi<Scalar>());
-    auto b = vector_t<Scalar>::Ones(n + 1).eval();
-    b.coeffRef(0) = 2.0;
-    b.coeffRef(b.size() - 1) = 2.0;
-    auto d = vector_t<Scalar>::Ones(n + 1).eval();
-    for (Integral i = 1; i < n + 1; i += 2) {
-      d.coeffRef(i) = -1;
-    }
-    auto x = a.array().cos().eval();
-    auto X = (x.matrix() * vector_t<Scalar>::Ones(n + 1).transpose())
-                 .matrix()
-                 .eval();
-    auto dX = (X - X.transpose()).eval();
-    auto c = (b.array() * d.array()).eval();
+    // Case when n == 0
+    if (n == 0) {
+        Eigen::MatrixXd D(1, 1);
+        D(0, 0) = 0;
+        Eigen::VectorXd x(1);
+        x(0) = 1;
+        return std::make_pair(D, x);
+    } else {
+        // Create the vector of Chebyshev nodes
+        Eigen::VectorXd a = Eigen::VectorXd::LinSpaced(n + 1, 0.0, M_PI);
+        Eigen::VectorXd x = a.array().cos();
 
-    auto D = ((c.matrix() * (1.0 / c).matrix().transpose()).array()
-              / (dX + matrix_t<Scalar>::Identity(n + 1, n + 1)).array())
-                 .matrix()
-                 .eval();
-    D -= D.rowwise().sum().asDiagonal();
-    return std::make_pair(matrix_t<Scalar>(D), vector_t<Scalar>(x));
-  }
+        // Create b and d vectors
+        Eigen::VectorXd b = Eigen::VectorXd::Ones(n + 1);
+        b(0) = 2;
+        b(n) = 2;
+
+        Eigen::VectorXd d = Eigen::VectorXd::Ones(n + 1);
+        for (int i = 1; i <= n; i += 2) {
+            d(i) = -1;
+        }
+
+        // Compute c = b * d
+        Eigen::VectorXd c = b.array() * d.array();
+
+        // Compute X matrix and dX matrix
+        Eigen::MatrixXd X = x * Eigen::RowVectorXd::Ones(n + 1); // Outer product
+        Eigen::MatrixXd dX = X - X.transpose();
+
+        // Create identity matrix
+        Eigen::MatrixXd I = Eigen::MatrixXd::Identity(n + 1, n + 1);
+
+        // Compute the differentiation matrix D
+        Eigen::MatrixXd D = (c * (1.0 / c.array()).transpose().eval().matrix()).matrix().array() / (dX.array() + I.array());
+
+        // Subtract the diagonal elements
+        Eigen::VectorXd row_sum = D.rowwise().sum();
+        D.diagonal() -= row_sum;
+
+        return std::make_pair(D, x);
+    }
 }
 
 /**

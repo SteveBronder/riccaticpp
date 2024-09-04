@@ -172,7 +172,19 @@ template <typename T>
 inline void print(const char* name, const arena_matrix<T>& x) {
 #ifdef RICCATI_DEBUG
   std::cout << name << "(" << x.rows() << ", " << x.cols() << ")" << std::endl;
-  std::cout << x << std::endl;
+  if (std::decay_t<T>::RowsAtCompileTime == 1 || std::decay_t<T>::ColsAtCompileTime == 1) {
+  Eigen::IOFormat
+    numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
+    ", ", ", ", "", "",
+     "np.array([", "])");
+    std::cout << x.transpose().eval().format(numpyFormat) << std::endl;
+  } else {
+  Eigen::IOFormat
+    numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
+    ", ", ", ", "[", "]",
+     "np.array([", "])");
+    std::cout << x.format(numpyFormat) << std::endl;
+  }
 #endif
 }
 

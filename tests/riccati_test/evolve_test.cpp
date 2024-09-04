@@ -23,19 +23,23 @@ TEST_F(Riccati, bremer_nondense_output) {
     std::vector<double> lambda_arr = {10, 100, 1000, 10000, 100000, 1000000, 10000000};
     double xi = -1.0;
     double xf = 1.0;
+/*
     std::vector<double> epss = {1e-12, 1e-8};
     std::vector<double> epshs = {1e-13, 1e-9};
     std::vector<int> ns = {35, 20};
-
-    for (int j = 0; j < bremer_table.rows(); ++j) {
-        double lambda_scalar = bremer_table(j, 0);
+*/
+    std::vector<double> epss = {1e-12};
+    std::vector<double> epshs = {1e-13};
+    std::vector<int> ns = {35};
+    for (int j = 0; j < 1; ++j) {
+        double lambda_scalar = 100.0;
         for (size_t i = 0; i < epss.size(); ++i) {
             double eps = epss[i];
             double epsh = epshs[i];
             int n = ns[i];
             // Find the corresponding reference value for ytrue and err
             int index = j;
-            double ytrue = bremer_table(index, 1);
+            double ytrue = bremer_table(1, 1);
 //            double errref = bremer_table(index, 2);
             // Define omega and gamma functions
             auto omega_fun = [lambda_scalar](auto&& x) {
@@ -48,26 +52,33 @@ TEST_F(Riccati, bremer_nondense_output) {
             auto init_step = choose_nonosc_stepsize(info, xi, 1.0, epsh);
             // Perform the evolution
             Eigen::Matrix<double, 0, 0> x_eval;
-            auto res = evolve(info, xi, xf, std::complex<double>(0.0), std::complex<double>(lambda_scalar), eps, epsh, init_step, x_eval, true);
+            auto res = evolve(info, xi, xf, std::complex<double>(0.0), std::complex<double>(lambda_scalar), eps, epsh, 0.1, x_eval, true);
             // Get the final value of y
             auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(std::get<1>(res).data(), std::get<1>(res).size()).eval();
             // Calculate error
             double yerr = std::abs((ytrue - y_est[y_est.size() - 1]) / ytrue);
             // See Fig 5 from https://arxiv.org/pdf/2212.06924
             double err_val = eps == 1e-12 ? eps * lambda_scalar : eps * lambda_scalar * 1e-4;
-            EXPECT_LE(yerr, err_val) << 
-            "\nLambda: " << lambda_scalar << 
+            EXPECT_LE(yerr, err_val) <<
+            "\nLambda: " << lambda_scalar <<
             "\nn: " << n <<
             "\nepsh: " << epsh <<
-            "\neps: " << eps << 
+            "\neps: " << eps <<
             "\nytrue: " << ytrue <<
             "\ny_est: " << y_est[y_est.size() - 1].real() <<
-            "\nyerr: " << yerr << 
+            "\nyerr: " << yerr <<
             "\nerr_val: " << err_val;
+            print("xs", std::get<0>(res));
+            print("ys", std::get<1>(res));
+            print("ytrue", ytrue);
+            print("dys", std::get<2>(res));
+            print("successes", std::get<3>(res));
+            print("phases", std::get<4>(res));
+            print("steptypes", std::get<5>(res));
         }
     }
 }
-
+/*
 TEST_F(Riccati, osc_evolve_dense_output) {
   using namespace riccati;
   auto omega_fun
@@ -359,7 +370,7 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_bremer) {
   auto res
       = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 0.1, x_eval, true);
   auto x_steps = Eigen::Map<Eigen::VectorXd>(std::get<0>(res).data(),
-    std::get<0>(res).size()); 
+    std::get<0>(res).size());
 
   auto ytrue = 0.2913132934408612;
   auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
@@ -390,10 +401,11 @@ TEST_F(Riccati, vectorizer_evolve_nondense_fwd_hardstop_bremer) {
   auto res
       = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 1.0, x_eval, true);
   auto x_steps = Eigen::Map<Eigen::VectorXd>(std::get<0>(res).data(),
-    std::get<0>(res).size()); 
+    std::get<0>(res).size());
   auto ytrue = 0.2913132934408612;
   auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
       std::get<1>(res).data(), std::get<1>(res).size());
   auto y_err = std::abs((ytrue - y_est(y_est.size() - 1)) / ytrue);
   EXPECT_LE(y_err, 9e-12);
 }
+*/

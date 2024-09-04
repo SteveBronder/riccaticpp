@@ -373,17 +373,22 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   std::size_t output_size = 100;
   using stdvecd_t = std::vector<Scalar>;
   stdvecd_t xs;
-  xs.reserve(output_size);
+  xs.reserve(output_size + 1);
+  xs.push_back(xi);
   using complex_t = std::complex<Scalar>;
   using stdvecc_t = std::vector<complex_t>;
   stdvecc_t ys;
   ys.reserve(output_size);
+  ys.push_back(yi);
   stdvecc_t dys;
   dys.reserve(output_size);
+  dys.push_back(dyi);
   std::vector<int> successes;
   successes.reserve(output_size);
+  successes.push_back(1);
   std::vector<int> steptypes;
   steptypes.reserve(output_size);
+  steptypes.push_back(0);
   stdvecd_t phases;
   phases.reserve(output_size);
   using vectorc_t = vector_t<complex_t>;
@@ -430,8 +435,6 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   using matrixc_t = matrix_t<complex_t>;
   matrixc_t y_eval;
   matrixc_t dy_eval;
-  arena_matrix<vectorc_t> un(info.alloc_, omega_n.size(), 1);
-  arena_matrix<vectorc_t> d_un(info.alloc_, omega_n.size(), 1);
   std::pair<complex_t, complex_t> a_pair;
   while (std::abs(xcurrent - xf) > Scalar(1e-8)
          && direction * xcurrent < direction * xf) {
@@ -440,6 +443,8 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
     bool steptype = true;
     Scalar err;
     int cheb_N = 0;
+    arena_matrix<vectorc_t> un(info.alloc_, omega_n.size(), 1);
+    arena_matrix<vectorc_t> d_un(info.alloc_, omega_n.size(), 1);
     if ((direction * hosc > direction * hslo * 5.0)
         && (direction * hosc * wnext / (2.0 * pi<Scalar>()) > 1.0)) {
       if (hard_stop) {
