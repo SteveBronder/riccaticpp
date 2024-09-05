@@ -230,24 +230,29 @@ RICCATI_ALWAYS_INLINE auto quad_weights(Integral n) {
     auto a = vector_t<Scalar>::LinSpaced(n + 1, 0, pi<Scalar>()).eval();
     auto v = vector_t<Scalar>::Ones(n - 1).eval();
     // TODO: Smarter way to do this
-    if (n % 2 == 0) {
-      w.coeffRef(0) = 1.0 / static_cast<Scalar>(n * n - 1);
-      w.coeffRef(n) = w.coeff(0);
-      for (Integral i = 1; i < n / 2; ++i) {
-        v.array() -= 2.0 * (2.0 * i * a.segment(1, n - 1).array()).cos()
-                     / (4.0 * i * i - 1);
+    if (n % 2 == 0) {  // Check if n is even
+      w[0] = 1.0 / (std::pow(n, 2) - 1);
+      w[n] = w[0];
+      for (int k = 1; k < static_cast<int>(std::floor(n / 2.0)); ++k) {
+        v.array() -= 2.0
+                     * ((2.0 * static_cast<Scalar>(k) * a.segment(1, n - 1))
+                            .array()
+                            .cos())
+                           .array()
+                     / (4.0 * k * k - 1);
       }
-      v.array() -= (n * a.segment(1, n - 1).array()).cos() / (n * n - 1);
-    } else {
-      w.coeffRef(0) = 1.0 / static_cast<Scalar>(n * n);
-      w.coeffRef(n) = w.coeff(0);
-      for (std::size_t i = 0; i < std::floor((n + 1) / 2.0); ++i) {
-        v.array() -= 2.0 * (2.0 * i * a.segment(1, n - 1).array()).cos()
-                     / (4.0 * i * i - 1);
+      v.array()
+          -= ((n * a.segment(1, n - 1)).array().cos()) / (std::pow(n, 2) - 1);
+    } else {  // If n is odd
+      w[0] = 1.0 / std::pow(n, 2);
+      w[n] = w[0];
+      const auto max_val = static_cast<int>(std::floor((n + 1) / 2));
+      for (int k = 1; k < max_val; ++k) {
+        v.array() -= 2.0 * (2.0 * k * a.segment(1, n - 1).array()).cos()
+                     / (4.0 * k * k - 1.0);
       }
-      v.array() -= (n * a.segment(1, n - 1).array()).cos() / (n * n - 1);
     }
-    w.segment(1, n - 1).array() = (2.0 * v.array()) / n;
+    w.segment(1, n - 1) = (2.0 * v / n).array();  // Set weights
     return w;
   }
 }
@@ -268,39 +273,38 @@ RICCATI_ALWAYS_INLINE auto quad_weights(Integral n) {
  * @tparam Scalar The scalar type of the Chebyshev nodes and differentiation
  * @tparam Integral The integral type of the number of Chebyshev nodes
  * @param n int - The number of Chebyshev nodes minus one.
- * @return std::pair<Eigen::MatrixXd, Eigen::VectorXd> - A pair consisting of:
+ * @return std::pair<matrix_t<Scalar>, vector_t<Scalar>> - A pair consisting of:
  *         1. The differentiation matrix `D` of size
  * (n+1, n+1).
- *         2. Eigen::VectorXd (real) - The vector of Chebyshev nodes `x` of size
- * (n+1), ordered in descending order from 1 to -1.
+ *         2. vector_t<Scalar> (real) - The vector of Chebyshev nodes `x` of
+ * size (n+1), ordered in descending order from 1 to -1.
  */
 template <typename Scalar, typename Integral>
 RICCATI_ALWAYS_INLINE auto chebyshev(Integral n) {
+  // Case when n == 0
   if (n == 0) {
-    return std::make_pair(matrix_t<Scalar>::Zero(1, 1).eval(),
-                          vector_t<Scalar>::Ones(1).eval());
+    matrix_t<Scalar> D{{1}};
+    vector_t<Scalar> x{{1}};
+    return std::make_pair(D, x);
   } else {
-    auto a = vector_t<Scalar>::LinSpaced(n + 1, 0.0, pi<Scalar>());
-    auto b = vector_t<Scalar>::Ones(n + 1).eval();
-    b.coeffRef(0) = 2.0;
-    b.coeffRef(b.size() - 1) = 2.0;
-    auto d = vector_t<Scalar>::Ones(n + 1).eval();
-    for (Integral i = 1; i < n + 1; i += 2) {
-      d.coeffRef(i) = -1;
+    // Create the vector of Chebyshev nodes
+    vector_t<Scalar> x
+        = vector_t<Scalar>::LinSpaced(n + 1, 0.0, pi<Scalar>()).array().cos();
+    vector_t<Scalar> b = vector_t<Scalar>::Ones(n + 1);
+    b(0) = 2;
+    b(n) = 2;
+    vector_t<Scalar> d = vector_t<Scalar>::Ones(n + 1);
+    for (int i = 1; i <= n; i += 2) {
+      d(i) = -1;
     }
-    auto x = a.array().cos().eval();
-    auto X = (x.matrix() * vector_t<Scalar>::Ones(n + 1).transpose())
-                 .matrix()
-                 .eval();
-    auto dX = (X - X.transpose()).eval();
-    auto c = (b.array() * d.array()).eval();
-
-    auto D = ((c.matrix() * (1.0 / c).matrix().transpose()).array()
-              / (dX + matrix_t<Scalar>::Identity(n + 1, n + 1)).array())
-                 .matrix()
-                 .eval();
-    D -= D.rowwise().sum().asDiagonal();
-    return std::make_pair(matrix_t<Scalar>(D), vector_t<Scalar>(x));
+    auto c = b.array() * d.array();
+    auto X = x * Eigen::RowVectorXd::Ones(n + 1);
+    matrix_t<Scalar> D
+        = (c.matrix() * (1.0 / c).matrix().transpose().matrix()).array()
+          / ((X - X.transpose()).array()
+             + matrix_t<Scalar>::Identity(n + 1, n + 1).array());
+    D.diagonal() -= D.rowwise().sum();
+    return std::make_pair(D, x);
   }
 }
 
@@ -384,7 +388,7 @@ RICCATI_ALWAYS_INLINE auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
  *         2. Eigen::Vector<std::complex<Scalar>, Eigen::Dynamic, 1> - Numerical
  * estimate of the derivative of the solution at the end of the step, at `x0 +
  * h`.
- *         3. Eigen::VectorXd (real) - Chebyshev nodes used for the current
+ *         3. vector_t<Scalar> (real) - Chebyshev nodes used for the current
  * iteration of the spectral collocation method, scaled to lie in the interval
  * `[x0, x0 + h]`.
  */

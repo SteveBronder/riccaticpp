@@ -156,7 +156,6 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
          * (Scalar{1.0} / h * (Dn * omega_s) + gamma_s.cwiseProduct(omega_s)))
             .eval();
   Scalar maxerr = Ry.array().abs().maxCoeff();
-
   arena_matrix<vectorc_t> deltay(info.alloc_, Ry.size(), 1);
   Scalar prev_err = std::numeric_limits<Scalar>::infinity();
   while (maxerr > epsres) {
@@ -170,6 +169,14 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     }
     prev_err = maxerr;
   }
+  deltay = delta(Ry, y);
+  y += deltay;
+  Ry = R(deltay);
+  maxerr = Ry.array().abs().maxCoeff();
+  if (maxerr >= (Scalar{2.0} * prev_err)) {
+    success = false;
+  }
+  prev_err = maxerr;
   if constexpr (DenseOut) {
     auto u1
         = eval(info.alloc_, h / Scalar{2.0} * (info.integration_matrix_ * y));
@@ -188,7 +195,8 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     return std::make_tuple(success, y1(0), dy1(0), maxerr, phase, u1, y,
                            std::make_pair(ap, am));
   } else {
-    complex_t f1 = std::exp(h / Scalar{2.0} * (info.quadwts_.dot(y)));
+    auto u1 = (h / Scalar{2.0} * (info.quadwts_.dot(y)));
+    complex_t f1 = std::exp(u1);
     auto f2 = std::conj(f1);
     auto du2 = y.conjugate().eval();
     auto ap_top = (dy0 - y0 * du2(du2.size() - 1));

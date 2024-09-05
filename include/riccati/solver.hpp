@@ -14,16 +14,16 @@
 
 namespace riccati {
 
-template <
-    typename SolverInfo, typename Scalar, 
-    require_floating_point<value_type_t<Scalar>>* = nullptr,
-    require_not_same<typename std::decay_t<SolverInfo>::funtype, pybind11::object>* = nullptr>
+template <typename SolverInfo, typename Scalar,
+          require_floating_point<value_type_t<Scalar>>* = nullptr,
+          require_not_same<typename std::decay_t<SolverInfo>::funtype,
+                           pybind11::object>* = nullptr>
 inline auto gamma(SolverInfo&& info, const Scalar& x) {
   return info.gamma_fun_(x);
 }
 
 template <
-    typename SolverInfo, typename Scalar, 
+    typename SolverInfo, typename Scalar,
     require_floating_point<value_type_t<Scalar>>* = nullptr,
     std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::funtype,
                                    pybind11::object>::value>* = nullptr>
@@ -98,23 +98,25 @@ class SolverInfo {
     // Compute Chebyshev nodes and differentiation matrices
     bool n_found = false;
     bool p_found = false;
+    std::vector<int> cheb_nodes;
+    cheb_nodes.reserve(n_nodes + 2);
     for (Integral i = 0; i <= n_nodes; ++i) {
       auto it_v = nini * std::pow(2, i);
+      cheb_nodes.push_back(it_v);
       n_found = n_found || (it_v == n);
       p_found = p_found || (it_v == p);
+    }
+    if (!n_found) {
+      cheb_nodes.push_back(n);
+    }
+    if (!p_found && n != p) {
+      cheb_nodes.push_back(p);
+    }
+    std::sort(cheb_nodes.begin(), cheb_nodes.end());
+    for (auto&& it_v : cheb_nodes) {
       auto cheb_v = chebyshev<Scalar>(it_v);
       res.emplace_back(it_v, std::move(cheb_v.first), std::move(cheb_v.second));
     }
-    if (!n_found) {
-      auto cheb_v = chebyshev<Scalar>(n);
-      res.emplace_back(n, std::move(cheb_v.first), std::move(cheb_v.second));
-    }
-    if (!p_found && n != p) {
-      auto cheb_v = chebyshev<Scalar>(p);
-      res.emplace_back(p, std::move(cheb_v.first), std::move(cheb_v.second));
-    }
-    std::sort(res.begin(), res.end(),
-              [](auto& a, auto& b) { return std::get<0>(a) < std::get<0>(b); });
     return res;
   }
 
