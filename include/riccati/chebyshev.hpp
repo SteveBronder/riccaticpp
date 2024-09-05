@@ -227,7 +227,7 @@ RICCATI_ALWAYS_INLINE auto quad_weights(Integral n) {
   if (n == 0) {
     return w;
   } else {
-    auto a = vector_t<Scalar>::LinSpaced(n + 1, 0, M_PI).eval();
+    auto a = vector_t<Scalar>::LinSpaced(n + 1, 0, pi<Scalar>()).eval();
     auto v = vector_t<Scalar>::Ones(n - 1).eval();
     // TODO: Smarter way to do this
     if (n % 2 == 0) {  // Check if n is even
@@ -289,7 +289,7 @@ RICCATI_ALWAYS_INLINE auto chebyshev(Integral n) {
   } else {
     // Create the vector of Chebyshev nodes
     vector_t<Scalar> x
-        = vector_t<Scalar>::LinSpaced(n + 1, 0.0, M_PI).array().cos();
+        = vector_t<Scalar>::LinSpaced(n + 1, 0.0, pi<Scalar>()).array().cos();
     vector_t<Scalar> b = vector_t<Scalar>::Ones(n + 1);
     b(0) = 2;
     b(n) = 2;
