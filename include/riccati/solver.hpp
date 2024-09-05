@@ -166,12 +166,7 @@ class SolverInfo {
         nini_(nini),
         nmax_(nmax),
         n_(n),
-        p_(p) {
-          std::cout << "n_idx_: " << n_idx_ << std::endl;
-          for (int i = 0; i < chebyshev_.size(); ++i) {
-            std::cout << "chebyshev_[" << i << "]: " << std::get<0>(chebyshev_[i]) << std::endl;
-          }
-        }
+        p_(p) {}
 
   template <typename OmegaFun_, typename GammaFun_>
   SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Integral nini,

@@ -233,7 +233,7 @@ RICCATI_ALWAYS_INLINE auto quad_weights(Integral n) {
     if (n % 2 == 0) {  // Check if n is even
         w[0] = 1.0 / (std::pow(n, 2) - 1);
         w[n] = w[0];
-        for (int k = 1; k < std::floor(n / 2.0); ++k) {
+        for (int k = 1; k < static_cast<int>(std::floor(n / 2.0)); ++k) {
             v.array() -= 2.0 * ((2.0 * static_cast<Scalar>(k) * a.segment(1, n - 1)).array().cos()).array() / (4.0 * k * k - 1);
         }
         v.array() -= ((n * a.segment(1, n - 1)).array().cos())
@@ -241,11 +241,11 @@ RICCATI_ALWAYS_INLINE auto quad_weights(Integral n) {
     } else {  // If n is odd
         w[0] = 1.0 / std::pow(n, 2);
         w[n] = w[0];
-        for (int k = 1; k <= std::floor((n + 1) / 2.0); ++k) {
-            v.array() -= 2.0 * ((2 * k * a.segment(1, n - 1)).array().cos()).array() / (4.0 * k * k - 1);
+        const auto max_val = static_cast<int>(std::floor((n + 1) / 2));
+        for (int k = 1; k < max_val; ++k) {
+            v.array() -= 2.0 * (2.0 * k * a.segment(1, n - 1).array()).cos() / (4.0 * k * k - 1.0);
         }
     }
-
     w.segment(1, n - 1) = (2.0 * v / n).array();  // Set weights
     return w;
   }

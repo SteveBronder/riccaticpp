@@ -140,13 +140,6 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
                      Scalar epsres) {
   using complex_t = std::complex<Scalar>;
   using vectorc_t = vector_t<complex_t>;
-  print("h",h);
-  print("x0", x0);
-  print("y0", y0);
-  print("dy0", dy0);
-  print("epsres", epsres);
-  print("omega_s", omega_s);
-  print("gamma_s", gamma_s);
   bool success = true;
   auto &&Dn = info.Dn();
   auto y = eval(info.alloc_, complex_t(0.0, 1.0) * omega_s);
@@ -163,10 +156,6 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
          * (Scalar{1.0} / h * (Dn * omega_s) + gamma_s.cwiseProduct(omega_s)))
             .eval();
   Scalar maxerr = Ry.array().abs().maxCoeff();
-  print("maxerr", maxerr);
-  print("Dn", Dn);
-  print("y", y);
-  print("Ry", Ry);
   arena_matrix<vectorc_t> deltay(info.alloc_, Ry.size(), 1);
   Scalar prev_err = std::numeric_limits<Scalar>::infinity();
   while (maxerr > epsres) {
@@ -188,9 +177,6 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     success = false;
   }
   prev_err = maxerr;
-  print("maxerr", maxerr);
-  print("y_post", y.eval());
-  print("Ry_post", Ry);
   if constexpr (DenseOut) {
     auto u1
         = eval(info.alloc_, h / Scalar{2.0} * (info.integration_matrix_ * y));
@@ -210,7 +196,6 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
                            std::make_pair(ap, am));
   } else {
     auto u1 = (h / Scalar{2.0} * (info.quadwts_.dot(y)));
-    print("u1", u1);
     complex_t f1 = std::exp(u1);
     auto f2 = std::conj(f1);
     auto du2 = y.conjugate().eval();
@@ -221,14 +206,6 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
               / (du2(du2.size() - 1) - y(y.size() - 1));
     auto y1 = (ap * f1 + am * f2);
     auto dy1 = (ap * y * f1 + am * du2 * f2).eval();
-    print("quadwts", info.quadwts_);
-    print("ap", ap);
-    print("am", am);
-    print("f1", f1);
-    print("f2", f2);
-    print("du2", du2);
-    print("y1", y1);
-    print("dy1", dy1);
     Scalar phase = std::imag(f1);
     return std::make_tuple(success, y1, dy1(0), maxerr, phase,
                            arena_matrix<vectorc_t>(info.alloc_, y.size()),
