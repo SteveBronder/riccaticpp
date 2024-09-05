@@ -110,8 +110,17 @@ def Bremer237(l, n, eps, epsh, outdir, algo):
         info = ric.Init(w, g, 8, max(32, n), n, p)
         init_step = ric.choose_nonosc_stepsize(info, xi, 1.0, epsilon_h=epsh)
         for i in range(N):
-xs, ys, _, _, _, _, _, _ = ric.evolve(info=info, xi=xi, xf=xf, yi=yi, dyi=dyi, eps=eps, epsilon_h=epsh, init_stepsize=init_step, hard_stop=True)
-        import pdb; pdb.set_trace()
+            _, ys, _, _, _, _, _, _ = ric.evolve(
+                info=info,
+                xi=xi,
+                xf=xf,
+                yi=complex(yi),
+                dyi=complex(dyi),
+                eps=eps,
+                epsilon_h=epsh,
+                init_stepsize=init_step,
+                hard_stop=True,
+            )
         end = time.time_ns()
         ys = np.array(ys)
         # Compute statistics
