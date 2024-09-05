@@ -14,10 +14,10 @@
 
 namespace riccati {
 
-template <
-    typename SolverInfo, typename Scalar,
-    require_floating_point<value_type_t<Scalar>>* = nullptr,
-    require_not_same<typename std::decay_t<SolverInfo>::funtype, pybind11::object>* = nullptr>
+template <typename SolverInfo, typename Scalar,
+          require_floating_point<value_type_t<Scalar>>* = nullptr,
+          require_not_same<typename std::decay_t<SolverInfo>::funtype,
+                           pybind11::object>* = nullptr>
 inline auto gamma(SolverInfo&& info, const Scalar& x) {
   return info.gamma_fun_(x);
 }

@@ -63,8 +63,10 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
 template <typename SolverInfo, typename FloatingPoint>
 inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                 FloatingPoint h, FloatingPoint epsilon_h) {
-  auto t = eval(info.alloc_, (x0 + (h / 2.0) * (1.0 + info.xp_interp().array())).matrix());
-  auto s = eval(info.alloc_, (x0 + (h / 2.0) * (1.0 + info.xp().array())).matrix());
+  auto t = eval(info.alloc_,
+                (x0 + (h / 2.0) * (1.0 + info.xp_interp().array())).matrix());
+  auto s = eval(info.alloc_,
+                (x0 + (h / 2.0) * (1.0 + info.xp().array())).matrix());
   // TODO: Use a memory arena for these
   auto ws = omega(info, s).eval();
   auto gs = gamma(info, s).eval();

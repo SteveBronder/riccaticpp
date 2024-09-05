@@ -150,8 +150,8 @@ using require_same
     = std::enable_if_t<std::is_same<std::decay_t<T1>, std::decay_t<T2>>::value>;
 
 template <typename T1, typename T2>
-using require_not_same
-    = std::enable_if_t<!std::is_same<std::decay_t<T1>, std::decay_t<T2>>::value>;
+using require_not_same = std::enable_if_t<
+    !std::is_same<std::decay_t<T1>, std::decay_t<T2>>::value>;
 
 namespace internal {
 template <typename T>
@@ -172,11 +172,10 @@ struct value_type_impl<Eigen::Array<T, R, C>> {
   using type = T;
 };
 
-}
+}  // namespace internal
 
 template <typename T>
 using value_type_t = typename internal::value_type_impl<std::decay_t<T>>::type;
-
 
 namespace internal {
 template <typename T>
@@ -283,16 +282,12 @@ inline void print(const char* name, const Eigen::Matrix<T, R, C>& x) {
 #ifdef RICCATI_DEBUG
   std::cout << name << "(" << x.rows() << ", " << x.cols() << ")" << std::endl;
   if (R == 1 || C == 1) {
-  Eigen::IOFormat
-    numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
-    ", ", ", ", "", "",
-     "np.array([", "])");
+    Eigen::IOFormat numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
+                                ", ", ", ", "", "", "np.array([", "])");
     std::cout << x.transpose().eval().format(numpyFormat) << std::endl;
   } else {
-  Eigen::IOFormat
-    numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
-    ", ", ", ", "[", "]",
-     "np.array([", "])");
+    Eigen::IOFormat numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
+                                ", ", ", ", "[", "]", "np.array([", "])");
     std::cout << x.format(numpyFormat) << std::endl;
   }
 #endif
@@ -303,16 +298,12 @@ inline void print(const char* name, const Eigen::Array<T, R, C>& x) {
 #ifdef RICCATI_DEBUG
   std::cout << name << "(" << x.rows() << ", " << x.cols() << ")" << std::endl;
   if (R == 1 || C == 1) {
-  Eigen::IOFormat
-    numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
-    ", ", ", ", "", "",
-     "np.array([", "])");
+    Eigen::IOFormat numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
+                                ", ", ", ", "", "", "np.array([", "])");
     std::cout << x.transpose().eval().format(numpyFormat) << std::endl;
   } else {
-  Eigen::IOFormat
-    numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
-    ", ", ", ", "[", "]",
-     "np.array([", "])");
+    Eigen::IOFormat numpyFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
+                                ", ", ", ", "[", "]", "np.array([", "])");
     std::cout << x.format(numpyFormat) << std::endl;
   }
 #endif
@@ -342,7 +333,9 @@ inline void print(const char* name, const std::complex<T>& x) {
 template <typename T>
 inline void print(const char* name, const std::vector<T>& x) {
   for (int i = 0; i < x.size(); ++i) {
-    print((std::string(name) + std::string("[") + std::to_string(i) + "]").c_str(), x[i]);
+    print((std::string(name) + std::string("[") + std::to_string(i) + "]")
+              .c_str(),
+          x[i]);
   }
 }
 

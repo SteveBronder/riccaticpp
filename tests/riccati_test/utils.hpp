@@ -108,7 +108,6 @@ inline auto airy_bi_prime(T&& x) {
       .eval();
 }
 
-
 template <typename T>
 inline auto airy_i(T&& xi) {
   return eval(airy_ai(-xi)

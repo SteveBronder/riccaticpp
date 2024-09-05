@@ -231,20 +231,26 @@ RICCATI_ALWAYS_INLINE auto quad_weights(Integral n) {
     auto v = vector_t<Scalar>::Ones(n - 1).eval();
     // TODO: Smarter way to do this
     if (n % 2 == 0) {  // Check if n is even
-        w[0] = 1.0 / (std::pow(n, 2) - 1);
-        w[n] = w[0];
-        for (int k = 1; k < static_cast<int>(std::floor(n / 2.0)); ++k) {
-            v.array() -= 2.0 * ((2.0 * static_cast<Scalar>(k) * a.segment(1, n - 1)).array().cos()).array() / (4.0 * k * k - 1);
-        }
-        v.array() -= ((n * a.segment(1, n - 1)).array().cos())
-          / (std::pow(n, 2) - 1);
+      w[0] = 1.0 / (std::pow(n, 2) - 1);
+      w[n] = w[0];
+      for (int k = 1; k < static_cast<int>(std::floor(n / 2.0)); ++k) {
+        v.array() -= 2.0
+                     * ((2.0 * static_cast<Scalar>(k) * a.segment(1, n - 1))
+                            .array()
+                            .cos())
+                           .array()
+                     / (4.0 * k * k - 1);
+      }
+      v.array()
+          -= ((n * a.segment(1, n - 1)).array().cos()) / (std::pow(n, 2) - 1);
     } else {  // If n is odd
-        w[0] = 1.0 / std::pow(n, 2);
-        w[n] = w[0];
-        const auto max_val = static_cast<int>(std::floor((n + 1) / 2));
-        for (int k = 1; k < max_val; ++k) {
-            v.array() -= 2.0 * (2.0 * k * a.segment(1, n - 1).array()).cos() / (4.0 * k * k - 1.0);
-        }
+      w[0] = 1.0 / std::pow(n, 2);
+      w[n] = w[0];
+      const auto max_val = static_cast<int>(std::floor((n + 1) / 2));
+      for (int k = 1; k < max_val; ++k) {
+        v.array() -= 2.0 * (2.0 * k * a.segment(1, n - 1).array()).cos()
+                     / (4.0 * k * k - 1.0);
+      }
     }
     w.segment(1, n - 1) = (2.0 * v / n).array();  // Set weights
     return w;
@@ -270,33 +276,36 @@ RICCATI_ALWAYS_INLINE auto quad_weights(Integral n) {
  * @return std::pair<matrix_t<Scalar>, vector_t<Scalar>> - A pair consisting of:
  *         1. The differentiation matrix `D` of size
  * (n+1, n+1).
- *         2. vector_t<Scalar> (real) - The vector of Chebyshev nodes `x` of size
- * (n+1), ordered in descending order from 1 to -1.
+ *         2. vector_t<Scalar> (real) - The vector of Chebyshev nodes `x` of
+ * size (n+1), ordered in descending order from 1 to -1.
  */
 template <typename Scalar, typename Integral>
 RICCATI_ALWAYS_INLINE auto chebyshev(Integral n) {
-    // Case when n == 0
-    if (n == 0) {
-        matrix_t<Scalar> D{{1}};
-        vector_t<Scalar> x{{1}};
-        return std::make_pair(D, x);
-    } else {
-        // Create the vector of Chebyshev nodes
-        vector_t<Scalar> x = vector_t<Scalar>::LinSpaced(n + 1, 0.0, M_PI).array().cos();
-        vector_t<Scalar> b = vector_t<Scalar>::Ones(n + 1);
-        b(0) = 2;
-        b(n) = 2;
-        vector_t<Scalar> d = vector_t<Scalar>::Ones(n + 1);
-        for (int i = 1; i <= n; i += 2) {
-            d(i) = -1;
-        }
-        auto c = b.array() * d.array();
-        auto X = x * Eigen::RowVectorXd::Ones(n + 1);
-        matrix_t<Scalar> D = (c.matrix() * (1.0 / c).matrix().transpose().matrix()).array() /
-         ((X - X.transpose()).array() + matrix_t<Scalar>::Identity(n + 1, n + 1).array());
-        D.diagonal() -= D.rowwise().sum();
-        return std::make_pair(D, x);
+  // Case when n == 0
+  if (n == 0) {
+    matrix_t<Scalar> D{{1}};
+    vector_t<Scalar> x{{1}};
+    return std::make_pair(D, x);
+  } else {
+    // Create the vector of Chebyshev nodes
+    vector_t<Scalar> x
+        = vector_t<Scalar>::LinSpaced(n + 1, 0.0, M_PI).array().cos();
+    vector_t<Scalar> b = vector_t<Scalar>::Ones(n + 1);
+    b(0) = 2;
+    b(n) = 2;
+    vector_t<Scalar> d = vector_t<Scalar>::Ones(n + 1);
+    for (int i = 1; i <= n; i += 2) {
+      d(i) = -1;
     }
+    auto c = b.array() * d.array();
+    auto X = x * Eigen::RowVectorXd::Ones(n + 1);
+    matrix_t<Scalar> D
+        = (c.matrix() * (1.0 / c).matrix().transpose().matrix()).array()
+          / ((X - X.transpose()).array()
+             + matrix_t<Scalar>::Identity(n + 1, n + 1).array());
+    D.diagonal() -= D.rowwise().sum();
+    return std::make_pair(D, x);
+  }
 }
 
 /**
