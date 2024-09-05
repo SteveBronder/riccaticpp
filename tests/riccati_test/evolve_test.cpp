@@ -26,15 +26,14 @@ TEST_F(Riccati, bremer_nondense_output) {
     std::vector<double> epss = {1e-12, 1e-8};
     std::vector<double> epshs = {1e-13, 1e-9};
     std::vector<int> ns = {35, 20};
-    for (int j = 0; j < 1; ++j) {
-        double lambda_scalar = 100.0;
+    for (int j = 0; j < lambda_arr.size(); ++j) {
+        double lambda_scalar = lambda_arr[j];
         for (size_t i = 0; i < epss.size(); ++i) {
             double eps = epss[i];
             double epsh = epshs[i];
             int n = ns[i];
             // Find the corresponding reference value for ytrue and err
-            int index = j;
-            double ytrue = bremer_table(1, 1);
+            double ytrue = bremer_table(j, 1);
 //            double errref = bremer_table(index, 2);
             // Define omega and gamma functions
             auto omega_fun = [lambda_scalar](auto&& x) {

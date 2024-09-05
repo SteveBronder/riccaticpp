@@ -267,53 +267,34 @@ RICCATI_ALWAYS_INLINE auto quad_weights(Integral n) {
  * @tparam Scalar The scalar type of the Chebyshev nodes and differentiation
  * @tparam Integral The integral type of the number of Chebyshev nodes
  * @param n int - The number of Chebyshev nodes minus one.
- * @return std::pair<Eigen::MatrixXd, Eigen::VectorXd> - A pair consisting of:
+ * @return std::pair<matrix_t<Scalar>, vector_t<Scalar>> - A pair consisting of:
  *         1. The differentiation matrix `D` of size
  * (n+1, n+1).
- *         2. Eigen::VectorXd (real) - The vector of Chebyshev nodes `x` of size
+ *         2. vector_t<Scalar> (real) - The vector of Chebyshev nodes `x` of size
  * (n+1), ordered in descending order from 1 to -1.
  */
 template <typename Scalar, typename Integral>
 RICCATI_ALWAYS_INLINE auto chebyshev(Integral n) {
     // Case when n == 0
     if (n == 0) {
-        Eigen::MatrixXd D(1, 1);
-        D(0, 0) = 0;
-        Eigen::VectorXd x(1);
-        x(0) = 1;
+        matrix_t<Scalar> D{{1}};
+        vector_t<Scalar> x{{1}};
         return std::make_pair(D, x);
     } else {
         // Create the vector of Chebyshev nodes
-        Eigen::VectorXd a = Eigen::VectorXd::LinSpaced(n + 1, 0.0, M_PI);
-        Eigen::VectorXd x = a.array().cos();
-
-        // Create b and d vectors
-        Eigen::VectorXd b = Eigen::VectorXd::Ones(n + 1);
+        vector_t<Scalar> x = vector_t<Scalar>::LinSpaced(n + 1, 0.0, M_PI).array().cos();
+        vector_t<Scalar> b = vector_t<Scalar>::Ones(n + 1);
         b(0) = 2;
         b(n) = 2;
-
-        Eigen::VectorXd d = Eigen::VectorXd::Ones(n + 1);
+        vector_t<Scalar> d = vector_t<Scalar>::Ones(n + 1);
         for (int i = 1; i <= n; i += 2) {
             d(i) = -1;
         }
-
-        // Compute c = b * d
-        Eigen::VectorXd c = b.array() * d.array();
-
-        // Compute X matrix and dX matrix
-        Eigen::MatrixXd X = x * Eigen::RowVectorXd::Ones(n + 1); // Outer product
-        Eigen::MatrixXd dX = X - X.transpose();
-
-        // Create identity matrix
-        Eigen::MatrixXd I = Eigen::MatrixXd::Identity(n + 1, n + 1);
-
-        // Compute the differentiation matrix D
-        Eigen::MatrixXd D = (c * (1.0 / c.array()).transpose().eval().matrix()).matrix().array() / (dX.array() + I.array());
-
-        // Subtract the diagonal elements
-        Eigen::VectorXd row_sum = D.rowwise().sum();
-        D.diagonal() -= row_sum;
-
+        auto c = b.array() * d.array();
+        auto X = x * Eigen::RowVectorXd::Ones(n + 1);
+        matrix_t<Scalar> D = (c.matrix() * (1.0 / c).matrix().transpose().matrix()).array() /
+         ((X - X.transpose()).array() + matrix_t<Scalar>::Identity(n + 1, n + 1).array());
+        D.diagonal() -= D.rowwise().sum();
         return std::make_pair(D, x);
     }
 }
@@ -398,7 +379,7 @@ RICCATI_ALWAYS_INLINE auto interpolate(Vec1&& s, Vec2&& t, Allocator&& alloc) {
  *         2. Eigen::Vector<std::complex<Scalar>, Eigen::Dynamic, 1> - Numerical
  * estimate of the derivative of the solution at the end of the step, at `x0 +
  * h`.
- *         3. Eigen::VectorXd (real) - Chebyshev nodes used for the current
+ *         3. vector_t<Scalar> (real) - Chebyshev nodes used for the current
  * iteration of the spectral collocation method, scaled to lie in the interval
  * `[x0, x0 + h]`.
  */
