@@ -40,7 +40,7 @@ $$
 \gamma(x) = 0
 $$
 
-![bench1](./imgs/bremer_together.png)
+![bench1](./imgs/bremer_together1.png)
 
 The blue area in the graph of errors is the best possible lower bound for error calculated by Bremer. 
 Because the results of each algorithm are compared relative to Bremer's values, the algorithms may report 
