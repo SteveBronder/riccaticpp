@@ -10,11 +10,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED NO)
 cmake_policy(SET CMP0135 NEW)
 cmake_policy(SET CMP0077 NEW)
 set(CMAKE_CXX_EXTENSIONS NO)
-if (CMAKE_BUILD_TYPE MATCHES Release)
-#  set(CMAKE_VERBOSE_MAKEFILE NO)
-else()
+if (CMAKE_BUILD_TYPE MATCHES Debug)
   set(CMAKE_VERBOSE_MAKEFILE YES)
 endif()
+option(RICCATI_BUILD_TESTING "Build the test targets for the library" OFF)
+option(RICCATI_BUILD_BENCHMARKS "Build the benchmarks target" OFF)
+option(RICCATI_BUILD_DOXYGEN "Build the doxygen docs target" OFF)
+option(RICCATI_BUILD_PYTHON "Build the python target" OFF)
 
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(-Wno-deprecated-declarations)
@@ -76,7 +78,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/cmake_deps)
 
-set(RICCATI_BUILD_TESTING ${BUILD_TESTING} BOOL "Build the tests for the library")
 
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(
@@ -164,8 +165,4 @@ if (RICCATI_BUILD_PYTHON)
     #target_compile_options(pyriccaticpp PRIVATE -Og -glldb)
     # The install directory is the output (wheel) directory
     install(TARGETS pyriccaticpp DESTINATION pyriccaticpp)
-endif()
-
-if (RICCATI_BUILD_EXAMPLES)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/examples)
 endif()
