@@ -37,6 +37,7 @@ Below is a graph camparing several methods over Bremer's phase function method o
 
 $$
 \omega(x) = \lambda \sqrt{1 - x^2 \cos(3x)} \\
+
 \gamma(x) = 0
 $$
 
