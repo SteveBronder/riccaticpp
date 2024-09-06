@@ -1,4 +1,4 @@
-# method, l, eps, relerr, tsolve, errlessref, params
+method, l, eps, relerr, tsolve, errlessref, params
 wkbmarching, 10, 1.000000e-12, 1.95e-11, 0.234, False, (nint = 20)
 wkbmarching, 10, 1.000000e-06, 1.37e-05, 0.03, False, (nint = 20)
 wkbmarching, 100, 1.000000e-12, 2.78e-10, 3.14, False, (nint = 20)
