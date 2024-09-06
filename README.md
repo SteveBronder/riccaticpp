@@ -33,9 +33,18 @@ cd build/python/benchmark
 make -j4 figgen
 ```
 
+Below is a graph camparing several methods over Bremer's phase function method on Eq. (237) in Bremer 2018. The omega and gamma functions are given by the following.
+
+$$
+\omega(x) = \lambda \sqrt{1 - x^2 \cos(3x)}
+\gamma(x) = 0
+$$
+
 ![bench1](./imgs/bremer_together.png)
 
-
+The blue area in the graph of errors is the best possible lower bound for error calculated by Bremer. 
+Because the results of each algorithm are compared relative to Bremer's values, the algorithms may report 
+smaller values than the actual possible error, but should be considered bounded by the blue area.
 
 ## Documentation
 
