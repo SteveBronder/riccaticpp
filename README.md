@@ -36,11 +36,10 @@ make -j4 figgen
 Below is a graph camparing several methods over Bremer's phase function method on Eq. (237) in Bremer 2018. The omega and gamma functions are given by the following.
 
 $$
-\omega(x) = \lambda \sqrt{1 - x^2 \cos(3x)} 
-$$
-
-$$
-\gamma(x) = 0
+\begin{align}
+\omega(x) &= \lambda \sqrt{1 - x^2 \cos(3x)} \\
+\gamma(x) &= 0
+\end{align}
 $$
 
 ![bench1](./imgs/bremer_together1.png)
