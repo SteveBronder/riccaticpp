@@ -33,7 +33,7 @@ cd build/python/benchmark
 make -j4 figgen
 ```
 
-Below is a graph camparing several methods over Bremer's phase function method on Eq. (237) in Bremer 2018. The omega and gamma functions are given by the following.
+Below is a graph camparing several methods over Bremer's phase function method on Eq. (237) in [Bremer 2018](https://www.sciencedirect.com/science/article/pii/S1063520316300185). The omega and gamma functions are given by the following.
 
 $$
 \begin{align}
