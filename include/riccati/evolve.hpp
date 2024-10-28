@@ -438,6 +438,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   std::pair<complex_t, complex_t> a_pair;
   while (std::abs(xcurrent - xf) > Scalar(1e-8)
          && direction * xcurrent < direction * xf) {
+//    std::cout << "t = " << xcurrent << std::endl;
     Scalar phase{0.0};
     bool success = false;
     bool steptype = true;
@@ -445,8 +446,8 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
     int cheb_N = 0;
     arena_matrix<vectorc_t> un(info.alloc_, omega_n.size(), 1);
     arena_matrix<vectorc_t> d_un(info.alloc_, omega_n.size(), 1);
-    if ((direction * hosc > direction * hslo * 5.0)
-        && (direction * hosc * wnext / (2.0 * pi<Scalar>()) > 1.0)) {
+    if (direction * hosc > direction * hslo){
+//        && (direction * hosc * wnext / (2.0 * pi<Scalar>()) > 1.0)) {
       if (hard_stop) {
         if (direction * (xcurrent + hosc) > direction * xf) {
           hosc = xf - xcurrent;
@@ -462,11 +463,13 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       std::tie(success, y, dy, err, phase, un, d_un, a_pair)
           = osc_step<dense_output>(info, omega_n, gamma_n, xcurrent, hosc,
                                    yprev, dyprev, eps);
+//      std::cout << "Attempted osc step with hosc = " << hosc << ", successful? " << success << std::endl;
       steptype = 1;
     }
     while (!success) {
       std::tie(success, y, dy, err, y_eval, dy_eval, cheb_N)
           = nonosc_step(info, xcurrent, hslo, yprev, dyprev, eps);
+//      std::cout << "Attempted nonosc step with hslo = " << hslo << ", successful? " << success << std::endl;
       steptype = 0;
       if (!success) {
         hslo *= Scalar{0.5};
@@ -561,6 +564,9 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
     }
     info.alloc_.recover_memory();
   }
+  #ifdef RICCATI_DEBUG
+  std::cout << "Total riccati steps: " << successes.size() << std::endl;
+  #endif
   return std::make_tuple(xs, ys, dys, successes, phases, steptypes, yeval,
                          dyeval);
 }

@@ -405,17 +405,17 @@ RICCATI_ALWAYS_INLINE auto spectral_chebyshev(SolverInfo&& info, Scalar x0,
   auto ws = omega(info, x_scaled);
   auto gs = gamma(info, x_scaled);
   auto D2 = eval(info.alloc_,
-                 (4.0 / (h * h) * (D * D) + 4.0 / h * (gs.asDiagonal() * D)));
-  D2 += (ws.array().square()).matrix().asDiagonal();
+                 ((D * D) + h * (gs.asDiagonal() * D)));
+  D2 += ((ws * h / 2.0).array().square()).matrix().asDiagonal();
   const auto n = std::round(std::get<0>(info.chebyshev_[niter]));
   auto D2ic = eval(info.alloc_, matrix_t<complex_t>::Zero(n + 3, n + 1));
   D2ic.topRows(n + 1) = D2;
-  D2ic.row(n + 1) = 2.0 / h * D.row(D.rows() - 1);
+  D2ic.row(n + 1) = D.row(D.rows() - 1);
   auto ic = eval(info.alloc_, vectorc_t::Zero(n + 1));
   ic.coeffRef(n) = complex_t{1.0, 0.0};
   D2ic.row(n + 2) = ic;
   auto rhs = eval(info.alloc_, vectorc_t::Zero(n + 3));
-  rhs.coeffRef(n + 1) = dy0;
+  rhs.coeffRef(n + 1) = dy0 * h / 2.0;
   rhs.coeffRef(n + 2) = y0;
   auto y1 = eval(info.alloc_, D2ic.colPivHouseholderQr().solve(rhs));
   auto dy1 = eval(info.alloc_, 2.0 / h * (D * y1));
