@@ -469,7 +469,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
     while (!success) {
       std::tie(success, y, dy, err, y_eval, dy_eval, cheb_N)
           = nonosc_step(info, xcurrent, hslo, yprev, dyprev, eps);
-//      std::cout << "Attempted nonosc step with hslo = " << hslo << ", successful? " << success << std::endl;  
+//      std::cout << "Attempted nonosc step with hslo = " << hslo << ", successful? " << success << std::endl;
       steptype = 0;
       if (!success) {
         hslo *= Scalar{0.5};
@@ -564,7 +564,9 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
     }
     info.alloc_.recover_memory();
   }
+  #ifdef RICCATI_DEBUG
   std::cout << "Total riccati steps: " << successes.size() << std::endl;
+  #endif
   return std::make_tuple(xs, ys, dys, successes, phases, steptypes, yeval,
                          dyeval);
 }
