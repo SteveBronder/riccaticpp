@@ -162,7 +162,7 @@ template <typename Alt>
 inline auto hard_copy_arena(Alt&& x) {
   return std::move(x);
 }
-
+/*
 inline auto hard_copy_arena(const std::array<std::pair<riccati::LogInfo, std::size_t>, 5>& x) {
   std::array<std::pair<std::string, std::size_t>, 5> ret;
   for (std::size_t i = 0; i < 5; ++i) {
@@ -170,7 +170,7 @@ inline auto hard_copy_arena(const std::array<std::pair<riccati::LogInfo, std::si
   }
   return ret;
 }
-
+*/
 template <typename Tuple>
 auto hard_copy_arena(std::tuple<Tuple>&& tup) {
   return std::apply(
@@ -186,11 +186,19 @@ auto hard_copy_arena(std::tuple<Tuple>&& tup) {
 
 PYBIND11_MODULE(pyriccaticpp, m) {
   m.doc() = "Riccati solver module";
-  py::enum_<riccati::LogLevel>(m, "LogLevel")
-      .value("ERROR", riccati::LogLevel::ERROR)
-      .value("WARNING", riccati::LogLevel::WARNING)
-      .value("INFO", riccati::LogLevel::INFO)
-      .value("DEBUG", riccati::LogLevel::DEBUG)
+  py::enum_<riccati::LogLevel>(m, "LogLevel", py::arithmetic(), "Log levels for eveolve")
+      .value("ERROR", riccati::LogLevel::ERROR, "Report Only Errors")
+      .value("WARNING", riccati::LogLevel::WARNING, "Report up to warnings")
+      .value("INFO", riccati::LogLevel::INFO, "Report all information")
+      .value("DEBUG", riccati::LogLevel::DEBUG, "DEV ONLY: Report all information and debug info")
+      .export_values();
+  // Expose LogInfo
+  py::enum_<riccati::LogInfo>(m, "LogInfo", "Information types for logging")
+      .value("CHEBNODES", riccati::LogInfo::CHEBNODES)
+      .value("CHEBSTEP", riccati::LogInfo::CHEBSTEP)
+      .value("CHEBITS", riccati::LogInfo::CHEBITS)
+      .value("LS", riccati::LogInfo::LS)
+      .value("RICCSTEP", riccati::LogInfo::RICCSTEP)
       .export_values();
   py::class_<riccati::init_f64_i64>(m, "Init").def(
       py::init<py::object, py::object, int64_t, int64_t, int64_t, int64_t>(),
