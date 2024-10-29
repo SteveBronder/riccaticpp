@@ -27,7 +27,7 @@ TEST_F(Riccati, bremer_nondense_output) {
   std::vector<double> epss = {1e-12, 1e-8};
   std::vector<double> epshs = {1e-13, 1e-9};
   std::vector<int> ns = {35, 20};
-  for (int j = 0; j < lambda_arr.size(); ++j) {
+  for (std::size_t j = 0; j < lambda_arr.size(); ++j) {
     double lambda_scalar = lambda_arr[j];
     for (size_t i_eps = 0; i_eps < epss.size(); ++i_eps) {
       for (size_t i_ns = 0; i_ns < ns.size(); ++i_ns) {
@@ -53,7 +53,7 @@ TEST_F(Riccati, bremer_nondense_output) {
         Eigen::Matrix<double, 0, 0> x_eval;
         auto res = evolve(info, xi, xf, std::complex<double>(0.0),
                           std::complex<double>(lambda_scalar), eps, epsh,
-                          init_step, x_eval, true);
+                          init_step, x_eval, true, riccati::LogLevel::INFO);
         // Get the final value of y
         auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
                          std::get<1>(res).data(), std::get<1>(res).size())
@@ -352,8 +352,10 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_bremer) {
     return eval(matrix(l * sqrt(1.0 - square(array(x)) * cos(3.0 * array(x)))));
   };
   auto gamma_fun = [](auto&& x) { return riccati::zero_like(x); };
-  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 8,
-                                           32, 32, 32);
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator,
+    8, 32, 32, 32, riccati::DefaultLogger<std::stringstream>{
+    std::make_unique<std::stringstream>()
+  });
   auto xi = -1.0;
   auto xf = 1.0;
   auto eps = 1e-12;
@@ -362,15 +364,14 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_bremer) {
   std::complex<double> dyi = l;
   Eigen::Matrix<double, 0, 0> x_eval;
   auto res
-      = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 0.1, x_eval, true);
-  auto x_steps = Eigen::Map<Eigen::VectorXd>(std::get<0>(res).data(),
-                                             std::get<0>(res).size());
-
+      = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 0.1, x_eval, true,
+      LogLevel::INFO);
   auto ytrue = 0.2913132934408612;
   auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
       std::get<1>(res).data(), std::get<1>(res).size());
   auto y_err = std::abs((ytrue - y_est(y_est.size() - 1)) / ytrue);
   EXPECT_LE(y_err, 9e-11);
+  std::cout << "LOGS: \n" << info.logger().output_->str();
 }
 
 TEST_F(Riccati, vectorizer_evolve_nondense_fwd_hardstop_bremer) {

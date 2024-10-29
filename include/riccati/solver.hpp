@@ -2,6 +2,7 @@
 #define INCLUDE_RICCATI_SOLVER_HPP
 
 #include <riccati/arena_matrix.hpp>
+#include <riccati/logger.hpp>
 #include <riccati/memory.hpp>
 #include <riccati/chebyshev.hpp>
 #include <riccati/utils.hpp>
@@ -16,7 +17,7 @@ namespace riccati {
 
 template <typename SolverInfo, typename Scalar,
           require_floating_point<value_type_t<Scalar>>* = nullptr,
-          require_not_same<typename std::decay_t<SolverInfo>::funtype,
+          require_not_same<typename std::decay_t<SolverInfo>::gamma_type,
                            pybind11::object>* = nullptr>
 inline auto gamma(SolverInfo&& info, const Scalar& x) {
   return info.gamma_fun_(x);
@@ -25,16 +26,28 @@ inline auto gamma(SolverInfo&& info, const Scalar& x) {
 template <
     typename SolverInfo, typename Scalar,
     require_floating_point<value_type_t<Scalar>>* = nullptr,
-    std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::funtype,
+    std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::omega_type,
                                    pybind11::object>::value>* = nullptr>
 inline auto omega(SolverInfo&& info, const Scalar& x) {
   return info.omega_fun_(x);
 }
 
-// OmegaFun / GammaFun take in a scalar and return a scalar
+/**
+ * @brief Class containing information about the solver.
+ * @tparam OmegaFun Type of the frequency function. Must have a valid `operator()`
+ *  whose input size and type is the same as its output size and type.
+ * @tparam GammaFun Type of the friction function. Must have a valid `operator()`
+ *  whose input size and type is the same as its output size and type.
+ * @tparam Scalar_ Numeric scalar type, typically float or double.
+ * @tparam Integral_ Numeric integral type, typically int or long.
+ * @tparam Allocator Type of the allocator for the arena memory pool.
+ * @tparam Logger Type of the logger for the solver. Must inherit from
+ * @ref riccati::LoggerBase.
+ */
 template <typename OmegaFun, typename GammaFun, typename Scalar_,
           typename Integral_,
-          typename Allocator = arena_allocator<Scalar_, arena_alloc>>
+          typename Allocator = arena_allocator<Scalar_, arena_alloc>,
+          typename Logger = ::riccati::EmptyLogger>
 class SolverInfo {
  public:
   using Scalar = Scalar_;
@@ -43,7 +56,8 @@ class SolverInfo {
   using matrixd_t = matrix_t<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   using vectord_t = vector_t<Scalar>;
-  using funtype = std::decay_t<OmegaFun>;
+  using gamma_type = std::decay_t<GammaFun>;
+  using omega_type = std::decay_t<OmegaFun>;
   // Frequency function
   OmegaFun omega_fun_;
   // Friction function
@@ -57,7 +71,6 @@ class SolverInfo {
   // Lengths of node vectors
   Integral n_idx_;
   Integral p_idx_;
-
   /**
    * Values of the independent variable evaluated at `p` points
    * over the interval [x, x + `h`] lying in between Chebyshev nodes, where x is
@@ -89,7 +102,7 @@ class SolverInfo {
   Integral n_;
   // (Number of Chebyshev nodes - 1) to use for estimating Riccati stepsizes.
   Integral p_;
-
+  Logger logger_;
  private:
   inline auto build_chebyshev(Integral nini, Integral n_nodes, Integral n,
                               Integral p) {
@@ -140,6 +153,7 @@ class SolverInfo {
    */
   template <typename OmegaFun_, typename GammaFun_, typename Allocator_>
   SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Allocator_&& alloc,
+             Logger&& logger,
              Integral nini, Integral nmax, Integral n, Integral p)
       : omega_fun_(std::forward<OmegaFun_>(omega_fun)),
         gamma_fun_(std::forward<GammaFun_>(gamma_fun)),
@@ -166,38 +180,29 @@ class SolverInfo {
         nini_(nini),
         nmax_(nmax),
         n_(n),
-        p_(p) {}
+        p_(p),
+        logger_(std::move(logger)) {
+        }
 
   template <typename OmegaFun_, typename GammaFun_>
   SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Integral nini,
              Integral nmax, Integral n, Integral p)
-      : omega_fun_(std::forward<OmegaFun_>(omega_fun)),
-        gamma_fun_(std::forward<GammaFun_>(gamma_fun)),
-        alloc_(),
-        n_nodes_(log2(nmax / nini) + 1),
-        chebyshev_(build_chebyshev(nini, n_nodes_, n, p)),
-        n_idx_(std::distance(
-            chebyshev_.begin(),
-            std::find_if(chebyshev_.begin(), chebyshev_.end(),
-                         [n](auto& x) { return std::get<0>(x) == n; }))),
-        p_idx_(std::distance(
-            chebyshev_.begin(),
-            std::find_if(chebyshev_.begin(), chebyshev_.end(),
-                         [p](auto& x) { return std::get<0>(x) == p; }))),
-        xp_interp_((vector_t<Scalar>::LinSpaced(
-                        p, pi<Scalar>() / (2.0 * p),
-                        pi<Scalar>() * (1.0 - (1.0 / (2.0 * p))))
-                        .array())
-                       .cos()
-                       .matrix()),
-        L_(interpolate(this->xp(), xp_interp_, dummy_allocator{})),
-        quadwts_(quad_weights<Scalar>(n)),
-        integration_matrix_(integration_matrix<Scalar>(n + 1)),
-        nini_(nini),
-        nmax_(nmax),
-        n_(n),
-        p_(p) {}
-
+      : SolverInfo(std::forward<OmegaFun_>(omega_fun),
+                   std::forward<GammaFun_>(gamma_fun), Allocator{},
+                   Logger{}, nini, nmax, n, p) {}
+  template <typename OmegaFun_, typename GammaFun_, typename Allocator_>
+  SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Allocator_&& alloc, Integral nini,
+             Integral nmax, Integral n, Integral p)
+      : SolverInfo(std::forward<OmegaFun_>(omega_fun),
+                   std::forward<GammaFun_>(gamma_fun),
+                   std::forward<Allocator_>(alloc),
+                   Logger{}, nini, nmax, n, p) {}
+  auto info() const {
+    return std::array<std::pair<LogInfo, std::size_t>, 5>{
+      std::make_pair(LogInfo::CHEBNODES, chebyshev_.size()),
+      std::make_pair(LogInfo::CHEBSTEP, 0), std::make_pair(LogInfo::CHEBITS, 0),
+      std::make_pair(LogInfo::LS, 1), std::make_pair(LogInfo::RICCSTEP, 0)};
+  }
   void mem_info() {
 #ifdef RICCATI_DEBUG
     auto* mem = alloc_.alloc_;
@@ -247,6 +252,8 @@ class SolverInfo {
    * stepsizes).
    */
   RICCATI_ALWAYS_INLINE const auto& L() const noexcept { return L_; }
+
+  RICCATI_ALWAYS_INLINE Logger& logger() noexcept { return logger_; }
 };
 
 /**
@@ -269,14 +276,14 @@ class SolverInfo {
  * steps.
  */
 template <typename Scalar, typename OmegaFun, typename Allocator,
-          typename GammaFun, typename Integral>
+          typename GammaFun, typename Integral, typename Logger = ::riccati::EmptyLogger>
 inline auto make_solver(OmegaFun&& omega_fun, GammaFun&& gamma_fun,
                         Allocator&& alloc, Integral nini, Integral nmax,
-                        Integral n, Integral p) {
+                        Integral n, Integral p, Logger&& logger = Logger{}) {
   return SolverInfo<std::decay_t<OmegaFun>, std::decay_t<GammaFun>, Scalar,
-                    Integral, std::decay_t<Allocator>>(
+                    Integral, std::decay_t<Allocator>, std::decay_t<Logger>>(
       std::forward<OmegaFun>(omega_fun), std::forward<GammaFun>(gamma_fun),
-      std::forward<Allocator>(alloc), nini, nmax, n, p);
+      std::forward<Allocator>(alloc), std::move(logger), nini, nmax, n, p);
 }
 
 }  // namespace riccati
