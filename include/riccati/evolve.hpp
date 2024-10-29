@@ -609,7 +609,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
     }
   }
   return std::make_tuple(xs, ys, dys, successes, phases, steptypes, yeval,
-                         dyeval, solver_counts);
+                        dyeval, 1.0);
 }
 
 }  // namespace riccati

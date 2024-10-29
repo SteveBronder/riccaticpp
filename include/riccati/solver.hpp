@@ -187,16 +187,63 @@ class SolverInfo {
   template <typename OmegaFun_, typename GammaFun_>
   SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Integral nini,
              Integral nmax, Integral n, Integral p)
-      : SolverInfo(std::forward<OmegaFun_>(omega_fun),
-                   std::forward<GammaFun_>(gamma_fun), Allocator{},
-                   Logger{}, nini, nmax, n, p) {}
+      : omega_fun_(std::forward<OmegaFun_>(omega_fun)),
+        gamma_fun_(std::forward<GammaFun_>(gamma_fun)),
+        alloc_(),
+        n_nodes_(log2(nmax / nini) + 1),
+        chebyshev_(build_chebyshev(nini, n_nodes_, n, p)),
+        n_idx_(std::distance(
+            chebyshev_.begin(),
+            std::find_if(chebyshev_.begin(), chebyshev_.end(),
+                         [n](auto& x) { return std::get<0>(x) == n; }))),
+        p_idx_(std::distance(
+            chebyshev_.begin(),
+            std::find_if(chebyshev_.begin(), chebyshev_.end(),
+                         [p](auto& x) { return std::get<0>(x) == p; }))),
+        xp_interp_((vector_t<Scalar>::LinSpaced(
+                        p, pi<Scalar>() / (2.0 * p),
+                        pi<Scalar>() * (1.0 - (1.0 / (2.0 * p))))
+                        .array())
+                       .cos()
+                       .matrix()),
+        L_(interpolate(this->xp(), xp_interp_, dummy_allocator{})),
+        quadwts_(quad_weights<Scalar>(n)),
+        integration_matrix_(integration_matrix<Scalar>(n + 1)),
+        nini_(nini),
+        nmax_(nmax),
+        n_(n),
+        p_(p),
+        logger_() {}
   template <typename OmegaFun_, typename GammaFun_, typename Allocator_>
   SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Allocator_&& alloc, Integral nini,
              Integral nmax, Integral n, Integral p)
-      : SolverInfo(std::forward<OmegaFun_>(omega_fun),
-                   std::forward<GammaFun_>(gamma_fun),
-                   std::forward<Allocator_>(alloc),
-                   Logger{}, nini, nmax, n, p) {}
+      : omega_fun_(std::forward<OmegaFun_>(omega_fun)),
+        gamma_fun_(std::forward<GammaFun_>(gamma_fun)),
+        alloc_(std::forward<Allocator_>(alloc)),
+        n_nodes_(log2(nmax / nini) + 1),
+        chebyshev_(build_chebyshev(nini, n_nodes_, n, p)),
+        n_idx_(std::distance(
+            chebyshev_.begin(),
+            std::find_if(chebyshev_.begin(), chebyshev_.end(),
+                         [n](auto& x) { return std::get<0>(x) == n; }))),
+        p_idx_(std::distance(
+            chebyshev_.begin(),
+            std::find_if(chebyshev_.begin(), chebyshev_.end(),
+                         [p](auto& x) { return std::get<0>(x) == p; }))),
+        xp_interp_((vector_t<Scalar>::LinSpaced(
+                        p, pi<Scalar>() / (2.0 * p),
+                        pi<Scalar>() * (1.0 - (1.0 / (2.0 * p))))
+                        .array())
+                       .cos()
+                       .matrix()),
+        L_(interpolate(this->xp(), xp_interp_, dummy_allocator{})),
+        quadwts_(quad_weights<Scalar>(n)),
+        integration_matrix_(integration_matrix<Scalar>(n + 1)),
+        nini_(nini),
+        nmax_(nmax),
+        n_(n),
+        p_(p),
+        logger_() {}
   auto info() const {
     return std::array<std::pair<LogInfo, std::size_t>, 5>{
       std::make_pair(LogInfo::CHEBNODES, chebyshev_.size()),

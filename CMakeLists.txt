@@ -158,7 +158,7 @@ if (RICCATI_BUILD_PYTHON)
     target_link_libraries(pyriccaticpp PRIVATE pybind11::headers riccati Eigen3::Eigen)
 
     # This is passing in the version as a define just as an example
-    target_compile_definitions(pyriccaticpp PRIVATE VERSION_INFO=${PROJECT_VERSION})
+    target_compile_definitions(pyriccaticpp PRIVATE VERSION_INFO=${PROJECT_VERSION} RICCATI_PYTHON)
     if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(pyriccaticpp PRIVATE -Wno-deprecated-declarations)
     endif()

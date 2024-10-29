@@ -154,13 +154,21 @@ using init_f64_i64
     riccati::SharedLogger<riccati::py_print>>;
 
 template <typename Mat>
-auto hard_copy_arena(arena_matrix<Mat>&& x) {
+inline auto hard_copy_arena(arena_matrix<Mat>&& x) {
   return Mat(x);
 }
 
 template <typename Alt>
-auto hard_copy_arena(Alt&& x) {
+inline auto hard_copy_arena(Alt&& x) {
   return std::move(x);
+}
+
+inline auto hard_copy_arena(const std::array<std::pair<riccati::LogInfo, std::size_t>, 5>& x) {
+  std::array<std::pair<std::string, std::size_t>, 5> ret;
+  for (std::size_t i = 0; i < 5; ++i) {
+    ret[i] = {riccati::to_string(x[i].first), x[i].second};
+  }
+  return ret;
 }
 
 template <typename Tuple>
@@ -287,14 +295,14 @@ PYBIND11_MODULE(pyriccaticpp, m) {
         if (py::isinstance<riccati::init_f64_i64>(info)) {
           auto info_ = info.cast<riccati::init_f64_i64>();
           if (x_eval.is_none()) {
-            auto ret = riccati::evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
-                                       init_stepsize, hard_stop, log_level);
+            auto ret = riccati::hard_copy_arena(riccati::evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
+                                       init_stepsize, hard_stop, log_level));
             info_.alloc_.recover_memory();
             return ret;
           } else {
-            auto ret = riccati::evolve(
+            auto ret = riccati::hard_copy_arena(riccati::evolve(
                 info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize,
-                x_eval.cast<Eigen::VectorXd>(), hard_stop, log_level);
+                x_eval.cast<Eigen::VectorXd>(), hard_stop, log_level));
             info_.alloc_.recover_memory();
             return ret;
           }
