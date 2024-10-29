@@ -28,7 +28,7 @@ def test_bremer_nondense():
                 p = n
                 info = ric.Init(w, g, 8, max(32, n), n, p)
                 init_step = ric.choose_nonosc_stepsize(info, xi, 1.0, epsilon_h=epsh)
-                xs, ys, dys, ss, ps, stypes, _, _ = ric.evolve(
+                xs, ys, dys, ss, ps, stypes, _, _, _ = ric.evolve(
                     info=info,
                     xi=xi,
                     xf=xf,
@@ -63,7 +63,7 @@ def test_denseoutput():
     xeval = np.linspace(xi, xf, Neval)
     hi = 2.0 * xi
     hi = ric.choose_osc_stepsize(info, xi, hi, epsh)[0]
-    xs, ys, dys, ss, ps, stypes, yeval, dyeval = ric.evolve(
+    xs, ys, dys, ss, ps, stypes, yeval, dyeval,_ = ric.evolve(
         info, xi, xf, yi, dyi, eps, epsh, init_stepsize=hi, x_eval=xeval
     )
     ys_true = np.array([mpmath.airyai(-x) + 1j * mpmath.airybi(-x) for x in xs])
@@ -102,7 +102,7 @@ def test_denseoutput_xbac():
     dyi = complex(-sp.airy(-xi)[1] - 1j * sp.airy(-xi)[3])
     Neval = int(1e2)
     xeval = np.linspace(xf, xi, Neval)
-    xs, ys, dys, ss, ps, stypes, yeval, dyeval = ric.evolve(
+    xs, ys, dys, ss, ps, stypes, yeval, dyeval,_ = ric.evolve(
         info, xi, xf, yi, dyi, eps, epsh, init_stepsize=0.01, x_eval=xeval
     )
     ytrue = np.array([mpmath.airyai(-x) + 1j * mpmath.airybi(-x) for x in xeval])
@@ -134,7 +134,7 @@ def test_denseoutput_err():
     # Turn on warnings
     warnings.simplefilter("always")
     with pytest.raises(Exception):
-        xs, ys, dys, ss, ps, stypes, yeval, dyeval = ric.evolve(
+        xs, ys, dys, ss, ps, stypes, yeval, dyeval,_ = ric.evolve(
             info, xi, xf, yi, dyi, eps, epsh, init_stepsize=0.01, x_eval=xeval
         )
 
@@ -149,7 +149,7 @@ def test_solve_airy():
     epsh = 1e-13
     yi = complex(sp.airy(-xi)[0] + 1j * sp.airy(-xi)[2])
     dyi = complex(-sp.airy(-xi)[1] - 1j * sp.airy(-xi)[3])
-    xs, ys, dys, ss, ps, stypes, yeval, dyeval = ric.evolve(
+    xs, ys, dys, ss, ps, stypes, yeval, dyeval,_ = ric.evolve(
         info, xi, xf, yi, dyi, eps=eps, epsilon_h=epsh, init_stepsize=0.01
     )
     xs = np.array(xs)
@@ -171,7 +171,7 @@ def test_solve_airy_backwards():
     epsh = 1e-13
     yi = complex(sp.airy(-xi)[0] + 1j * sp.airy(-xi)[2])
     dyi = complex(-sp.airy(-xi)[1] - 1j * sp.airy(-xi)[3])
-    xs, ys, dys, ss, ps, stypes, yeval, dyeval = ric.evolve(
+    xs, ys, dys, ss, ps, stypes, yeval, dyeval,_ = ric.evolve(
         info,
         xi,
         xf,
@@ -203,7 +203,7 @@ def test_denseoutput_backwards_xfor():
     dyi = complex(-sp.airy(-xi)[1] - 1j * sp.airy(-xi)[3])
     Neval = int(1e2)
     xeval = np.linspace(xi, xf, Neval)
-    xs, ys, dys, ss, ps, stypes, yeval, dyeval = ric.evolve(
+    xs, ys, dys, ss, ps, stypes, yeval, dyeval,_ = ric.evolve(
         info,
         xi,
         xf,
@@ -234,7 +234,7 @@ def test_denseoutput_backwards_xback():
     dyi = complex(-sp.airy(-xi)[1] - 1j * sp.airy(-xi)[3])
     Neval = int(1e2)
     xeval = np.flip(np.linspace(xf, xi, Neval))
-    xs, ys, dys, ss, ps, stypes, yeval, dyeval = ric.evolve(
+    xs, ys, dys, ss, ps, stypes, yeval, dyeval,_ = ric.evolve(
         info,
         xi,
         xf,
@@ -285,7 +285,7 @@ def test_solve_burst():
     eps = 1e-10
     epsh = 1e-12
     info = ric.Init(w, g, 16, 32, 32, 32)
-    xs, ys, dys, ss, ps, types, yeval, dyeval = ric.evolve(
+    xs, ys, dys, ss, ps, types, yeval, dyeval,_ = ric.evolve(
         info, xi, xf, yi, dyi, eps=eps, epsilon_h=epsh
     )
     xs = np.array(xs)
