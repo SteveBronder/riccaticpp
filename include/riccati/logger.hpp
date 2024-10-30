@@ -186,8 +186,7 @@ class PtrLogger : public LoggerBase<PtrLogger<Ptr>> {
       std::unique_ptr<Stream, StreamDeleter>&& output)
       : output_(std::move(output)) {}
   template <typename Stream>
-  RICCATI_NO_INLINE explicit PtrLogger(
-      const std::shared_ptr<Stream>& output)
+  RICCATI_NO_INLINE explicit PtrLogger(const std::shared_ptr<Stream>& output)
       : output_(output) {}
 
   /**
@@ -211,14 +210,12 @@ class PtrLogger : public LoggerBase<PtrLogger<Ptr>> {
     full_msg += std::string("]");
     *output_ << full_msg + "\n";
   }
-
 };
 
 template <typename Stream, typename StreamDeleter = std::default_delete<Stream>>
 using DefaultLogger = PtrLogger<std::unique_ptr<Stream, StreamDeleter>>;
 template <typename Stream>
 using SharedLogger = PtrLogger<std::shared_ptr<Stream>>;
-
 
 }  // namespace riccati
 
