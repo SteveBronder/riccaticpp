@@ -342,12 +342,20 @@ inline void print(const char* name, const std::vector<T>& x) {
   }
 }
 
+inline void local_time(const time_t* timer, struct tm* buf) noexcept {
+#ifdef _WIN32
+  localtime_s(timer, buf);
+#else
+  localtime_r(timer, buf);
+#endif
+}
+
 /* Get the current time with microseconds */
 inline std::string time_mi() noexcept {
     auto now = std::chrono::system_clock::now();
     time_t epoch = std::chrono::system_clock::to_time_t(now);
     struct tm tms{};
-    localtime_r(&epoch, &tms);
+    ::riccati::local_time(&epoch, &tms);
     auto fractional_seconds = now - std::chrono::system_clock::from_time_t(epoch);
     int micros = std::chrono::duration_cast<std::chrono::microseconds>(fractional_seconds).count();
     // Format the time string
