@@ -2,6 +2,7 @@
 #define INCLUDE_RICCATI_CHEBYSHEV_HPP
 
 #include <riccati/arena_matrix.hpp>
+#include <riccati/logger.hpp>
 #include <riccati/memory.hpp>
 #include <riccati/utils.hpp>
 #include <unsupported/Eigen/FFT>

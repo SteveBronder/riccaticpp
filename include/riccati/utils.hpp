@@ -7,6 +7,9 @@
 #include <iostream>
 #include <iomanip>
 #endif
+#include <chrono>
+#include <ctime>
+#include <stdio.h>
 namespace pybind11 {
 class object;
 }
@@ -338,6 +341,32 @@ inline void print(const char* name, const std::vector<T>& x) {
           x[i]);
   }
 }
+
+inline void local_time(const time_t* timer, struct tm* buf) noexcept {
+#ifdef _WIN32
+  // Windows switches the order of the arguments?
+  localtime_s(buf, timer);
+#else
+  localtime_r(timer, buf);
+#endif
+}
+
+/* Get the current time with microseconds */
+inline std::string time_mi() noexcept {
+    auto now = std::chrono::system_clock::now();
+    time_t epoch = std::chrono::system_clock::to_time_t(now);
+    struct tm tms{};
+    ::riccati::local_time(&epoch, &tms);
+    auto fractional_seconds = now - std::chrono::system_clock::from_time_t(epoch);
+    int micros = std::chrono::duration_cast<std::chrono::microseconds>(fractional_seconds).count();
+    // Format the time string
+    char buf[sizeof "[9999-12-31 29:59:59.999999]"];
+    size_t nb = strftime(buf, sizeof(buf), "[%Y-%m-%d %H:%M:%S", &tms);
+    nb += snprintf(&buf[nb], sizeof(buf) - nb, ".%06d]", micros);
+    // Return the formatted string
+    return std::string(buf, nb);
+}
+
 
 }  // namespace riccati
 

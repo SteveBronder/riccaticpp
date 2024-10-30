@@ -2,6 +2,7 @@
 #define INCLUDE_RICCATI_STEP_HPP
 
 #include <riccati/chebyshev.hpp>
+#include <riccati/logger.hpp>
 #include <Eigen/Dense>
 #include <complex>
 #include <cmath>

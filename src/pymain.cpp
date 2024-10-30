@@ -53,7 +53,7 @@ struct is_scalar : bool_constant<std::is_floating_point<std::decay_t<T>>::value
 
 template <
     typename SolverInfo, typename Scalar,
-    std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::funtype,
+    std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::gamma_type,
                                   pybind11::object>::value>* = nullptr,
     std::enable_if_t<is_scalar<Scalar>::value>* = nullptr>
 inline auto gamma(SolverInfo&& info, const Scalar& x) {
@@ -62,7 +62,7 @@ inline auto gamma(SolverInfo&& info, const Scalar& x) {
 
 template <
     typename SolverInfo, typename Scalar,
-    std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::funtype,
+    std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::omega_type,
                                   pybind11::object>::value>* = nullptr,
     std::enable_if_t<is_scalar<Scalar>::value>* = nullptr>
 inline auto omega(SolverInfo&& info, const Scalar& x) {
@@ -70,7 +70,7 @@ inline auto omega(SolverInfo&& info, const Scalar& x) {
 }
 template <
     typename SolverInfo, typename Scalar,
-    std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::funtype,
+    std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::gamma_type,
                                   pybind11::object>::value>* = nullptr,
     std::enable_if_t<is_eigen<Scalar>::value>* = nullptr>
 inline auto gamma(SolverInfo&& info, const Scalar& x) {
@@ -80,7 +80,7 @@ inline auto gamma(SolverInfo&& info, const Scalar& x) {
 
 template <
     typename SolverInfo, typename Scalar,
-    std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::funtype,
+    std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::omega_type,
                                   pybind11::object>::value>* = nullptr,
     std::enable_if_t<is_eigen<Scalar>::value>* = nullptr>
 inline auto omega(SolverInfo&& info, const Scalar& x) {
@@ -92,10 +92,10 @@ template <typename SolverInfo, typename Scalar>
 inline auto evolve(SolverInfo& info, Scalar xi, Scalar xf,
                    std::complex<Scalar> yi, std::complex<Scalar> dyi,
                    Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
-                   bool hard_stop = false) {
+                   bool hard_stop = false, riccati::LogLevel log_level = riccati::LogLevel::ERROR) {
   Eigen::Matrix<double, 0, 0> not_used;
   return evolve(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, not_used,
-                hard_stop);
+                hard_stop, log_level);
 }
 
 template <typename SolverInfo, typename Scalar>
@@ -141,19 +141,36 @@ inline FloatingPoint choose_nonosc_stepsize_(SolverInfo& info, FloatingPoint x0,
   return choose_nonosc_stepsize(info, x0, h, epsilon_h);
   info.alloc_.recover_memory();
 }
+struct py_print {
+  template <typename... Args>
+  py_print& operator<<(Args&&... args) {
+    py::print(std::forward<Args>(args)...);
+    return *this;
+  }
+};
 using init_f64_i64
-    = riccati::SolverInfo<py::object, py::object, double, int64_t>;
+    = riccati::SolverInfo<py::object, py::object, double, int64_t,
+    riccati::arena_allocator<double, riccati::arena_alloc>,
+    riccati::SharedLogger<riccati::py_print>>;
 
 template <typename Mat>
-auto hard_copy_arena(arena_matrix<Mat>&& x) {
+inline auto hard_copy_arena(arena_matrix<Mat>&& x) {
   return Mat(x);
 }
 
 template <typename Alt>
-auto hard_copy_arena(Alt&& x) {
+inline auto hard_copy_arena(Alt&& x) {
   return std::move(x);
 }
-
+/*
+inline auto hard_copy_arena(const std::array<std::pair<riccati::LogInfo, std::size_t>, 5>& x) {
+  std::array<std::pair<std::string, std::size_t>, 5> ret;
+  for (std::size_t i = 0; i < 5; ++i) {
+    ret[i] = {riccati::to_string(x[i].first), x[i].second};
+  }
+  return ret;
+}
+*/
 template <typename Tuple>
 auto hard_copy_arena(std::tuple<Tuple>&& tup) {
   return std::apply(
@@ -163,10 +180,26 @@ auto hard_copy_arena(std::tuple<Tuple>&& tup) {
       },
       std::move(tup));
 }
+
+
 }  // namespace riccati
 
 PYBIND11_MODULE(pyriccaticpp, m) {
   m.doc() = "Riccati solver module";
+  py::enum_<riccati::LogLevel>(m, "LogLevel", py::arithmetic(), "Log levels for eveolve")
+      .value("ERROR", riccati::LogLevel::ERROR, "Report Only Errors")
+      .value("WARNING", riccati::LogLevel::WARNING, "Report up to warnings")
+      .value("INFO", riccati::LogLevel::INFO, "Report all information")
+      .value("DEBUG", riccati::LogLevel::DEBUG, "DEV ONLY: Report all information and debug info")
+      .export_values();
+  // Expose LogInfo
+  py::enum_<riccati::LogInfo>(m, "LogInfo", "Information types for logging")
+      .value("CHEBNODES", riccati::LogInfo::CHEBNODES)
+      .value("CHEBSTEP", riccati::LogInfo::CHEBSTEP)
+      .value("CHEBITS", riccati::LogInfo::CHEBITS)
+      .value("LS", riccati::LogInfo::LS)
+      .value("RICCSTEP", riccati::LogInfo::RICCSTEP)
+      .export_values();
   py::class_<riccati::init_f64_i64>(m, "Init").def(
       py::init<py::object, py::object, int64_t, int64_t, int64_t, int64_t>(),
       R"pbdoc(
@@ -221,8 +254,8 @@ PYBIND11_MODULE(pyriccaticpp, m) {
     """
     Solves the differential equation y'' + 2gy' + w^2y = 0 over a given interval.
 
-    This function solves the differential equation on the interval (xi, xf), starting from the initial conditions 
-    y(xi) = yi and y'(xi) = dyi. It keeps the residual of the ODE below eps, and returns an interpolated solution 
+    This function solves the differential equation on the interval (xi, xf), starting from the initial conditions
+    y(xi) = yi and y'(xi) = dyi. It keeps the residual of the ODE below eps, and returns an interpolated solution
     (dense output) at the points specified in x_eval.
 
     Parameters
@@ -265,18 +298,19 @@ PYBIND11_MODULE(pyriccaticpp, m) {
       "evolve",
       [](py::object& info, double xi, double xf, std::complex<double> yi,
          std::complex<double> dyi, double eps, double epsilon_h,
-         double init_stepsize, py::object x_eval, bool hard_stop) {
+         double init_stepsize, py::object x_eval, bool hard_stop,
+         riccati::LogLevel log_level) {
         if (py::isinstance<riccati::init_f64_i64>(info)) {
           auto info_ = info.cast<riccati::init_f64_i64>();
           if (x_eval.is_none()) {
-            auto ret = riccati::evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
-                                       init_stepsize, hard_stop);
+            auto ret = riccati::hard_copy_arena(riccati::evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
+                                       init_stepsize, hard_stop, log_level));
             info_.alloc_.recover_memory();
             return ret;
           } else {
-            auto ret = riccati::evolve(
+            auto ret = riccati::hard_copy_arena(riccati::evolve(
                 info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize,
-                x_eval.cast<Eigen::VectorXd>(), hard_stop);
+                x_eval.cast<Eigen::VectorXd>(), hard_stop, log_level));
             info_.alloc_.recover_memory();
             return ret;
           }
@@ -287,12 +321,13 @@ PYBIND11_MODULE(pyriccaticpp, m) {
       py::arg("info"), py::arg("xi"), py::arg("xf"), py::arg("yi"),
       py::arg("dyi"), py::arg("eps"), py::arg("epsilon_h"),
       py::arg("init_stepsize") = 0.01, py::arg("x_eval") = py::none(),
-      py::arg("hard_stop") = false, R"pbdoc(
+      py::arg("hard_stop") = false, py::arg("log_level") = riccati::LogLevel::ERROR,
+       R"pbdoc(
     """
     Solves the differential equation y'' + 2gy' + w^2y = 0 over a given interval.
 
-    This function solves the differential equation on the interval (xi, xf), starting from the initial conditions 
-    y(xi) = yi and y'(xi) = dyi. It keeps the residual of the ODE below eps, and returns an interpolated solution 
+    This function solves the differential equation on the interval (xi, xf), starting from the initial conditions
+    y(xi) = yi and y'(xi) = dyi. It keeps the residual of the ODE below eps, and returns an interpolated solution
     (dense output) at the points specified in x_eval.
 
     Parameters
@@ -408,24 +443,24 @@ PYBIND11_MODULE(pyriccaticpp, m) {
                 """
     Chooses an appropriate step size for the Riccati step based on the accuracy of Chebyshev interpolation of w(x) and g(x).
 
-    This function determines an optimal step size `h` over which the functions `w(x)` and `g(x)` can be represented with 
-    sufficient accuracy by evaluating their values at `p+1` Chebyshev nodes. It performs interpolation to `p` points 
-    halfway between these nodes and compares the interpolated values with the actual values of `w(x)` and `g(x)`. 
-    If the largest relative error in `w` or `g` exceeds the tolerance `epsilon_h`, the step size `h` is reduced. 
-    This process ensures that the Chebyshev interpolation of `w(x)` and `g(x)` over the step [`x0`, `x0+h`] has a 
+    This function determines an optimal step size `h` over which the functions `w(x)` and `g(x)` can be represented with
+    sufficient accuracy by evaluating their values at `p+1` Chebyshev nodes. It performs interpolation to `p` points
+    halfway between these nodes and compares the interpolated values with the actual values of `w(x)` and `g(x)`.
+    If the largest relative error in `w` or `g` exceeds the tolerance `epsilon_h`, the step size `h` is reduced.
+    This process ensures that the Chebyshev interpolation of `w(x)` and `g(x)` over the step [`x0`, `x0+h`] has a
     relative error no larger than `epsilon_h`.
 
     Parameters
     ----------
     info : SolverInfo
-        Object containing pre-computed information and methods for evaluating functions `w(x)` and `g(x)`, 
+        Object containing pre-computed information and methods for evaluating functions `w(x)` and `g(x)`,
         as well as interpolation matrices and node positions.
     x0 : float
         The current value of the independent variable.
     h : float
         The initial estimate of the step size.
     epsilon_h : float
-        Tolerance parameter defining the maximum relative error allowed in the Chebyshev interpolation of `w(x)` 
+        Tolerance parameter defining the maximum relative error allowed in the Chebyshev interpolation of `w(x)`
         and `g(x)` over the proposed step.
 
     Returns
@@ -451,16 +486,16 @@ PYBIND11_MODULE(pyriccaticpp, m) {
       py::arg("info"), py::arg("x0"), py::arg("h"), py::arg("epsilon_h"),
       R"pbdoc(
     """
-    Chooses the stepsize for spectral Chebyshev steps based on the variation of 1/w, 
+    Chooses the stepsize for spectral Chebyshev steps based on the variation of 1/w,
     the approximate timescale over which the solution changes.
 
-    This function evaluates the change in 1/w over the suggested interval h. 
+    This function evaluates the change in 1/w over the suggested interval h.
     If 1/w changes by a fraction of ±epsilon_h or more, the interval is halved; otherwise, it is accepted.
 
     Parameters
     ----------
     info : SolverInfo
-        A SolverInfo-like object, used to retrieve SolverInfo.xp, which contains the (p+1) Chebyshev nodes 
+        A SolverInfo-like object, used to retrieve SolverInfo.xp, which contains the (p+1) Chebyshev nodes
         used for interpolation to determine the stepsize.
     x0 : float
         The current value of the independent variable.
@@ -473,6 +508,6 @@ PYBIND11_MODULE(pyriccaticpp, m) {
     -------
     float
         Refined stepsize over which 1/w(x) does not change by more than epsilon_h/w(x).
-    """            
+    """
           )pbdoc");
 }
