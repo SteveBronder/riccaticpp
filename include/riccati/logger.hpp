@@ -2,6 +2,7 @@
 #define INCLUDE_RICCATI_LOGGER_HPP
 
 #include <riccati/macros.hpp>
+#include <riccati/utils.hpp>
 #include <ctime>
 #include <fstream>
 #include <iomanip>
@@ -205,12 +206,8 @@ class PtrLogger : public LoggerBase<PtrLogger<Ptr>> {
     if constexpr (!RICCATI_DEBUG_VAL && Level == LogLevel::DEBUG) {
       return;
     }
-    std::string full_msg = log_level<Level>();
     const std::time_t now = std::time(nullptr);
-    char buf[66];
-    if (std::strftime(buf, sizeof(buf), "[%c][", std::localtime(&now))) {
-      full_msg += buf;
-    }
+    full_msg += time_mi();
     full_msg += msg;
     full_msg += std::string("]");
     *output_ << full_msg + "\n";
