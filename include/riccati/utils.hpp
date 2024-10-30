@@ -344,7 +344,8 @@ inline void print(const char* name, const std::vector<T>& x) {
 
 inline void local_time(const time_t* timer, struct tm* buf) noexcept {
 #ifdef _WIN32
-  localtime_s(timer, buf);
+  // Windows switches the order of the arguments?
+  localtime_s(buf, timer);
 #else
   localtime_r(timer, buf);
 #endif
