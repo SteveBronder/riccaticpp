@@ -343,7 +343,7 @@ inline void print(const char* name, const std::vector<T>& x) {
 }
 
 /* Get the current time with microseconds */
-inline std::string time_mi() {
+inline std::string time_mi() noexcept {
     auto now = std::chrono::system_clock::now();
     time_t epoch = std::chrono::system_clock::to_time_t(now);
     struct tm tms{};
