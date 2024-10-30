@@ -371,7 +371,7 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_bremer) {
       std::get<1>(res).data(), std::get<1>(res).size());
   auto y_err = std::abs((ytrue - y_est(y_est.size() - 1)) / ytrue);
   EXPECT_LE(y_err, 9e-11);
-  std::cout << "LOGS: \n" << info.logger().output_->str();
+  //std::cout << "LOGS: \n" << info.logger().output_->str();
 }
 
 TEST_F(Riccati, vectorizer_evolve_nondense_fwd_hardstop_bremer) {
@@ -395,8 +395,6 @@ TEST_F(Riccati, vectorizer_evolve_nondense_fwd_hardstop_bremer) {
   Eigen::Matrix<double, 0, 0> x_eval;
   auto res
       = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 1.0, x_eval, true);
-  auto x_steps = Eigen::Map<Eigen::VectorXd>(std::get<0>(res).data(),
-                                             std::get<0>(res).size());
   auto ytrue = 0.2913132934408612;
   auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
       std::get<1>(res).data(), std::get<1>(res).size());

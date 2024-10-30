@@ -206,8 +206,7 @@ class PtrLogger : public LoggerBase<PtrLogger<Ptr>> {
     if constexpr (!RICCATI_DEBUG_VAL && Level == LogLevel::DEBUG) {
       return;
     }
-    const std::time_t now = std::time(nullptr);
-    full_msg += time_mi();
+    std::string full_msg = log_level<Level>() + time_mi() + "[";
     full_msg += msg;
     full_msg += std::string("]");
     *output_ << full_msg + "\n";
