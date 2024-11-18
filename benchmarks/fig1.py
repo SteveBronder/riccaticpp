@@ -470,5 +470,11 @@ for problem_key, problem_item in problem_dictionary.items():
 
 algo_times = pl.concat(timing_dfs, rechunk=True, how="vertical_relaxed")
 algo_times
+dir_path = os.getcwd()
+if dir_path.endswith("benchmarks"):
+    output_path = "./output/solve_ivp_times.csv"
+else:
+    output_path = "./benchmarks/output/solve_ivp_times.csv"
+algo_times.write_csv(output_path)
 
 # %%
