@@ -249,8 +249,8 @@ class Airy(BaseProblem):
         Initializes the Airy problem with the given parameters.
 
         Args:
-          start (int): The start of the interval.
-          end (int): The end of the interval.
+          start (int): The start of the interval. QUESTION: why is this an integer? Should be float.
+          end (int): The end of the interval. QUESTION: same as above.
           y1 (float): The expected value at the end of the interval.
           relative_error (float): The acceptable relative error.
         """
@@ -325,6 +325,113 @@ airy_data = pl.DataFrame(
     {"start": [-1.0], "end": [1.0], "y1": [0.0], "relative_error": [1e-12]}
 )
 problem_dictionary[Problem.AIRY] = {"class": Airy, "data": airy_data}
+
+## Stiff problem
+
+class Stiff(BaseProblem):
+    """
+    Represents the differential equation problem y'' + (t + 21)*y' + 21*t*y = 0,
+    on the interval [0, 200], with initial conditions y(0) = 0, y'(0) = 1.
+
+    This class defines the problem parameters, functions, and initial conditions
+    needed to solve the equation using different numerical methods.
+
+    Attributes:
+    """
+
+    def __init__(
+        self, start: int, end: int, y1: float, relative_error: float):
+        """
+        Initializes the Flame propagation problem with the given parameters.
+
+        Args:
+          start (int): The start of the interval.
+          end (int): The end of the interval.
+          y1 (float): The expected value at the end of the interval.
+          relative_error (float): The acceptable relative error.
+          lamb (float): Parameter λ in the differential equation.
+        """
+        super().__init__(start, end, y1, relative_error)
+
+    def w_gen(self) -> Callable[[np.ndarray], np.ndarray]:
+        """
+        Generates the function w(x) for the differential equation.
+
+        Returns:
+          Callable[[np.ndarray], np.ndarray]: The function w(x).
+        """
+        return lambda x: np.sqrt(21.0 * x) 
+
+    def g_gen(self) -> Callable[[np.ndarray], np.ndarray]:
+        """
+        Generates the function g(x) for the differential equation.
+
+        Returns:
+          Callable[[np.ndarray], np.ndarray]: The function g(x), which is zero in this case.
+        """
+        return lambda x: 0.5 * (21.0 + x)
+
+    def f_gen(self) -> Callable[[float, np.ndarray], np.ndarray]:
+        """
+        Generates the function f(t, y) for use with numerical solvers.
+
+        Returns:
+          Callable[[float, np.ndarray], np.ndarray]: The function f(t, y).
+        """
+
+        def f(t: float, y: np.ndarray) -> np.ndarray:
+            yp = np.zeros_like(y)
+            yp[0] = y[1]
+            yp[1] = - (t + 21.0) * y[1] - 21.0 * t * y[0]
+            return yp
+
+        return f
+
+    def yi_init(self) -> complex:
+        """
+        Provides the initial condition y(t0).
+
+        Returns:
+          complex: The initial value y(t0).
+        """
+        return complex(0.0)
+
+    def dyi_init(self) -> complex:
+        """
+        Provides the initial condition y'(t0).
+
+        Returns:
+          complex: The initial derivative y'(t0).
+        """
+        return complex(1.0)
+
+    def print_params(self) -> str:
+        """
+        Returns a string representation of the problem parameters.
+
+        Returns:
+          str: The problem parameters as a string.
+        """
+        return f"start={self.range[0]},end={self.range[1]},lamb={self.lamb}"
+
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the problem.
+
+        Returns:
+          str: The problem as a string.
+        """
+        return "Stiff: " + self.print_params()
+
+# Not sure what to write here
+#stiff_data = pl.DataFrame(
+#    {"start": [0.0], "end": [200.0], "y1": [0.0], "relative_error": [1e-12]}
+#)
+
+problem_dictionary = {Problem.STIFF: {"class": Stiff} #, "data": bremer_ref}} # Do we need this?
+
+
+
 
 ## Burst
 
