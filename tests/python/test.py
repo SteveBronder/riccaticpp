@@ -160,6 +160,7 @@ def test_solve_airy():
     print(maxerr)
     assert maxerr < 1e-6
 
+test_solve_airy()
 
 def test_solve_airy_backwards():
     w = lambda x: np.sqrt(x)

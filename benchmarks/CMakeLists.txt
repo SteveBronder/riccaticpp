@@ -10,7 +10,7 @@ target_link_libraries(brenner237 riccati Eigen3::Eigen)
 message(STATUS ${CMAKE_CURRENT_SOURCE_DIR})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fig1.py
   ${CMAKE_CURRENT_BINARY_DIR}/fig1.py COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/eq237.txt
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/eq237.csv
   ${CMAKE_CURRENT_BINARY_DIR}/data/eq237.txt COPYONLY)
 
 ExternalProject_Add(

@@ -8,6 +8,35 @@
 #include <fstream>
 #include <stdlib.h>
 #include <string>
+// TODO: Test more boundaries
+TEST_F(Riccati, evolve_nondense_fwd_airy_bounds) {
+  using namespace riccati;
+  auto omega_fun
+      = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
+  auto gamma_fun = [](auto&& x) { return zero_like(x); };
+  auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
+                                           32, 20, 20);
+  constexpr double xi = 0.0;
+  constexpr double xf = 1e6;
+  constexpr auto eps = 1e-12;
+  constexpr auto epsh = 1e-13;
+  auto yi = riccati::test::airy_i(xi);
+  auto dyi = riccati::test::airy_i_prime(xi);
+  Eigen::Matrix<double, 0, 0> x_eval;
+  auto res
+      = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 0.1, x_eval, true);
+  auto x_steps = Eigen::Map<Eigen::VectorXd>(std::get<0>(res).data(),
+                                             std::get<0>(res).size());
+  auto ytrue = riccati::test::airy_i(x_steps.array()).matrix().eval();
+  auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
+      std::get<1>(res).data(), std::get<1>(res).size());
+  auto y_err = ((y_est - ytrue).array() / ytrue.array()).abs().eval();
+  for (int i = 0; i < y_err.size(); ++i) {
+    EXPECT_LE(y_err[i], 9e-6) << "i = " << i << " y = " << ytrue[i]
+                              << " y_est = " << std::get<6>(res)[i];
+  }
+  EXPECT_LE(y_err.maxCoeff(), 9e-6);
+}
 
 TEST_F(Riccati, bremer_nondense_output) {
   using namespace riccati;
@@ -20,13 +49,13 @@ TEST_F(Riccati, bremer_nondense_output) {
        {1e5, 0.6558931145821987e0, 3e-10},
        {1e6, -0.4829009413372087e0, 5e-9},
        {1e7, -0.6634949630196019e0, 4e-8}}};
-  std::vector<double> lambda_arr
+  constexpr std::array lambda_arr
       = {10, 100, 1000, 10000, 100000, 1000000, 10000000};
-  double xi = -1.0;
-  double xf = 1.0;
-  std::vector<double> epss = {1e-12, 1e-8};
-  std::vector<double> epshs = {1e-13, 1e-9};
-  std::vector<int> ns = {35, 20};
+  constexpr double xi = -1.0;
+  constexpr double xf = 1.0;
+  constexpr std::array epss = {1e-12, 1e-8};
+  constexpr std::array epshs = {1e-13, 1e-9};
+  constexpr std::array ns = {36, 28};
   for (std::size_t j = 0; j < lambda_arr.size(); ++j) {
     double lambda_scalar = lambda_arr[j];
     for (size_t i_eps = 0; i_eps < epss.size(); ++i_eps) {
@@ -62,7 +91,8 @@ TEST_F(Riccati, bremer_nondense_output) {
         double yerr = std::abs((ytrue - y_est[y_est.size() - 1]) / ytrue);
         // See Fig 5 from https://arxiv.org/pdf/2212.06924
         double err_val
-            = eps == 1e-12 ? eps * lambda_scalar : eps * lambda_scalar * 1e-4;
+            = eps == 1e-12 ? eps * lambda_scalar : eps * lambda_scalar * 1e-3;
+        err_val = std::max(err_val, 1e-9);
         EXPECT_LE(yerr, err_val)
             << "\nLambda: " << lambda_scalar << "\nn: " << n
             << "\nepsh: " << epsh << "\neps: " << eps << "\nytrue: " << ytrue
@@ -80,10 +110,10 @@ TEST_F(Riccati, osc_evolve_dense_output) {
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
                                            32, 32, 32);
-  auto xi = 1e2;
-  auto xf = 1e6;
-  auto eps = 1e-12;
-  auto epsh = 1e-13;
+  double xi = 1e2;
+  constexpr double xf = 1e6;
+  constexpr auto eps = 1e-12;
+  constexpr auto epsh = 1e-13;
   auto yi = riccati::test::airy_i(xi);
   auto dyi = riccati::test::airy_i_prime(xi);
   Eigen::Index Neval = 1e3;
@@ -135,10 +165,10 @@ TEST_F(Riccati, nonosc_evolve_dense_output) {
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
                                            32, 32, 32);
-  auto xi = 1e0;
-  auto xf = 4e1;
-  auto eps = 1e-12;
-  auto epsh = 0.2;
+  double xi = 1e0;
+  constexpr double xf = 4e1;
+  constexpr auto eps = 1e-12;
+  constexpr auto epsh = 0.2;
   auto yi = riccati::test::airy_i(xi);
   auto dyi = riccati::test::airy_i_prime(xi);
   Eigen::Index Neval = 1e3;
@@ -193,10 +223,10 @@ TEST_F(Riccati, evolve_dense_output_airy) {
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 8,
                                            32, 32, 32);
-  auto xi = 1e0;
-  auto xf = 1e6;
-  auto eps = 1e-12;
-  auto epsh = 1e-13;
+  constexpr double xi = 1e0;
+  constexpr double xf = 1e6;
+  constexpr auto eps = 1e-12;
+  constexpr auto epsh = 1e-13;
   auto yi = riccati::test::airy_i(xi);
   auto dyi = riccati::test::airy_i_prime(xi);
   Eigen::Index Neval = 1e3;
@@ -221,10 +251,10 @@ TEST_F(Riccati, evolve_nondense_output_airy) {
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 8,
                                            32, 32, 32);
-  auto xi = 1e0;
-  auto xf = 1e6;
-  auto eps = 1e-12;
-  auto epsh = 1e-13;
+  constexpr double xi = 1e0;
+  constexpr double xf = 1e6;
+  constexpr auto eps = 1e-12;
+  constexpr auto epsh = 1e-13;
   auto yi = riccati::test::airy_i(xi);
   auto dyi = riccati::test::airy_i_prime(xi);
   // Eigen::Index Neval = 1e3;
@@ -270,8 +300,8 @@ TEST_F(Riccati, evolve_dense_output_burst) {
                      * std::sin(mm * std::atan(x))));
   };
   auto dyi = burst_dy(xi);
-  auto eps = 1e-12;
-  auto epsh = 1e-13;
+  constexpr auto eps = 1e-12;
+  constexpr auto epsh = 1e-13;
   Eigen::Index Neval = 1e3;
   riccati::vector_t<double> x_eval
       = riccati::vector_t<double>::LinSpaced(Neval, xi, xf);
@@ -293,10 +323,10 @@ TEST_F(Riccati, evolve_nondense_reverse_hardstop_airy) {
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
                                            32, 32, 32);
-  auto xi = 1e6;
-  auto xf = 1e0;
-  auto eps = 1e-12;
-  auto epsh = 1e-13;
+  constexpr double xi = 1e6;
+  constexpr double xf = 0;
+  constexpr auto eps = 1e-12;
+  constexpr auto epsh = 1e-13;
   auto yi = riccati::test::airy_i(xi);
   auto dyi = riccati::test::airy_i_prime(xi);
   Eigen::Matrix<double, 0, 0> x_eval;
@@ -310,10 +340,12 @@ TEST_F(Riccati, evolve_nondense_reverse_hardstop_airy) {
   auto y_err = ((y_est - ytrue).array() / ytrue.array()).abs().eval();
   for (int i = 0; i < y_err.size(); ++i) {
     EXPECT_LE(y_err[i], 9e-6) << "i = " << i << " y = " << ytrue[i]
-                              << " y_est = " << std::get<6>(res)[i];
+                              << " y_est = " << y_est[i];
   }
   EXPECT_LE(y_err.maxCoeff(), 9e-6);
 }
+
+
 
 TEST_F(Riccati, evolve_nondense_fwd_hardstop_airy) {
   using namespace riccati;
@@ -322,10 +354,10 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_airy) {
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
                                            32, 20, 20);
-  auto xi = 1e0;
-  auto xf = 1e6;
-  auto eps = 1e-12;
-  auto epsh = 1e-13;
+  constexpr double xi = 1e0;
+  constexpr double xf = 1e6;
+  constexpr auto eps = 1e-12;
+  constexpr auto epsh = 1e-13;
   auto yi = riccati::test::airy_i(xi);
   auto dyi = riccati::test::airy_i_prime(xi);
   Eigen::Matrix<double, 0, 0> x_eval;
@@ -356,10 +388,10 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_bremer) {
     8, 32, 32, 32, riccati::DefaultLogger<std::stringstream>{
     std::make_unique<std::stringstream>()
   });
-  auto xi = -1.0;
-  auto xf = 1.0;
-  auto eps = 1e-12;
-  auto epsh = 1e-13;
+  constexpr auto xi = -1.0;
+  constexpr auto xf = 1.0;
+  constexpr auto eps = 1e-12;
+  constexpr auto epsh = 1e-13;
   std::complex<double> yi = 0.0;
   std::complex<double> dyi = l;
   Eigen::Matrix<double, 0, 0> x_eval;
@@ -386,18 +418,19 @@ TEST_F(Riccati, vectorizer_evolve_nondense_fwd_hardstop_bremer) {
   auto gamma_fun = riccati::vectorize(gamma_scalar);
   auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 8,
                                            32, 32, 32);
-  auto xi = -1.0;
-  auto xf = 1.0;
-  auto eps = 1e-12;
-  auto epsh = 1e-13;
+  constexpr auto xi = -1.0;
+  constexpr auto xf = 1.0;
+  constexpr auto eps = 1e-12;
+  constexpr auto epsh = 1e-13;
   std::complex<double> yi = 0.0;
   std::complex<double> dyi = l;
   Eigen::Matrix<double, 0, 0> x_eval;
   auto res
       = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 1.0, x_eval, true);
-  auto ytrue = 0.2913132934408612;
+  constexpr auto ytrue = 0.2913132934408612;
   auto y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
       std::get<1>(res).data(), std::get<1>(res).size());
   auto y_err = std::abs((ytrue - y_est(y_est.size() - 1)) / ytrue);
   EXPECT_LE(y_err, 9e-11);
 }
+

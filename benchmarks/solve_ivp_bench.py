@@ -42,6 +42,7 @@ class Problem(Enum):
     AIRY = 3
     SCHRODINGER = 4
     FLAME_PROP = 5
+    STIFF = 6
 
     def __str__(self) -> str:
         """Returns the name of the problem."""
@@ -75,18 +76,18 @@ class BaseProblem:
     Base class for defining a problem to solve.
 
     Attributes:
-      range (List[int]): The interval over which to solve the problem.
+      range (List[float]): The interval over which to solve the problem.
       y1 (float): The expected value at the end of the interval.
       relative_error (float): The acceptable relative error in the solution.
     """
 
-    def __init__(self, start: int, end: int, y1: float, relative_error: float):
+    def __init__(self, start: float, end: float, y1: float, relative_error: float):
         """
         Initializes the BaseProblem with the given parameters.
 
         Args:
-          start (int): The start of the interval.
-          end (int): The end of the interval.
+          start (float): The start of the interval.
+          end (float): The end of the interval.
           y1 (float): The expected value at the end of the interval.
           relative_error (float): The acceptable relative error.
         """
@@ -145,14 +146,14 @@ class Bremer(BaseProblem):
     """
 
     def __init__(
-        self, start: int, end: int, y1: float, relative_error: float, lamb: float
+        self, start: float, end: float, y1: float, relative_error: float, lamb: float
     ):
         """
         Initializes the Bremer problem with the given parameters.
 
         Args:
-          start (int): The start of the interval.
-          end (int): The end of the interval.
+          start (float): The start of the interval.
+          end (float): The end of the interval.
           y1 (float): The expected value at the end of the interval.
           relative_error (float): The acceptable relative error.
           lamb (float): Parameter λ in the differential equation.
@@ -230,8 +231,9 @@ class Bremer(BaseProblem):
         """
         return "Bremer237: " + self.print_params()
 
+problem_dictionary = {}
 
-problem_dictionary = {Problem.BREMER237: {"class": Bremer, "data": bremer_ref}}
+problem_dictionary[Problem.BREMER237] = {"class": Bremer, "data": bremer_ref}
 
 ## Airy
 
@@ -244,13 +246,13 @@ class Airy(BaseProblem):
     needed to solve the Airy equation using different numerical methods.
     """
 
-    def __init__(self, start: int, end: int, y1: float, relative_error: float):
+    def __init__(self, start: float, end: float, y1: float, relative_error: float):
         """
         Initializes the Airy problem with the given parameters.
 
         Args:
-          start (int): The start of the interval. QUESTION: why is this an integer? Should be float.
-          end (int): The end of the interval. QUESTION: same as above.
+          start (float): The start of the interval.
+          end (float): The end of the interval.
           y1 (float): The expected value at the end of the interval.
           relative_error (float): The acceptable relative error.
         """
@@ -299,7 +301,6 @@ class Airy(BaseProblem):
         Returns:
           complex: The initial derivative y'(t0).
         """
-        # NOTE: Hard coded init position as 1 here :(
         return complex(-sp.airy(-self.range[0])[1] - 1j * sp.airy(-self.range[0])[3])
 
     def print_params(self) -> str:
@@ -321,8 +322,10 @@ class Airy(BaseProblem):
         return "Airy: " + self.print_params()
 
 
+# TODO: Fails for 0 and 1
+airy_end = complex(sp.airy(-1e6)[0] + 1j * sp.airy(-1e6)[2])
 airy_data = pl.DataFrame(
-    {"start": [-1.0], "end": [1.0], "y1": [0.0], "relative_error": [1e-12]}
+    {"start": [1.0], "end": [1e6], "y1": [airy_end], "relative_error": [1e-12]}
 )
 problem_dictionary[Problem.AIRY] = {"class": Airy, "data": airy_data}
 
@@ -340,13 +343,13 @@ class Stiff(BaseProblem):
     """
 
     def __init__(
-        self, start: int, end: int, y1: float, relative_error: float):
+        self, start: float, end: float, y1: float, relative_error: float):
         """
         Initializes the Flame propagation problem with the given parameters.
 
         Args:
-          start (int): The start of the interval.
-          end (int): The end of the interval.
+          start (float): The start of the interval.
+          end (float): The end of the interval.
           y1 (float): The expected value at the end of the interval.
           relative_error (float): The acceptable relative error.
           lamb (float): Parameter λ in the differential equation.
@@ -360,7 +363,7 @@ class Stiff(BaseProblem):
         Returns:
           Callable[[np.ndarray], np.ndarray]: The function w(x).
         """
-        return lambda x: np.sqrt(21.0 * x) 
+        return lambda x: np.sqrt(21.0 * x)
 
     def g_gen(self) -> Callable[[np.ndarray], np.ndarray]:
         """
@@ -380,10 +383,7 @@ class Stiff(BaseProblem):
         """
 
         def f(t: float, y: np.ndarray) -> np.ndarray:
-            yp = np.zeros_like(y)
-            yp[0] = y[1]
-            yp[1] = - (t + 21.0) * y[1] - 21.0 * t * y[0]
-            return yp
+            return [y[1], - (t + 21.0) * y[1] - 21.0 * t * y[0]]
 
         return f
 
@@ -412,7 +412,7 @@ class Stiff(BaseProblem):
         Returns:
           str: The problem parameters as a string.
         """
-        return f"start={self.range[0]},end={self.range[1]},lamb={self.lamb}"
+        return f"start={self.range[0]},end={self.range[1]}"
 
     def __str__(self) -> str:
         """
@@ -424,13 +424,11 @@ class Stiff(BaseProblem):
         return "Stiff: " + self.print_params()
 
 # Not sure what to write here
-#stiff_data = pl.DataFrame(
-#    {"start": [0.0], "end": [200.0], "y1": [0.0], "relative_error": [1e-12]}
-#)
+stiff_data = pl.DataFrame(
+    {"start": [1.0], "end": [200.0], "y1": [0.0], "relative_error": [1e-12]}
+)
 
-problem_dictionary = {Problem.STIFF: {"class": Stiff} #, "data": bremer_ref}} # Do we need this?
-
-
+problem_dictionary[Problem.STIFF] = {"class": Stiff, "data": stiff_data}
 
 
 ## Burst
@@ -528,17 +526,19 @@ def construct_algo_args(
             return construct_riccati_args(problem, *args)
         case _:
             return construct_solve_ivp_args(problem, str(algo), *args)
-
+# %%
 
 ## Start Benchmark
-epss, epshs, ns = [1e-12, 1e-6], [1e-13, 1e-9], [35, 20]
+epss = [1e-12, 1e-6]
+epshs = [0.1 * x for x in epss]
+ns = [35, 20]
 atol = [1e-14, 1e-6]
 # rtol = [1e-3, 1e-6]
 algorithm_dict = {  # Algo.LSODA: {"args":[epss, atol], "iters": 1},
-    Algo.BDF: {"args": [epss, atol], "iters": 1},
-    Algo.Radau: {"args": [epss, atol], "iters": 1},
-    Algo.RK45: {"args": [epss, atol], "iters": 1},
-    Algo.DOP853: {"args": [epss, atol], "iters": 1},
+#    Algo.BDF: {"args": [epss, atol], "iters": 1},
+#    Algo.Radau: {"args": [epss, atol], "iters": 1},
+#    Algo.RK45: {"args": [epss, atol], "iters": 1},
+#    Algo.DOP853: {"args": [epss, atol], "iters": 1},
     Algo.PYRICCATICPP: {"args": [epss, epshs, ns], "iters": 1000},
 }
 
@@ -619,7 +619,9 @@ def benchmark(
 timing_dfs = []
 for problem_key, problem_item in problem_dictionary.items():
     for algo, algo_params in algorithm_dict.items():
-        for algo_iter in list(itertools.product(*algo_params["args"])):
+        for algo_iter1 in zip(list(itertools.product(algo_params["args"][0], algo_params["args"][1])), algo_params["args"][2]):
+            algo_iter = [algo_iter1[0][0], algo_iter1[0][1], algo_iter1[1]]
+            print("Algo iter", algo_iter)
             for problem_info in gen_problem(
                 problem_item["class"], problem_item["data"]
             ):
@@ -647,6 +649,7 @@ for problem_key, problem_item in problem_dictionary.items():
                 timing_dfs.append(
                     benchmark(problem_info, algo_args, N=algo_params["iters"])
                 )
+                print("Time: ", timing_dfs[-1]["walltime"][0])
 
 algo_times = pl.concat(timing_dfs, rechunk=True, how="vertical_relaxed")
 algo_times
