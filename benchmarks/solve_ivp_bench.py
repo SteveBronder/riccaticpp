@@ -12,7 +12,7 @@ import timeit
 import itertools
 import inspect
 from typing import Any, Callable, Dict, List, Tuple
-
+from collections.abc import Iterable
 
 # %%
 class Algo(Enum):
@@ -97,42 +97,6 @@ class BaseProblem:
 
 
 ## Bremer
-
-# Self-reported accuracy of Bremer's phase function method on
-# Eq. (237) in Bremer 2018.
-# "On the numerical solution of second order ordinary
-#  differential equations in the high-frequency regime".
-dir_path = os.getcwd()
-if dir_path.endswith("benchmarks"):
-    reftable = "./data/eq237.csv"
-else:
-    reftable = "./benchmarks/data/eq237.csv"
-try:
-    bremer_ref = pl.read_csv(reftable, separator=",")
-except FileNotFoundError:
-    print("Current Directory is ", dir_path)
-    print(
-        "./data/eq237.csv was not found. This script should be run from the top level of the repository."
-    )
-
-bremer_ref = bremer_ref.with_columns(pl.lit(-1).alias("start"))
-bremer_ref = bremer_ref.with_columns(pl.lit(1).alias("end"))
-
-
-# %%
-def get_args(func: Callable, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Filters keyword arguments to only include those accepted by the given function.
-
-    Args:
-      func (Callable): The function to inspect.
-      kwargs (Dict[str, Any]): The dictionary of keyword arguments.
-
-    Returns:
-      Dict[str, Any]: A dictionary of keyword arguments accepted by the function.
-    """
-    return {k: v for k, v in kwargs.items() if k in inspect.getfullargspec(func).args}
-
 
 class Bremer(BaseProblem):
     """
@@ -231,12 +195,38 @@ class Bremer(BaseProblem):
         """
         return "Bremer237: " + self.print_params()
 
-problem_dictionary = {}
+##
+# Dictionary indexed by problem enum containing data for each problem
+# to be used in benchmarking.
+# Each row of the items data frame will hold the parameters for a problem instance.
+# The row of parameters will be passed to the associated problem class constructor
+# i.e. a row for Bremer will look like
+# (start: float, end: float, y1: float, relative_error: float, lamb: float)
+problem_dictionary : Dict[Problem, pl.DataFrame] = {}
+
+# Self-reported accuracy of Bremer's phase function method on
+# Eq. (237) in Bremer 2018.
+# "On the numerical solution of second order ordinary
+#  differential equations in the high-frequency regime".
+dir_path = os.getcwd()
+if dir_path.endswith("benchmarks"):
+    reftable = "./data/eq237.csv"
+else:
+    reftable = "./benchmarks/data/eq237.csv"
+try:
+    bremer_ref = pl.read_csv(reftable, separator=",")
+except FileNotFoundError:
+    print("Current Directory is ", dir_path)
+    print(
+        "./data/eq237.csv was not found. This script should be run from the top level of the repository."
+    )
+
+bremer_ref = bremer_ref.with_columns(pl.lit(-1).alias("start"))
+bremer_ref = bremer_ref.with_columns(pl.lit(1).alias("end"))
 
 problem_dictionary[Problem.BREMER237] = {"class": Bremer, "data": bremer_ref}
 
 ## Airy
-
 
 class Airy(BaseProblem):
     """
@@ -322,10 +312,10 @@ class Airy(BaseProblem):
         return "Airy: " + self.print_params()
 
 
-# TODO: Fails for 0 and 1
-airy_end = complex(sp.airy(-1e6)[0] + 1j * sp.airy(-1e6)[2])
+airy_end = 1e6
+airy_yend = complex(sp.airy(-airy_end)[0] + 1j * sp.airy(-airy_end)[2])
 airy_data = pl.DataFrame(
-    {"start": [1.0], "end": [1e6], "y1": [airy_end], "relative_error": [1e-12]}
+    {"start": [0.0], "end": [airy_end], "y1": [airy_yend], "relative_error": [1e-12]}
 )
 problem_dictionary[Problem.AIRY] = {"class": Airy, "data": airy_data}
 
@@ -425,14 +415,13 @@ class Stiff(BaseProblem):
 
 # Not sure what to write here
 stiff_data = pl.DataFrame(
-    {"start": [1.0], "end": [200.0], "y1": [0.0], "relative_error": [1e-12]}
+    {"start": [0.0], "end": [200.0], "y1": [0.0], "relative_error": [1e-12]}
 )
 
 problem_dictionary[Problem.STIFF] = {"class": Stiff, "data": stiff_data}
 
 
 ## Burst
-
 
 def gen_problem(problem: Any, data: pl.DataFrame):
     """
@@ -448,8 +437,6 @@ def gen_problem(problem: Any, data: pl.DataFrame):
     for x in data.iter_rows(named=True):
         yield problem(**x)
 
-
-##
 # %%
 def construct_riccati_args(
     problem: BaseProblem, eps: float, epsh: float, n: int
@@ -532,14 +519,16 @@ def construct_algo_args(
 epss = [1e-12, 1e-6]
 epshs = [0.1 * x for x in epss]
 ns = [35, 20]
-atol = [1e-14, 1e-6]
+atol = [1e-13, 1e-7]
 # rtol = [1e-3, 1e-6]
-algorithm_dict = {  # Algo.LSODA: {"args":[epss, atol], "iters": 1},
-#    Algo.BDF: {"args": [epss, atol], "iters": 1},
-#    Algo.Radau: {"args": [epss, atol], "iters": 1},
-#    Algo.RK45: {"args": [epss, atol], "iters": 1},
-#    Algo.DOP853: {"args": [epss, atol], "iters": 1},
-    Algo.PYRICCATICPP: {"args": [epss, epshs, ns], "iters": 1000},
+algorithm_dict = {
+    Algo.PYRICCATICPP: {"args": [[epss, epshs], [ns]], "iters": 1000},
+    Algo.BDF: {"args": [[epss, atol]], "iters": 1},
+    Algo.RK45: {"args": [[epss, atol]], "iters": 1},
+    Algo.DOP853: {"args": [[epss, atol]], "iters": 1},
+# Does not support complex
+#   Algo.Radau: {"args": [[epss, atol]], "iters": 1},
+#   Algo.LSODA: {"args":[epss, atol], "iters": 1}
 }
 
 
@@ -615,49 +604,84 @@ def benchmark(
             )
             return timing_df
 
+def flatten_tuple_impl(ret, x):
+    if hasattr(type(x), '__iter__') and hasattr(type(x[0]), '__iter__'):
+      for item in x:
+        ret = flatten_tuple_impl(ret, item)
+    elif hasattr(type(x), '__iter__'):
+      for item in x:
+        ret.append(item)
+    else:
+      ret.append(x)
+    return ret
 
-timing_dfs = []
-for problem_key, problem_item in problem_dictionary.items():
-    for algo, algo_params in algorithm_dict.items():
-        for algo_iter1 in zip(list(itertools.product(algo_params["args"][0], algo_params["args"][1])), algo_params["args"][2]):
-            algo_iter = [algo_iter1[0][0], algo_iter1[0][1], algo_iter1[1]]
-            print("Algo iter", algo_iter)
-            for problem_info in gen_problem(
-                problem_item["class"], problem_item["data"]
-            ):
-                algo_args = {
-                    "method": algo,
-                    "function_name": str(problem_key),
-                    # Eps must always be first arg of tuple
-                    "eps": algo_iter[0],
-                    "method_args": construct_algo_args(algo, problem_info, algo_iter),
-                }
-                print("Running ", str(algo), "on", str(problem_key))
-                print("\tProblem Info: ", problem_info)
-                match algo_args["method"]:
-                    case Algo.PYRICCATICPP:
-                        print_args = algo_args["method_args"]["print_args"]
-                        print(
-                            "\tArgs: ",
-                            f"n={print_args['n']};p={print_args['n']};epsh={print_args['epsh']}",
-                        )
-                    case _:
-                        print(
-                            "\tArgs: ",
-                            f"rtol={algo_args['method_args']['rtol']};atol={algo_args['method_args']['atol']}",
-                        )
-                timing_dfs.append(
-                    benchmark(problem_info, algo_args, N=algo_params["iters"])
-                )
-                print("Time: ", timing_dfs[-1]["walltime"][0])
+def flatten_tuple(x):
+    ret = []
+    return flatten_tuple_impl(ret, x)
 
-algo_times = pl.concat(timing_dfs, rechunk=True, how="vertical_relaxed")
-algo_times
+
 dir_path = os.getcwd()
 if dir_path.endswith("benchmarks"):
-    output_path = "./output/solve_ivp_times.csv"
+    base_output_path = "./output/solve_ivp_times"
 else:
-    output_path = "./benchmarks/output/solve_ivp_times.csv"
-algo_times.write_csv(output_path)
+    base_output_path = "./benchmarks/output/solve_ivp_times"
+
+print("Problem Sets: ", problem_dictionary)
+print("Algo Sets: ", algorithm_dict)
+
+
+all_timing_pl_lst = []
+# Uncomment to test just airy
+#problem_dictionary = {}
+#problem_dictionary[Problem.AIRY] = {"class": Airy, "data": airy_data}
+
+for problem_key, problem_item in problem_dictionary.items():
+    for algo, algo_params in algorithm_dict.items():
+        algo_timing_pl_lst = []
+        if len(algo_params["args"]) > 1:
+          algo_args = itertools.product(zip(*algo_params["args"][0]), *algo_params["args"][1])
+        else:
+          algo_args = zip(*algo_params["args"][0])
+        for algo_iter_ in algo_args:
+              print("=====================================")
+              algo_iter = flatten_tuple(algo_iter_)
+              for problem_info in gen_problem(
+                  problem_item["class"], problem_item["data"]
+              ):
+                  algo_args = {
+                      "method": algo,
+                      "function_name": str(problem_key),
+                      # Eps must always be first arg of tuple
+                      "eps": algo_iter[0],
+                      "method_args": construct_algo_args(algo, problem_info, algo_iter),
+                  }
+                  print("Running ", str(algo), "on", str(problem_key))
+                  print("\tProblem Info: ", problem_info)
+                  match algo_args["method"]:
+                      case Algo.PYRICCATICPP:
+                          print_args = algo_args["method_args"]["print_args"]
+                          print(
+                              "\tArgs: ",
+                              f"n={print_args['n']};p={print_args['n']};epsh={print_args['epsh']}",
+                          )
+                      case _:
+                          print(
+                              "\tArgs: ",
+                              f"rtol={algo_args['method_args']['rtol']};atol={algo_args['method_args']['atol']}",
+                          )
+                  algo_timing_pl_lst.append(
+                      benchmark(problem_info, algo_args, N=algo_params["iters"])
+                  )
+                  print("Time: ", algo_timing_pl_lst[-1]["walltime"][0])
+                  print("=====================================")
+        algo_timing_pl = pl.concat(algo_timing_pl_lst, rechunk=True, how="vertical_relaxed")
+        algo_problem_file_name = base_output_path + "_" + str(problem_key) + "_" + str(algo) + ".csv"
+        algo_timing_pl.write_csv(algo_problem_file_name)
+        print(algo_problem_file_name)
+        print(algo_timing_pl)
+        all_timing_pl_lst.append(algo_timing_pl)
+algo_times = pl.concat(all_timing_pl_lst, rechunk=True, how="vertical_relaxed")
+print("Algo Times: ", algo_times)
+algo_times.write_csv(base_output_path + ".csv")
 
 # %%
