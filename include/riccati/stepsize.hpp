@@ -28,12 +28,11 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                             FloatingPoint h,
                                             FloatingPoint epsilon_h) {
   auto ws = omega(info, riccati::scale(info.xp(), x0, h));
-  if (ws.maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
-    return choose_nonosc_stepsize(info, x0, static_cast<FloatingPoint>(h / 2.0),
-                                  epsilon_h);
-  } else {
-    return h;
+  while (ws.maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
+    h /= 2.0;
+    ws = omega(info, riccati::scale(info.xp(), x0, h));
   }
+  return h;
 }
 
 /**
