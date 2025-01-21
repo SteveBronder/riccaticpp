@@ -323,6 +323,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
                    Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
                    Vec &&x_eval, bool hard_stop = false,
                    LogLevel log_level = riccati::LogLevel::ERROR) {
+//                   bool phase_out = false) {
   static_assert(std::is_floating_point<Scalar>::value,
                 "Scalar type must be a floating-point type.");
   using vectord_t = vector_t<Scalar>;
@@ -608,6 +609,9 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       }
     }
   }
+//  std::cout << "info.un: " << info.un() << std::endl; 
+//  std::cout << "info.dun: " << info.dun() << std::endl;
+//  std::cout << "info.apm: " << info.apm().first << ", " << info.apm().second << std::endl;
   return std::make_tuple(xs, ys, dys, successes, phases, steptypes, yeval,
                         dyeval, 1.0);
 }

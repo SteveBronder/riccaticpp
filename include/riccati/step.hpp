@@ -193,6 +193,11 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     auto dy1 = eval(info.alloc_,
                     ap * y.cwiseProduct(f1) + am * du2.cwiseProduct(f2));
     Scalar phase = std::imag(f1(0));
+    // NEW
+    info.apm_ = std::make_pair(ap, am);
+    info.un_ = u1;
+    info.dun_ = y;
+    //
     return std::make_tuple(success, y1(0), dy1(0), maxerr, phase, u1, y,
                            std::make_pair(ap, am));
   } else {

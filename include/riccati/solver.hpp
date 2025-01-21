@@ -83,6 +83,11 @@ class SolverInfo {
    * \f]
    */
   vectord_t xp_interp_;
+  // NEW
+  // Values of the phase function, its derivative, and the A+/- coeffs
+  vectorc_t un_;
+  vectorc_t dun_;
+  std::pair<std::complex<double>, std::complex<double>> apm_;
 
   matrixd_t L_;
   // Clenshaw-Curtis quadrature weights
@@ -291,6 +296,27 @@ class SolverInfo {
 
   RICCATI_ALWAYS_INLINE const auto& xp_interp() const noexcept {
     return xp_interp_;
+  }
+
+// NEW
+  /** 
+   * Values of the phase function and its derivative evaluated at the scaled
+   * Chebyshev nodes over the current interval.
+   */
+  RICCATI_ALWAYS_INLINE const auto& un() const noexcept {
+    return un_;
+  }
+
+  RICCATI_ALWAYS_INLINE const auto& dun() const noexcept {
+    return dun_;
+  }
+
+// NEW
+  /**
+   * Value of the A+ and A- coefficients
+   */
+  RICCATI_ALWAYS_INLINE const auto& apm() const noexcept {
+    return apm_;
   }
 
   /**
