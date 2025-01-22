@@ -166,7 +166,7 @@ for j,n,current_energy in zip(range(len(ns)),ns,Es):
     print("x_eval: ",x_eval)
     sol_l = ric.evolve(info, tl, tr/2.0, complex(0), complex(1e-3), eps, epsh, init_step, x_eval, True)
     ts_l = sol_l[0]
-    x_l = sol_l[6]
+    y_l = sol_l[6]
     types_l = sol_l[5]
     print("ts_l: ", ts_l)
     if True:
@@ -181,19 +181,19 @@ for j,n,current_energy in zip(range(len(ns)),ns,Es):
     print("range: ", (ts_l[firstwkb],tr))
     t_eval = np.linspace(ts_l[firstwkb],tr,2000)
     # Solve Right side
-    init_step = ric.choose_nonosc_stepsize(info, tl, tr, epsh)
+    init_step = ric.choose_nonosc_stepsize(info, tr/2.0, tr, epsh)
     if init_step==0:
         init_step = 1e-12
     sol_r = ric.evolve(info, tl, tr, complex(0), complex(1e-3), eps, epsh, init_step, t_eval, True)
     y_eval = sol_r[6]
-    x_l = x_l[:firstwkb]
+    y_pre_ric = y_l[:firstwkb]
     ts_l = ts_l[:firstwkb]
     Ts_l = np.concatenate((np.array(ts_l),t_eval))
-    Xs_l = np.concatenate((np.array(x_l), y_eval))
-    maxx = max(np.real(Xs_l))
-    Xs_l = Xs_l/maxx*4*np.sqrt(current_energy)
-    plt.plot(Ts_l,Xs_l+current_energy,color='C{}'.format(j),label='$\Psi_n(x)$, n={}, $E_n$={:.4f}'.format(n,current_energy))
-    plt.plot(-1*Ts_l,Xs_l+current_energy,color='C{}'.format(j))
+    Ys_l = np.concatenate((np.array(y_pre_ric), y_eval))
+    maxx = max(np.real(Ys_l))
+    Ys_l = Ys_l/maxx*4*np.sqrt(current_energy)
+    plt.plot(Ts_l,Ys_l+current_energy,color='C{}'.format(j),label='$\Psi_n(x)$, n={}, $E_n$={:.4f}'.format(n,current_energy))
+    plt.plot(-1*Ts_l,Ys_l+current_energy,color='C{}'.format(j))
 plt.xlabel('x')
 plt.legend(loc='lower left')
 plt.show()
