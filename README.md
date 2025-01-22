@@ -96,6 +96,7 @@ make -j4 riccati_test && ctest
 For the python tests and benchmarks it is recommended to setup a virtual environment
 
 ```bash
+git checkout feature/benchmarks
 # From the top level of this directory
 python -m venv ./.venv
 source ./.venv/bin/activate
@@ -103,7 +104,7 @@ pip install -r requirements.txt
 # Install pyriccaticpp
 pip install .
 # Now run benchmarks
-
+python3 ./benchmarks/solve_ivp_bench.py
 ```
 
 ## Example
