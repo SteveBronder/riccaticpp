@@ -274,7 +274,7 @@ class Airy(BaseProblem):
         Returns:
           Callable[[float, np.ndarray], np.ndarray]: The function f(t, y).
         """
-        return lambda t, y: [t * y[1], y[0]]
+        return lambda t, y: [y[1], -(t * y[0])]
 
     def yi_init(self) -> complex:
         """
@@ -318,7 +318,7 @@ airy_yend = complex(sp.airy(-airy_end)[0] + 1j * sp.airy(-airy_end)[2])
 airy_data = pl.DataFrame(
     {"start": [0.0], "end": [airy_end], "y1": [airy_yend], "relative_error": [1e-12]}
 )
-problem_dictionary[Problem.AIRY] = {"class": Airy, "data": airy_data}
+#problem_dictionary[Problem.AIRY] = {"class": Airy, "data": airy_data}
 
 ## Stiff problem
 

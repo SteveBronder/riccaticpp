@@ -33,167 +33,320 @@ class Algo(Enum):
         """Returns the name of the algorithm."""
         return str(self.name)
 
-l=1.0
-m=0.5
+# WARNING: Not thread safe
+class GlobalTimer:
+    def __init__(self):
+        self.times = {}
+        self.calls = {}
+        self.start = 0
+    def start(self, name):
+        self.start = time.time()
+        if name not in self.times:
+            self.times[name] = 0
+            self.calls[name] = 0
+    def stop_nocall(self, name):
+        self.times[name] += time.time() - self.start
+    def stop(self, name):
+        self.times[name] += time.time() - self.start
+        self.calls[name] += 1
 
-def Ei(n):
-    """
-    Energy eigenvalues (if analytic solution available)
-    """
-    return np.sqrt(2.0)*(n-0.5)
+global_timer = GlobalTimer()
 
-def V(t):
-    """
-    Potential well
-    """
-    return t**2 + l*t**4
+class RiccatiSolver:
+    def __init__(self, init_args, solver_args):
+        self.type = Algo.PYRICCATICPP
+        global_timer.start(str(self.type))
+        self.init_args = init_args
+        self.init = ric.Init(*init_args)
+        global_timer.stop_nocall(str(self.type))
+        self.solver_args = solver_args
 
-def w_gen(E):
-    """
-    Frequency term in the Schrodinger equation
-    """
-    return lambda t: np.sqrt(2*m*(complex(E)-V(t)))
+    def construct_args(self, problem, range) -> Dict[str, Any]:
+        """
+        Constructs the arguments required for solving the problem using pyriccaticpp.
 
-g = lambda x: np.zeros_like(x)
-def f(current_energy):
-  """
-  Function to minimize wrt E to give the energy eigenvalues
-  """
-  cheby_n = 32
-  time_left = -((current_energy)**(0.25))-2.0
-  time_right = -time_left
-  time_m = 0.5
-  eps = 1e-12
-  epsh = eps * 1e-1
-  args = {"init_args": (w_gen(current_energy), g, 8, max(32, cheby_n), cheby_n, cheby_n),
-          "left_solver_args": {
-              "xi": time_left,
-              "xf": time_m,
-              "yi": complex(0),
-              "dyi": complex(1e-3),
-              "eps": eps,
-              "epsilon_h": epsh,
-              "hard_stop": True,
-          },
-          "right_solver_args": {
-              "xi": time_right,
-              "xf": time_m,
-              "yi": complex(0),
-              "dyi": complex(1e-3),
-              "eps": eps,
-              "epsilon_h": epsh,
-              "hard_stop": True,
-          }}
-  # Grid of w, g
-  #t = np.linspace(tl.real,tr.real,30000)
-  #ws = np.log(w(t,E))
-  #g = np.zeros(t.shape)
-  info = ric.Init(*args["init_args"])
-  # Solve left side
-  solver_args = args["left_solver_args"]
-  args["init_step_args"] = (
-      info,
-      solver_args["xi"],
-      solver_args["xf"],
-      solver_args["epsilon_h"],
-  )
-  init_step = ric.choose_nonosc_stepsize(*args["init_step_args"])
-  if init_step==0:
-      init_step = 1e-5
-  # Solve left side
-  solver_args["init_stepsize"] = init_step
-  _, left_ys, left_dys, _, _, _, _, _, _ = ric.evolve(info=info, **solver_args)
-  solver_args = args["right_solver_args"]
-  args["init_step_args"] = (
-      info,
-      solver_args["xi"],
-      solver_args["xf"],
-      solver_args["epsilon_h"],
-  )
-  init_step = ric.choose_nonosc_stepsize(*args["init_step_args"])
-  if init_step==0:
-      init_step = 1e-5
-  solver_args["init_stepsize"] = -init_step
-  _, right_ys, right_dys, _, _, _, _, _, _ = ric.evolve(info=info, **solver_args)
-  psi_l = left_ys[-1]
-  psi_r = right_ys[-1]
-  dpsi_l = left_dys[-1]
-  dpsi_r = right_dys[-1]
-  try:
-      return abs(dpsi_l/psi_l - dpsi_r/psi_r)
-  except ZeroDivisionError:
-      return 1000.0
+        Args:
+          problem (BaseProblem): The problem instance.
+          eps (float): The epsilon parameter for the solver.
+          epsh (float): The epsilon_h parameter for the solver.
+          n (int): The parameter n for the solver.
+
+        Returns:
+          Dict[str, Any]: A dictionary containing the arguments for the solver.
+        """
+        global_timer.start(str(self.type))
+        init_step = ric.choose_nonosc_stepsize(self.init, range[0], 1e-1, self.solver_args["epsh"])
+        global_timer.stop_nocall(str(self.type))
+        return {
+                "info" : self.init,
+                "xi": range[0],
+                "xf": range[1],
+                "yi": problem.yi_init(),
+                "dyi": problem.dyi_init(),
+                "eps": self.solver_args["eps"],
+                "epsilon_h": self.solver_args["epsh"],
+                "init_stepsize": init_step,
+                "hard_stop": True,
+            }
+    def solve(self, args):
+        global_timer.start(str(self.type))
+        _, left_wavefunction, left_derivative, *unused = ric.evolve(**args)
+        global_timer.stop(str(self.type))
+        return left_wavefunction, left_derivative
+    def __str__(self):
+        return str(self.type) + f" [eps={self.solver_args["eps"]};epsh={self.solver_args["epsh"]};n={self.init_args["n"]}]"
+
+class SolveIVP:
+    def __init__(self, method : Algo, rtol : float, atol : float):
+        self.type = method
+        self.rtol = rtol
+        self.atol = atol
+    def construct_args(self, problem, range) -> Dict[str, Any]:
+        return {
+            "fun": problem.f_gen(),
+            "t_span": range,
+            "y0": [problem.yi_init(), problem.dyi_init()],
+            "method": str(self.type),
+            "rtol": self.rtol,
+            "atol": self.atol,
+        }
+    def solve(self, args):
+        global_timer.start(str(self.type))
+        res = solve_ivp(**args)
+        global_timer.stop(str(self.type))
+        return res.y[:,0], res.y[:,1]
+    def __str__(self):
+        return str(self.type) + f" [rtol={self.rtol}; atol={self.atol}]"
+
+class SchrodingerProblem:
+    def __init__(self, l: float, m: float):
+        self.l = l
+        self.m = m
+
+    def potential(self, x):
+        """
+        Potential function V(x) = x^2 + l*x^4
+        """
+        return x**2 + self.l * x**4
+
+    def analytic_energy(n):
+        """
+        Optional analytic guess for the nth energy level
+        """
+        return np.sqrt(2.0) * (n - 0.5)
+
+    def w_gen(self, energy):
+        return lambda x: np.sqrt(2 * self.m * (complex(energy) - self.potential(x)))
+
+    def g_gen(self):
+        return lambda x: np.zeros_like(x)
+
+    def f_gen(self, energy):
+        def f(x, y):
+            psi, dpsi = y
+            return [dpsi, -2 * self.m * (complex(energy) - self.potential(x)) * psi]
+        return f
+
+    def yi_init(self):
+        return complex(0)
+
+    def dyi_init(self):
+        return complex(1e-3)
+
+    def solve_riccati(self, range, solver):
+        args = solver.construct_args(self, range)
+        res = ric.evolve(**args["solver_args"])
+        return res
+
+    def solve_ivp(self, range, solver):
+        return solve_ivp(
+            **solver
+        )
+    def solve(self, range, solver):
+        args = solver.construct_args(self, range)
+        return solver.solve(args)
+
+
 
 # %%
+schrodinger = SchrodingerProblem(1.0, 0.5)
+def energy_mismatch(algo, algo_iter, problem):
+    """
+    Function to minimize with respect to 'current_energy' in order
+    to find the correct energy eigenvalue for the bound state.
+
+    Returns a mismatch measure between the left and right solution derivatives.
+    """
+    def f(current_energy):
+      solver = RiccatiSolver([schrodinger.w_gen(current_energy),
+                            schrodinger.g_gen(), 8,
+                            max(32, chebyshev_order), chebyshev_order, chebyshev_order],
+                            {"eps": 1e-12, "epsh": 1e-13})
+      left_boundary = -(current_energy ** 0.25) - 2.0
+      right_boundary = -left_boundary
+      midpoint = 0.5
+      left_range, right_range = (left_boundary, midpoint), (midpoint, right_boundary)
+
+      # Evolve (integrate) from left to midpoint
+      left_wavefunction, left_derivative = problem.solve(left_range, solver)
+      right_wavefunction, right_derivative = problem.solve(right_range, solver)
+      # Final values at the midpoint
+      psi_left = left_wavefunction[-1]
+      psi_right = right_wavefunction[-1]
+      dpsi_left = left_derivative[-1]
+      dpsi_right = right_derivative[-1]
+
+      left_log_derivative  = np.log(abs(dpsi_left))  - np.log(abs(psi_left))
+      right_log_derivative = np.log(abs(dpsi_right)) - np.log(abs(psi_right))
+      mismatch = abs(np.exp(left_log_derivative) - np.exp(right_log_derivative))
+      return mismatch
+
+def flatten_tuple_impl(ret, x):
+    if hasattr(type(x), '__iter__') and hasattr(type(x[0]), '__iter__'):
+      for item in x:
+        ret = flatten_tuple_impl(ret, item)
+    elif hasattr(type(x), '__iter__'):
+      for item in x:
+        ret.append(item)
+    else:
+      ret.append(x)
+    return ret
+
+def flatten_tuple(x):
+    ret = []
+    return flatten_tuple_impl(ret, x)
+
+# %%
+epss = [1e-12, 1e-6]
+epshs = [0.1 * x for x in epss]
+cheby_order = [35, 20]
+atol = [1e-13, 1e-7]
 bounds = [ (416.5,417.5),(1035,1037),(21930,21940),(471100,471110)]
 solution_lst = []
 optim_res = []
-for bound in bounds:
-    print("Running for bounds: {}".format(bound))
-    res = minimize_scalar(f,bounds=bound,method='bounded')
-    print("Eigenenergy found: {}".format(res.x))
-    solution_lst.append(res.x)
-    optim_res.append(res)
+algorithm_dict = {
+    Algo.BDF: {"args": [[epss, atol]]},
+    Algo.RK45: {"args": [[epss, atol]]},
+    Algo.DOP853: {"args": [[epss, atol]]},
+    Algo.PYRICCATICPP: {"args": [[epss, epshs], [cheby_order]]},
+}
+for algo, algo_params in algorithm_dict.items():
+    if len(algo_params["args"]) > 1:
+      algo_args_iter = itertools.product(zip(*algo_params["args"][0]), *algo_params["args"][1])
+    else:
+      algo_args_iter = zip(*algo_params["args"][0])
+    algo_timing_pl_lst = []
+    for algo_iter_ in algo_args_iter:
+      algo_iter = flatten_tuple(algo_iter_)
+      energy_mismatch_algo = energy_mismatch(algo, algo_iter)
+      for bound in bounds:
+          print("Running for bounds: {}".format(bound))
+          res = minimize_scalar(energy_mismatch,bounds=bound,method='bounded')
+          print("Eigenenergy found: {}".format(res.x))
+          solution_lst.append(res.x)
+          optim_res.append(res)
 solution_lst
 # %%
-ns = [50,100]
-Es = solution_lst[:2]
-t_v = np.linspace(-6,6,500)
-plt.figure(figsize=(10,5))
-plt.plot(t_v,V(t_v),color='black',label='V(x)')
-for j,n,current_energy in zip(range(len(ns)),ns,Es):
+ns = [50, 100]
+energies = solution_lst[:2]
+
+x_plot = np.linspace(-6, 6, 500)
+plt.figure(figsize=(10, 5))
+plt.plot(x_plot, V(x_plot), color='black', label='V(x)')
+
+default_init_step = 1e-12
+
+for j, (n, current_energy) in enumerate(zip(ns, energies)):
     # Boundaries of integration
-    tl = -((current_energy)**(0.25))-1.0
-    tr = -tl
-    tm = 0.0
-    cheby_n = 32
-    info = ric.Init(w_gen(current_energy), g, 8, max(32, cheby_n), cheby_n, cheby_n)
-    # Grid of w, g
+    left_boundary = -((current_energy)**0.25) - 1.0
+    right_boundary = -left_boundary
+    midpoint = 0.0
+    chebyshev_order = 32
+
+    # Initialize Riccati solver
+    riccati_info = ric.Init(
+        w_gen(current_energy),
+        g,
+        8,
+        max(32, chebyshev_order),
+        chebyshev_order,
+        chebyshev_order
+    )
+    # Tolerances
     eps = 1e-12
-    epsh = eps * 1e-1
-    init_step = ric.choose_nonosc_stepsize(info, tl, tr/2.0, epsh)
-    if init_step==0:
-        init_step = 1e-12
-    print("j: ", j)
-    print("n: ", n)
-    print("tl: ",tl)
-    print("tr: ",tr)
-    print("tm: ",tm)
-    print("current_energy: ",current_energy)
-    print("init_step: ",init_step)
-    # Solve left side
-    x_eval = np.linspace(tl, tr/2.0,30000)
-    print("x_eval: ",x_eval)
-    sol_l = ric.evolve(info, tl, tr/2.0, complex(0), complex(1e-3), eps, epsh, init_step, x_eval, True)
-    ts_l = sol_l[0]
-    y_l = sol_l[6]
-    types_l = sol_l[5]
-    print("ts_l: ", ts_l)
-    if True:
-        print("Types: ",types_l)
-        [print("i: ", i, "\t", sol_l[i]) for i in range(len(sol_l))]
-    firstwkb = len(types_l) - 1
-    for i,typ in enumerate(types_l):
-        if typ==1 and 0 not in types_l[i:]:
-            firstwkb = i
+    eps_h = eps * 1e-1
+    # First integration range
+    first_range = (left_boundary, right_boundary / 2.0)
+    init_step = ric.choose_nonosc_stepsize(riccati_info, *first_range, eps_h)
+    if init_step == 0:
+        init_step = default_init_step
+    print("iteration:", j)
+    print("quantum_number:", n)
+    print("left_boundary:", left_boundary)
+    print("right_boundary:", right_boundary)
+    print("midpoint:", midpoint)
+    print("current_energy:", current_energy)
+    print("init_step:", init_step)
+    # Solve from left_boundary up to right_boundary/2
+    full_range = (left_boundary, right_boundary)
+    x_values = np.linspace(*full_range, 50_000)
+    first_slice = x_values[x_values <= (right_boundary / 2.0)]
+    left_solution = ric.evolve(
+        riccati_info,
+        *first_range,
+        complex(0),
+        complex(1e-8),
+        eps,
+        eps_h,
+        init_step,
+        first_slice,
+        True
+    )
+    left_times = left_solution[0]
+    left_wavefunction = left_solution[6]
+    left_step_types = left_solution[5]
+    # Print debug info
+    for i_val in range(len(left_solution)):
+        print("i:", i_val, "\t", left_solution[i_val])
+    # Find first Riccati index
+    first_riccati_index = len(left_step_types) - 1
+    for idx, step_type in enumerate(left_step_types):
+        if step_type == 1 and 0 not in left_step_types[idx:]:
+            first_riccati_index = idx
             break
-    print("firstwkb: ",firstwkb)
-    print("range: ", (ts_l[firstwkb],tr))
-    t_eval = np.linspace(ts_l[firstwkb],tr,2000)
-    # Solve Right side
-    init_step = ric.choose_nonosc_stepsize(info, tr/2.0, tr, epsh)
-    if init_step==0:
-        init_step = 1e-12
-    sol_r = ric.evolve(info, tl, tr, complex(0), complex(1e-3), eps, epsh, init_step, t_eval, True)
-    y_eval = sol_r[6]
-    y_pre_ric = y_l[:firstwkb]
-    ts_l = ts_l[:firstwkb]
-    Ts_l = np.concatenate((np.array(ts_l),t_eval))
-    Ys_l = np.concatenate((np.array(y_pre_ric), y_eval))
-    maxx = max(np.real(Ys_l))
-    Ys_l = Ys_l/maxx*4*np.sqrt(current_energy)
-    plt.plot(Ts_l,Ys_l+current_energy,color='C{}'.format(j),label='$\Psi_n(x)$, n={}, $E_n$={:.4f}'.format(n,current_energy))
-    plt.plot(-1*Ts_l,Ys_l+current_energy,color='C{}'.format(j))
+    print("first_riccati_index:", first_riccati_index)
+    print("range:", (left_times[first_riccati_index], midpoint))
+    # Solve from right_boundary back to right_boundary/2 (or full range, whichever you need)
+    init_step = ric.choose_nonosc_stepsize(riccati_info, *full_range, eps_h)
+    if init_step == 0:
+        init_step = default_init_step
+    if full_range[0] > full_range[1]:
+        init_step = -init_step
+    print("init_step:", init_step)
+    second_slice = x_values[x_values >= (right_boundary / 2.0)]
+    right_solution = ric.evolve(
+        riccati_info,
+        *full_range,
+        complex(0),
+        complex(1e-8),
+        eps,
+        eps_h,
+        init_step,
+        second_slice,
+        True
+    )
+    right_wavefunction = right_solution[6]
+    # Combine left and right solutions for plotting
+    combined_wavefunction = np.concatenate((left_wavefunction, right_wavefunction))
+    max_val = np.max(np.real(combined_wavefunction))
+    scaled_wavefunction = combined_wavefunction / max_val * 4.0 * np.sqrt(current_energy)
+    plt.plot(
+        x_values,
+        scaled_wavefunction + current_energy,
+        color=f'C{j}',
+        label=f'$\\Psi_n(x)$, n={n}, $E_n$={current_energy:.4f}'
+    )
+
 plt.xlabel('x')
 plt.legend(loc='lower left')
 plt.show()
