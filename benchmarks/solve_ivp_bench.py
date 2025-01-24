@@ -15,6 +15,7 @@ import signal
 from typing import Any, Callable, Dict, List, Tuple
 from collections.abc import Iterable
 
+
 # %%
 class Algo(Enum):
     """Enumeration of available algorithms for solving differential equations."""
@@ -98,6 +99,7 @@ class BaseProblem:
 
 
 ## Bremer
+
 
 class Bremer(BaseProblem):
     """
@@ -196,6 +198,7 @@ class Bremer(BaseProblem):
         """
         return "Bremer237: " + self.print_params()
 
+
 ##
 # Dictionary indexed by problem enum containing data for each problem
 # to be used in benchmarking.
@@ -203,7 +206,7 @@ class Bremer(BaseProblem):
 # The row of parameters will be passed to the associated problem class constructor
 # i.e. a row for Bremer will look like
 # (start: float, end: float, y1: float, relative_error: float, lamb: float)
-problem_dictionary : Dict[Problem, pl.DataFrame] = {}
+problem_dictionary: Dict[Problem, pl.DataFrame] = {}
 
 # Self-reported accuracy of Bremer's phase function method on
 # Eq. (237) in Bremer 2018.
@@ -225,9 +228,10 @@ except FileNotFoundError:
 bremer_ref = bremer_ref.with_columns(pl.lit(-1).alias("start"))
 bremer_ref = bremer_ref.with_columns(pl.lit(1).alias("end"))
 
-#problem_dictionary[Problem.BREMER237] = {"class": Bremer, "data": bremer_ref}
+problem_dictionary[Problem.BREMER237] = {"class": Bremer, "data": bremer_ref}
 
 ## Airy
+
 
 class Airy(BaseProblem):
     """
@@ -318,9 +322,10 @@ airy_yend = complex(sp.airy(-airy_end)[0] + 1j * sp.airy(-airy_end)[2])
 airy_data = pl.DataFrame(
     {"start": [0.0], "end": [airy_end], "y1": [airy_yend], "relative_error": [1e-12]}
 )
-#problem_dictionary[Problem.AIRY] = {"class": Airy, "data": airy_data}
+problem_dictionary[Problem.AIRY] = {"class": Airy, "data": airy_data}
 
 ## Stiff problem
+
 
 class Stiff(BaseProblem):
     """
@@ -333,8 +338,7 @@ class Stiff(BaseProblem):
     Attributes:
     """
 
-    def __init__(
-        self, start: float, end: float, y1: float, relative_error: float):
+    def __init__(self, start: float, end: float, y1: float, relative_error: float):
         """
         Initializes the Flame propagation problem with the given parameters.
 
@@ -374,7 +378,7 @@ class Stiff(BaseProblem):
         """
 
         def f(t: float, y: np.ndarray) -> np.ndarray:
-            return [y[1], - (t + 21.0) * y[1] - 21.0 * t * y[0]]
+            return [y[1], -(t + 21.0) * y[1] - 21.0 * t * y[0]]
 
         return f
 
@@ -413,6 +417,8 @@ class Stiff(BaseProblem):
           str: The problem as a string.
         """
         return "Stiff: " + self.print_params()
+
+
 # %%
 # Not sure what to write here
 stiff_data = pl.DataFrame(
@@ -423,6 +429,7 @@ problem_dictionary[Problem.STIFF] = {"class": Stiff, "data": stiff_data}
 
 
 ## Burst
+
 
 def gen_problem(problem: Any, data: pl.DataFrame):
     """
@@ -437,6 +444,7 @@ def gen_problem(problem: Any, data: pl.DataFrame):
     """
     for x in data.iter_rows(named=True):
         yield problem(**x)
+
 
 # %%
 def construct_riccati_args(
@@ -514,6 +522,8 @@ def construct_algo_args(
             return construct_riccati_args(problem, *args)
         case _:
             return construct_solve_ivp_args(problem, str(algo), *args)
+
+
 # %%
 
 ## Start Benchmark
@@ -527,9 +537,9 @@ algorithm_dict = {
     Algo.RK45: {"args": [[epss, atol]], "iters": 1},
     Algo.DOP853: {"args": [[epss, atol]], "iters": 1},
     Algo.PYRICCATICPP: {"args": [[epss, epshs], [ns]], "iters": 1000},
-# Does not support complex
-#   Algo.Radau: {"args": [[epss, atol]], "iters": 1},
-#   Algo.LSODA: {"args":[epss, atol], "iters": 1}
+    # Does not support complex
+    #   Algo.Radau: {"args": [[epss, atol]], "iters": 1},
+    #   Algo.LSODA: {"args":[epss, atol], "iters": 1}
 }
 
 
@@ -589,56 +599,59 @@ def benchmark(
         # All Python IVPs use the same scheme
         case _:
             try:
-              runtime = (
-                  timeit.timeit(lambda: solve_ivp(**algo_args["method_args"]), number=N)
-                  / N
-              )
-              sol = solve_ivp(**algo_args["method_args"])
-              if problem_info.y1 == 0:
-                  yerr = np.abs(sol.y[0, -1])
-              else:
-                  yerr = np.abs((sol.y[0, -1] - problem_info.y1) / problem_info.y1)
-              timing_df = pl.DataFrame(
-                  {
-                      "eq_name": algo_args["function_name"],
-                      "method": str(algo_args["method"]),
-                      "eps": algo_args["eps"],
-                      "relerr": yerr,
-                      "walltime": runtime,
-                      "errlessref": bool(yerr < problem_info.relative_error),
-                      "problem_params": problem_info.print_params(),
-                      "params": f"rtol={algo_args['method_args']['rtol']};atol={algo_args['method_args']['atol']}",
-                  }
-              )
-              print("Timing: \n", timing_df)
-              import pdb; pdb.set_trace()
+                runtime = (
+                    timeit.timeit(
+                        lambda: solve_ivp(**algo_args["method_args"]), number=N
+                    )
+                    / N
+                )
+                sol = solve_ivp(**algo_args["method_args"])
+                if problem_info.y1 == 0:
+                    yerr = np.abs(sol.y[0, -1])
+                else:
+                    yerr = np.abs((sol.y[0, -1] - problem_info.y1) / problem_info.y1)
+                timing_df = pl.DataFrame(
+                    {
+                        "eq_name": algo_args["function_name"],
+                        "method": str(algo_args["method"]),
+                        "eps": algo_args["eps"],
+                        "relerr": yerr,
+                        "walltime": runtime,
+                        "errlessref": bool(yerr < problem_info.relative_error),
+                        "problem_params": problem_info.print_params(),
+                        "params": f"rtol={algo_args['method_args']['rtol']};atol={algo_args['method_args']['atol']}",
+                    }
+                )
+                print("Timing: \n", timing_df)
             except MemoryError:
-              print("FAILURE: Memory Error")
-            # Catch out of memory error
-              timing_df = pl.DataFrame(
-                  {
-                      "eq_name": algo_args["function_name"],
-                      "method": str(algo_args["method"]),
-                      "eps": algo_args["eps"],
-                      "relerr": None,
-                      "walltime": None,
-                      "errlessref": False,
-                      "problem_params": problem_info.print_params(),
-                      "params": f"rtol={algo_args['method_args']['rtol']};atol={algo_args['method_args']['atol']}",
-                  }
-              )
+                print("FAILURE: Memory Error")
+                # Catch out of memory error
+                timing_df = pl.DataFrame(
+                    {
+                        "eq_name": algo_args["function_name"],
+                        "method": str(algo_args["method"]),
+                        "eps": algo_args["eps"],
+                        "relerr": None,
+                        "walltime": None,
+                        "errlessref": False,
+                        "problem_params": problem_info.print_params(),
+                        "params": f"rtol={algo_args['method_args']['rtol']};atol={algo_args['method_args']['atol']}",
+                    }
+                )
             return timing_df
 
+
 def flatten_tuple_impl(ret, x):
-    if hasattr(type(x), '__iter__') and hasattr(type(x[0]), '__iter__'):
-      for item in x:
-        ret = flatten_tuple_impl(ret, item)
-    elif hasattr(type(x), '__iter__'):
-      for item in x:
-        ret.append(item)
+    if hasattr(type(x), "__iter__") and hasattr(type(x[0]), "__iter__"):
+        for item in x:
+            ret = flatten_tuple_impl(ret, item)
+    elif hasattr(type(x), "__iter__"):
+        for item in x:
+            ret.append(item)
     else:
-      ret.append(x)
+        ret.append(x)
     return ret
+
 
 def flatten_tuple(x):
     ret = []
@@ -657,82 +670,98 @@ print("Algo Sets: ", algorithm_dict)
 
 all_timing_pl_lst = []
 # Uncomment to test just airy
-#problem_dictionary = {}
-#problem_dictionary[Problem.AIRY] = {"class": Airy, "data": airy_data}
+# problem_dictionary = {}
+# problem_dictionary[Problem.AIRY] = {"class": Airy, "data": airy_data}
+
 
 class timeout:
-    def __init__(self, seconds=1, error_message='Timeout'):
+    def __init__(self, seconds=1, error_message="Timeout"):
         self.seconds = seconds
         self.error_message = error_message
+
     def handle_timeout(self, signum, frame):
         raise TimeoutError(self.error_message)
+
     def __enter__(self):
         signal.signal(signal.SIGALRM, self.handle_timeout)
         signal.alarm(self.seconds)
+
     def __exit__(self, type, value, traceback):
         signal.alarm(0)
+
 
 max_time = 1200
 for algo, algo_params in algorithm_dict.items():
     if len(algo_params["args"]) > 1:
-      algo_args_iter = itertools.product(zip(*algo_params["args"][0]), *algo_params["args"][1])
+        algo_args_iter = itertools.product(
+            zip(*algo_params["args"][0]), *algo_params["args"][1]
+        )
     else:
-      algo_args_iter = zip(*algo_params["args"][0])
+        algo_args_iter = zip(*algo_params["args"][0])
     algo_timing_pl_lst = []
     for algo_iter_ in algo_args_iter:
-      for problem_key, problem_item in problem_dictionary.items():
-        print("=====================================")
-        algo_iter = flatten_tuple(algo_iter_)
-        # If the previous run did not timeout, continue
-        prev_timeout = False
-        for problem_info in gen_problem(
-            problem_item["class"], problem_item["data"]
-        ):
-            algo_args = {
-                "method": algo,
-                "function_name": str(problem_key),
-                # Eps must always be first arg of tuple
-                "eps": algo_iter[0],
-                "method_args": construct_algo_args(algo, problem_info, algo_iter),
-            }
-            match algo_args["method"]:
-                case Algo.PYRICCATICPP:
-                    print_args = algo_args["method_args"]["print_args"]
-                    args_str = f"n={print_args['n']};p={print_args['n']};epsh={print_args['epsh']}"
-                case _:
-                    args_str = f"rtol={algo_args['method_args']['rtol']};atol={algo_args['method_args']['atol']}"
-            print("\tArgs: ", args_str)
-            timeout_df = pl.DataFrame(
-              {
-                  "eq_name": algo_args["function_name"],
-                  "method": str(algo_args["method"]),
-                  "eps": algo_args["eps"],
-                  "relerr": None,
-                  "walltime": max_time,
-                  "errlessref": False,
-                  "problem_params": problem_info.print_params(),
-                  "params": args_str,
-              })
-            if prev_timeout:
-              print("Skipping ", str(algo), "on", str(problem_key))
-              algo_timing_pl_lst.append(timeout_df)
-              continue
-            print("Running ", str(algo), "on", str(problem_key))
-            print("\tProblem Info: ", problem_info)
-            # Assuming each problem set is linear in complexity parameters
-            # Allows a max time of max_time seconds per problem
-            try:
-              with timeout(seconds=max_time):
-                bench_time = benchmark(problem_info, algo_args, N=algo_params["iters"])
-                algo_timing_pl_lst.append(bench_time)
-                prev_time = algo_timing_pl_lst[-1]["walltime"][0]
-                print("Time: ", algo_timing_pl_lst[-1]["walltime"][0])
-            except TimeoutError:
-                algo_timing_pl_lst.append(timeout_df)
-                prev_timeout = True
-                print("Program took longer than ", max_time, "seconds (", max_time/60, "minutes) to run")
-                pass
+        for problem_key, problem_item in problem_dictionary.items():
             print("=====================================")
+            algo_iter = flatten_tuple(algo_iter_)
+            # If the previous run did not timeout, continue
+            prev_timeout = False
+            for problem_info in gen_problem(
+                problem_item["class"], problem_item["data"]
+            ):
+                algo_args = {
+                    "method": algo,
+                    "function_name": str(problem_key),
+                    # Eps must always be first arg of tuple
+                    "eps": algo_iter[0],
+                    "method_args": construct_algo_args(algo, problem_info, algo_iter),
+                }
+                match algo_args["method"]:
+                    case Algo.PYRICCATICPP:
+                        print_args = algo_args["method_args"]["print_args"]
+                        args_str = f"n={print_args['n']};p={print_args['n']};epsh={print_args['epsh']}"
+                    case _:
+                        args_str = f"rtol={algo_args['method_args']['rtol']};atol={algo_args['method_args']['atol']}"
+                print("\tArgs: ", args_str)
+                timeout_df = pl.DataFrame(
+                    {
+                        "eq_name": algo_args["function_name"],
+                        "method": str(algo_args["method"]),
+                        "eps": algo_args["eps"],
+                        "relerr": None,
+                        "walltime": max_time,
+                        "errlessref": False,
+                        "problem_params": problem_info.print_params(),
+                        "params": args_str,
+                    }
+                )
+                if prev_timeout:
+                    print("Skipping ", str(algo), "on", str(problem_key))
+                    algo_timing_pl_lst.append(timeout_df)
+                    continue
+                print("Running ", str(algo), "on", str(problem_key))
+                print("\tProblem Info: ", problem_info)
+                # Assuming each problem set is linear in complexity parameters
+                # Allows a max time of max_time seconds per problem
+                try:
+                    with timeout(seconds=max_time):
+                        bench_time = benchmark(
+                            problem_info, algo_args, N=algo_params["iters"]
+                        )
+                        algo_timing_pl_lst.append(bench_time)
+                        prev_time = algo_timing_pl_lst[-1]["walltime"][0]
+                        print("Time: ", algo_timing_pl_lst[-1]["walltime"][0])
+                except TimeoutError:
+                    algo_timing_pl_lst.append(timeout_df)
+                    prev_timeout = True
+                    print(
+                        "Program took longer than ",
+                        max_time,
+                        "seconds (",
+                        max_time / 60,
+                        "minutes) to run",
+                    )
+                    pass
+                print("=====================================")
     algo_timing_pl = pl.concat(algo_timing_pl_lst, rechunk=True, how="vertical_relaxed")
     algo_problem_file_name = base_output_path + "_" + str(algo) + ".csv"
     algo_timing_pl.write_csv(algo_problem_file_name, float_precision=24)
