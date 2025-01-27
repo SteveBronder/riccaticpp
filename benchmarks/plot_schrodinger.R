@@ -26,16 +26,19 @@ bench_sum_dt = bench_dt[, .(sum_time = sum(time), sum_count = sum(count)),
   .(algo, algo_plus, algo_args, eps)]
 bench_sum_dt[, per_call := sum_time/sum_count]
 setkey(bench_sum_dt, eps, algo_plus)
-ggplot(bench_sum_dt, aes(x = algo_plus, y = per_call, fill = algo)) +
+schrod_bench_plot = ggplot(bench_sum_dt, aes(x = algo, y = per_call, fill = algo)) +
   geom_bar(stat = "identity") +
   scale_y_continuous(transform = "log1p", breaks = c(0, 0.25, .5, 1, 2, 4, 8, 13)) +
   facet_wrap(vars(eps)) +
-  ggtitle("Schrodinger Equation: Average Seconds For ODE Solves") +
+  ggtitle("Schrodinger: Average Seconds For ODE Solver Calls") +
   xlab("") +
   ylab("") +
   theme_bw() +
   theme(legend.position="bottom") +
   theme(axis.text.x = element_text(angle = -30, vjust = 0.8, hjust=.1))
+schrod_bench_plot
+ggsave("./benchmarks/plots/schrodinger.png", schrod_bench_plot,
+  width = 6, height = 4, units = "in")
 
 
 # Error rates
@@ -48,18 +51,19 @@ err_dt[!grep("1e-06", algo_args), eps := 1e-12]
 err_dt[, algo_plus := algo]
 err_dt[grep("n=20", algo_args), algo_plus := paste0(algo, ":n=20")]
 err_dt[grep("n=35", algo_args), algo_plus := paste0(algo, ":n=35")]
-err_dt[, rel_energy_err := energy_error / energy_reference]
+err_dt[, rel_energy_err := abs(energy_error / energy_reference)]
 # Just look at a slice
 err_sub_dt = err_dt[energy_reference == 471103.666]
 err_sub_dt[, energy_reference := 471103.777]
 setkey(err_sub_dt, eps, algo_plus)
-knitr::kable(err_sub_dt[, .(algo_plus, algo_args, energy, energy_reference, energy_error)])
+knitr::kable(err_sub_dt[, .(algo_plus, algo_args, energy, energy_reference, energy_error, rel_energy_err)])
 
 setkey(err_dt, name)
 err_dt[, iter := NULL]
 err_dt = unique(err_dt)
 err_summary_dt = err_dt[,
-  .(err_val = mean(rel_energy_err)),
+  .(total_err = mean(energy_error),
+    err_val = mean(rel_energy_err)),
   .(algo, algo_args, prob_args, eps)]
 err_summary_dt = err_summary_dt[!grep("n=20", algo_args)]
 setkey(err_summary_dt, algo, eps, prob_args)
@@ -75,17 +79,22 @@ setkey(err_summary_dt, eps, algo, algo_args, prob_bounds)
 err_summary_dt[, bound_idx := as.numeric(prob_bounds)]
 err_summary_dt[, test := seq(from = bound_idx - .1, to = bound_idx + .1, length.out = 4)[blah], .I]
 err_summary_dt[rb == 417]
-setkey(err_summary_dt, eps, algo, algo_args, prob_args)
+setkey(err_summary_dt, eps, algo, algo_args, prob_bounds)
 err_summary_dt
-ggplot(err_summary_dt, aes(x = test, y = err_val, color = algo, fill = algo)) +
+err_summary_dt[, min(err_val)]
+# We multiply by 1_000_000 and then divide so we can make the y axis logarithmic
+# While still looking nice
+schrod_err_plot = ggplot(err_summary_dt,
+  aes(x = test, y = err_val * 1000000, color = algo, fill = algo)) +
   #  scale_y_log10(breaks = c(1, 2, 5, 10, 18, 30, 60)) +
   geom_bar(stat = "identity") +
   facet_wrap(vars(eps), nrow = 2, ncol = 1) +
-  ggtitle("Schrodinger Equation: Relative Error of Energy Per ODE") +
+  ggtitle("Schrodinger: Relative Error of Energy Per ODE") +
   scale_x_continuous(labels = err_summary_dt[, prob_bounds[1:4]]) +
-  scale_y_continuous(transform = "log1p", n.breaks = 7, labels = scales::scientific_format()) +
+  scale_y_continuous(transform = "log10", labels = \(x) x / 1000000) +
   xlab("") +
   ylab("") +
   theme_bw() +
   theme(legend.position="bottom", axis.text.y = element_text(size = 12))
-#  theme(axis.text.x = element_text(angle = -30, vjust = 0.8, hjust=.1))
+ggsave("./benchmarks/plots/schrodinger_err.png", schrod_err_plot,
+  width = 6, height = 4, units = "in")

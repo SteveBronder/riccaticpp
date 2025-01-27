@@ -2,13 +2,29 @@ library(data.table)
 library(ggplot2)
 library(patchwork)
 
-file_names = list.files("../../../riccaticpp/benchmarks/output", pattern = "solve_ivp_times_(.*).csv",
+file_names = list.files("./benchmarks/output", pattern = "solve_ivp_times_(.*).csv",
   full.names = TRUE, include.dirs = TRUE)
 bench_dt = rbindlist(lapply(file_names, fread))
 
 bremer_dt = bench_dt[eq_name == "BREMER237"]
 bremer_dt[, lambda := as.numeric(lapply(strsplit(problem_params, "="), \(x) x[[4]]))]
 bremer_dt = bremer_dt[!grep("n=20", params)]
+setkey(bremer_dt, method, eps, lambda)
+bremer_dt[, relerr := as.numeric(relerr)]
+setnafill(bremer_dt, type = "locf", cols = "relerr")
+bremer_table_dt = bremer_dt[eps == 1e-12][, .(method, walltime, lambda)]
+setkey(bremer_table_dt, lambda, method)
+bremer_table_dt[, relative_time := .SD[, walltime / walltime[3]], .(lambda)]
+bremer_table_dt[, method := factor(method,
+  levels = c("PYRICCATICPP", "BDF", "DOP853", "RK45"), ordered = TRUE)]
+setkey(bremer_table_dt, lambda, method)
+bremer_table_format_dt = copy(bremer_table_dt)
+bremer_table_format_dt[, `:=`(
+  walltime = format(walltime, scientific = TRUE),
+  relative_time = round(relative_time, digits = 2)
+  )]
+setcolorder(bremer_table_format_dt, c("method", "lambda"))
+knitr::kable(bremer_table_format_dt[method == "BDF"])
 bremer_plots = ggplot(bremer_dt,
   aes(x = lambda, y = walltime, color = method)) +
   geom_line() +
@@ -26,7 +42,6 @@ bremer_plots = ggplot(bremer_dt,
   xlab("Bremer Eq 237: Lambda") +
   theme_bw() +
   theme(legend.position="bottom")
-
 bremer_plots
 
 airy_dt = bench_dt[eq_name == "AIRY"]
@@ -38,7 +53,7 @@ stiff_plot = ggplot(stiff_dt, aes(x = method, y = walltime, fill = method)) +
   geom_bar(stat = "identity") +
   facet_wrap(vars(eps)) +
 #  ggtitle("Stiff Equation Wall Time In Seconds") +
-  scale_y_continuous(transform = "log1p", breaks = c(0, 0.05, 0.1, 0.3, 0.6)) +
+  scale_y_continuous(transform = "log1p", breaks = c(0, 0.1, 0.25, 0.5, 0.6)) +
   ylab("") +
   xlab("Stiff") +
   theme_bw() +
@@ -48,11 +63,12 @@ stiff_plot
 airy_dt = bench_dt[eq_name == "AIRY"]
 airy_dt = airy_dt[!grep("n=20", params)]
 
-airy_plot = ggplot(airy_dt, aes(x = method, y = walltime, fill = method)) +
+airy_y_breaks = c(10, 100, 1000, 10000, 60000)
+airy_plot = ggplot(airy_dt, aes(x = method, y = walltime * 10000, fill = method)) +
   geom_bar(stat = "identity") +
   facet_wrap(vars(eps)) +
 #  ggtitle("Airy Equation Wall Time In Seconds") +
-  scale_y_continuous(transform = "log1p", breaks = c(0, 0.1, 0.5, 3, 6)) +
+  scale_y_continuous(transform = "log10", labels = \(x) x / 10000, breaks = airy_y_breaks) +
   ylab("") +
   xlab("Airy") +
   theme_bw() +
@@ -60,13 +76,14 @@ airy_plot = ggplot(airy_dt, aes(x = method, y = walltime, fill = method)) +
   theme(axis.text.x = element_text(angle = -30, vjust = 0.8, hjust=.1))
 airy_plot
 
-(bremer_plots / (stiff_plot + airy_plot)) + plot_annotation(
+patched_plot = (bremer_plots / (stiff_plot + airy_plot)) + plot_annotation(
   title = 'Benchmarks in Seconds',
   subtitle = 'Benchmarks Faceted by relative tolerance'
 )
+patched_plot
+ggsave("./benchmarks/plots/ivp_bench.png", patched_plot,
+  width = 8, height = 6, units = "in")
 
-setkey(bremer_dt, method, eps, lambda)
-bremer_dt[, relerr := nafill(relerr, type = "locf"), .(method, eps)]
 bremer_err_plot = ggplot(bremer_dt, aes(x = lambda, y = relerr, color = method, group = method)) +
   facet_wrap(vars(eps), ncol = 1) +
   geom_point() +
@@ -93,12 +110,12 @@ stiff_err_plot = ggplot(stiff_dt, aes(x = method, y = relerr, fill = method)) +
   theme(legend.position="none") +
   theme(axis.text.x = element_text(angle = -30, vjust = 0.8, hjust=.1),
     axis.text.y = element_text(size = 12))
-
+stiff_err_plot
 
 airy_err_plot = ggplot(airy_dt, aes(x = method, y = relerr, fill = method)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label = format(relerr, scientific = TRUE, digits = 3)), vjust = -0.4) +
   facet_wrap(vars(eps), scales = "free_y") +
+  geom_text(aes(label = format(relerr, scientific = TRUE, digits = 3)), vjust = -0.4) +
   #  ggtitle("Stiff Equation Wall Time In Seconds") +
   scale_y_continuous(transform = "log1p",labels = scales::scientific_format()) +
   ylab("") +
@@ -107,9 +124,13 @@ airy_err_plot = ggplot(airy_dt, aes(x = method, y = relerr, fill = method)) +
   theme(legend.position="none") +
   theme(axis.text.x = element_text(angle = -30, vjust = 0.8, hjust=.1),
     axis.text.y = element_text(size = 12))
+airy_err_plot
 
-(bremer_err_plot / (stiff_err_plot + airy_err_plot)) + plot_annotation(
+err_plots = (bremer_err_plot / (stiff_err_plot + airy_err_plot)) + plot_annotation(
   title = 'Relative Error Per Problem',
   subtitle = 'Benchmarks Faceted by relative tolerance'
 )
+err_plots
+ggsave("./benchmarks/plots/ivp_bench_errs.png", err_plots,
+  width = 45, height = 35, units = "cm")
 
