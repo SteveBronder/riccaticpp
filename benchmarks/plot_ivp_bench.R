@@ -97,13 +97,18 @@ bremer_err_plot = ggplot(bremer_dt, aes(x = lambda, y = relerr, color = method, 
     axis.text.y = element_text(size = 12))
 bremer_err_plot
 
-stiff_err_plot = ggplot(stiff_dt, aes(x = method, y = relerr, fill = method)) +
+cheat_log = scales::new_transform(
+  "cheating_log", transform = \(x) ifelse(x > 0, log10(x), x),
+  inverse = \(x) ifelse(x > 0, 10^(x), 0)
+)
+stiff_breaks = c(0, 10, 100, 1000, 1e5, 1e7, 1e10)
+stiff_err_plot = ggplot(stiff_dt, aes(x = method, y = relerr * (1.0e21), fill = method)) +
   geom_bar(stat = "identity") +
   facet_wrap(vars(eps)) +
   #  ggtitle("Stiff Equation Wall Time In Seconds") +
   geom_text(aes(label = format(relerr, scientific = TRUE, digits = 3)), vjust = -0.4) +
-  facet_wrap(vars(eps), scales = "free_y") +
-  scale_y_continuous(transform = "log1p", labels = scales::scientific_format()) +
+  facet_wrap(vars(eps)) +
+  scale_y_continuous(transform = cheat_log, labels = \(x) x / 1.0e21, breaks = stiff_breaks) +
   ylab("") +
   xlab("Stiff") +
   theme_bw() +
@@ -112,12 +117,12 @@ stiff_err_plot = ggplot(stiff_dt, aes(x = method, y = relerr, fill = method)) +
     axis.text.y = element_text(size = 12))
 stiff_err_plot
 
-airy_err_plot = ggplot(airy_dt, aes(x = method, y = relerr, fill = method)) +
+airy_err_plot = ggplot(airy_dt, aes(x = method, y = relerr * 1e12, fill = method)) +
   geom_bar(stat = "identity") +
-  facet_wrap(vars(eps), scales = "free_y") +
+  facet_wrap(vars(eps)) +
   geom_text(aes(label = format(relerr, scientific = TRUE, digits = 3)), vjust = -0.4) +
   #  ggtitle("Stiff Equation Wall Time In Seconds") +
-  scale_y_continuous(transform = "log1p",labels = scales::scientific_format()) +
+  scale_y_continuous(transform = "log10", labels = \(x) x / 1e12) +
   ylab("") +
   xlab("Airy") +
   theme_bw() +
