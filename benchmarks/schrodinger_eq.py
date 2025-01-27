@@ -14,7 +14,7 @@ import inspect
 import signal
 from typing import Any, Callable, Dict, List, Tuple
 from collections.abc import Iterable
-from scipy.optimize import minimize_scalar
+import scipy.optimize as sci_opt
 import matplotlib
 from matplotlib import pyplot as plt
 
@@ -276,14 +276,16 @@ epss = [1e-12, 1e-6]
 epshs = [0.1 * x for x in epss]
 cheby_order = [35, 20]
 atol = [1e-13, 1e-7]
-bounds = [(416.5, 417.5), (1035, 1037), (21930, 21940), (471100, 471110)]
+quantum_number = [50, 100, 1_000, 10_000]
+energy_reference = [417.056, 1_035.544, 21_932.783, 471_103.666]
+bounds = [(416.5, 417.5), (1_035, 1_037), (21_930, 21_940), (471_100, 471_110)]
 algo_solutions = {}
 algo_optim = {}
 algorithm_dict = {
+    Algo.PYRICCATICPP: {"args": [[epss, epshs], [cheby_order]]},
     Algo.DOP853: {"args": [[epss, atol]]},
     Algo.BDF: {"args": [[epss, atol]]},
     Algo.RK45: {"args": [[epss, atol]]},
-    Algo.PYRICCATICPP: {"args": [[epss, epshs], [cheby_order]]},
 }
 algo_pl_lst: List[pl.DataFrame] = []
 dir_path = os.getcwd()
@@ -295,38 +297,42 @@ all_algo_pl_lst: List[pl.DataFrame] = []
 first_write = True
 with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
     for algo, algo_params in algorithm_dict.items():
-        print("Algo: ", str(algo))
-        if len(algo_params["args"]) > 1:
-            algo_args_iter = itertools.product(
-                zip(*algo_params["args"][0]), *algo_params["args"][1]
-            )
-        else:
-            algo_args_iter = zip(*algo_params["args"][0])
-        algo_timing_pl_lst = []
-        for algo_iter_ in algo_args_iter:
-            algo_iter = flatten_tuple(algo_iter_)
-            match algo:
-                case Algo.PYRICCATICPP:
-                    args_str = (
-                        f"n={algo_iter[2]};eps={algo_iter[0]};epsh={algo_iter[1]}"
-                    )
-                case _:
-                    args_str = f"rtol={algo_iter[0]};atol={algo_iter[1]}"
-                    print("\tArgs: " + args_str)
-            print("\tArgs: ", args_str)
-            for bound in bounds:
-                schrodinger = SchrodingerProblem(1.0, 0.5, *bound)
-                energy_mismatch = energy_mismatch_functor(algo, algo_iter, schrodinger)
-                print("\t\tRunning for bounds: {}".format(bound))
-                res = minimize_scalar(energy_mismatch, bounds=bound, method="bounded")
-                print("\t\tEigenenergy found: {}".format(res.x))
-                algo_key = to_string(algo, algo_iter, schrodinger)
-                if algo_key not in algo_optim:
-                    algo_optim[algo_key] = res
-                else:
-                    algo_optim[algo_key].append(res)
-                algo_timing_pl_lst.append(pl.DataFrame(algo_optim[algo_key]))
-        algo_pl = pl.concat(algo_timing_pl_lst)
+        algo_evals_pl_lst = []
+        for benchmark_run in range(20):
+          print("Algo: ", str(algo))
+          if len(algo_params["args"]) > 1:
+              algo_args_iter = itertools.product(
+                  zip(*algo_params["args"][0]), *algo_params["args"][1]
+              )
+          else:
+              algo_args_iter = zip(*algo_params["args"][0])
+          print("Iter: ", benchmark_run)
+          for algo_iter_ in algo_args_iter:
+              algo_iter = flatten_tuple(algo_iter_)
+              match algo:
+                  case Algo.PYRICCATICPP:
+                      args_str = (
+                          f"n={algo_iter[2]};eps={algo_iter[0]};epsh={algo_iter[1]}"
+                      )
+                  case _:
+                      args_str = f"rtol={algo_iter[0]};atol={algo_iter[1]}"
+                      print("\tArgs: " + args_str)
+              print("\tArgs: ", args_str)
+              for energy_ref, bound in zip(energy_reference, bounds):
+                  schrodinger = SchrodingerProblem(1.0, 0.5, *bound)
+                  energy_mismatch = energy_mismatch_functor(algo, algo_iter, schrodinger)
+                  res = sci_opt.minimize_scalar(energy_mismatch, bounds=bound, method="bounded", tol=algo_iter[0])
+                  print("\t\tEigenenergy found: {}".format(res.x))
+                  algo_key = to_string(algo, algo_iter, schrodinger)
+                  algo_pl_tmp = pl.DataFrame(res)
+                  algo_pl_tmp = algo_pl_tmp.rename({"x": "energy"})
+                  algo_pl_tmp = algo_pl_tmp.with_columns(pl.lit(algo_key).alias("name"),
+                                                         pl.lit(benchmark_run).alias("iter"),
+                                                         pl.lit(energy_ref).alias("energy_reference"))
+                  algo_pl_tmp = algo_pl_tmp.with_columns((pl.col("energy") - pl.col("energy_reference")).abs().alias("energy_error"))
+                  algo_evals_pl_lst.append(algo_pl_tmp)
+        algo_pl = pl.concat(algo_evals_pl_lst)
+        print(algo_pl)
         algo_pl.write_csv(base_output_path + f"schrod_{str(algo)}.csv")
         all_algo_pl_lst.append(algo_pl)
         time_pl_lst = []
@@ -346,7 +352,7 @@ with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
             time_pl.write_csv(time_file)
             first_write = False
         else:
-            time_pl.write_csv(time_file, include_headers=False)
+            time_pl.write_csv(time_file, include_header=False)
 
 all_algo_pl = pl.concat(all_algo_pl_lst)
 all_algo_pl.write_csv(f"{base_output_path}schrod.csv")
