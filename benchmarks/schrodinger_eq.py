@@ -245,10 +245,10 @@ def energy_mismatch_functor(
         psi_right = right_wavefunction[-1]
         dpsi_left = left_derivative[-1]
         dpsi_right = right_derivative[-1]
-
-        left_log_derivative = np.log(abs(dpsi_left)) - np.log(abs(psi_left))
-        right_log_derivative = np.log(abs(dpsi_right)) - np.log(abs(psi_right))
-        mismatch = abs(np.exp(left_log_derivative) - np.exp(right_log_derivative))
+        try:
+            mismatch = np.abs((dpsi_left / psi_left) - (dpsi_right / psi_right))
+        except ZeroDivisionError:
+            mismatch = 1000
         return mismatch
 
     return f
@@ -277,7 +277,7 @@ epshs = [0.1 * x for x in epss]
 cheby_order = [35, 20]
 atol = [1e-13, 1e-7]
 quantum_number = [50, 100, 1_000, 10_000]
-energy_reference = [417.056, 1_035.544, 21_932.783, 471_103.666]
+energy_reference = [417.056, 1_035.544, 21_932.783, 471_103.777]
 bounds = [(416.5, 417.5), (1_035, 1_037), (21_930, 21_940), (471_100, 471_110)]
 algo_solutions = {}
 algo_optim = {}
@@ -295,10 +295,10 @@ else:
     base_output_path = "./benchmarks/output/"
 all_algo_pl_lst: List[pl.DataFrame] = []
 first_write = True
-with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
+with open(base_output_path + "schrodinger_times2.csv", mode="a") as time_file:
     for algo, algo_params in algorithm_dict.items():
         algo_evals_pl_lst = []
-        for benchmark_run in range(20):
+        for benchmark_run in range(1):
           print("Algo: ", str(algo))
           if len(algo_params["args"]) > 1:
               algo_args_iter = itertools.product(
@@ -321,7 +321,11 @@ with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
               for energy_ref, bound in zip(energy_reference, bounds):
                   schrodinger = SchrodingerProblem(1.0, 0.5, *bound)
                   energy_mismatch = energy_mismatch_functor(algo, algo_iter, schrodinger)
-                  res = sci_opt.minimize_scalar(energy_mismatch, bounds=bound, method="bounded", tol=algo_iter[0])
+                  import pdb; pdb.set_trace()
+                  res = sci_opt.minimize_scalar(energy_mismatch, bounds=bound, method="bounded",
+                                                tol=algo_iter[0], options = {"maxiter": 1000,
+                                                                             "xatol" : algo_iter[0],
+                                                                             "disp" : 3})
                   print("\t\tEigenenergy found: {}".format(res.x))
                   algo_key = to_string(algo, algo_iter, schrodinger)
                   algo_pl_tmp = pl.DataFrame(res)
@@ -333,7 +337,7 @@ with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
                   algo_evals_pl_lst.append(algo_pl_tmp)
         algo_pl = pl.concat(algo_evals_pl_lst)
         print(algo_pl)
-        algo_pl.write_csv(base_output_path + f"schrod_{str(algo)}.csv")
+        algo_pl.write_csv(base_output_path + f"schrod2_{str(algo)}.csv")
         all_algo_pl_lst.append(algo_pl)
         time_pl_lst = []
         for algo_key, time_st in global_timer.execs.items():
@@ -355,7 +359,7 @@ with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
             time_pl.write_csv(time_file, include_header=False)
 
 all_algo_pl = pl.concat(all_algo_pl_lst)
-all_algo_pl.write_csv(f"{base_output_path}schrod.csv")
+all_algo_pl.write_csv(f"{base_output_path}schrod2.csv")
 # %%
 # %%
 time_pl_lst = []
@@ -367,7 +371,7 @@ for algo_key, time_st in global_timer.execs.items():
         )
     )
 time_pl = pl.concat(time_pl_lst)
-time_pl.write_csv(base_output_path + "schrodinger_times.csv")
+time_pl.write_csv(base_output_path + "schrodinger_times2.csv")
 
 
 # %%

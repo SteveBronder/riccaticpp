@@ -48,23 +48,44 @@ err_dt[!grep("1e-06", algo_args), eps := 1e-12]
 err_dt[, algo_plus := algo]
 err_dt[grep("n=20", algo_args), algo_plus := paste0(algo, ":n=20")]
 err_dt[grep("n=35", algo_args), algo_plus := paste0(algo, ":n=35")]
-setkey(err_dt, name)
-err_summary_dt = err_dt[,
-  .(err_avg = mean(energy_error)),
-  .(algo, algo_args, prob_args, eps)]
+err_dt[, rel_energy_err := energy_error / energy_reference]
+# Just look at a slice
+err_sub_dt = err_dt[energy_reference == 471103.666]
+err_sub_dt[, energy_reference := 471103.777]
+setkey(err_sub_dt, eps, algo_plus)
+knitr::kable(err_sub_dt[, .(algo_plus, algo_args, energy, energy_reference, energy_error)])
 
+setkey(err_dt, name)
+err_dt[, iter := NULL]
+err_dt = unique(err_dt)
+err_summary_dt = err_dt[,
+  .(err_val = mean(rel_energy_err)),
+  .(algo, algo_args, prob_args, eps)]
+err_summary_dt = err_summary_dt[!grep("n=20", algo_args)]
 setkey(err_summary_dt, algo, eps, prob_args)
-err_summary_dt[, lb := sub(".*\\blb=([0-9]+).*", "\\1", prob_args), .I]
-err_summary_dt[, rb := sub(".*\\brb=([0-9]+).*", "\\1", prob_args), .I]
+err_summary_dt[, lb := as.numeric(sub(".*\\blb=([0-9]+).*", "\\1", prob_args)), .I]
+err_summary_dt[, rb := as.numeric(sub(".*\\brb=([0-9]+).*", "\\1", prob_args)), .I]
 err_summary_dt[, prob_bounds := paste0(lb, "-", rb)]
-ggplot(err_summary_dt, aes(x = prob_bounds, y = err_avg, color = algo, group = algo)) +
-  geom_line() +
-  geom_point() +
+err_summary_dt[, prob_bounds := factor(prob_bounds, ordered = TRUE, levels =
+    c("416-417", "1035-1037", "21930-21940", "471100-471110"))]
+
+err_summary_dt[, md := ((lb + rb) / 2.0) + lb]
+err_summary_dt[, blah := as.numeric(as.factor(algo))]
+setkey(err_summary_dt, eps, algo, algo_args, prob_bounds)
+err_summary_dt[, bound_idx := as.numeric(prob_bounds)]
+err_summary_dt[, test := seq(from = bound_idx - .1, to = bound_idx + .1, length.out = 4)[blah], .I]
+err_summary_dt[rb == 417]
+setkey(err_summary_dt, eps, algo, algo_args, prob_args)
+err_summary_dt
+ggplot(err_summary_dt, aes(x = test, y = err_val, color = algo, fill = algo)) +
   #  scale_y_log10(breaks = c(1, 2, 5, 10, 18, 30, 60)) +
+  geom_bar(stat = "identity") +
   facet_wrap(vars(eps), nrow = 2, ncol = 1) +
-  ggtitle("Schrodinger Equation: Energy Error Per ODE") +
+  ggtitle("Schrodinger Equation: Relative Error of Energy Per ODE") +
+  scale_x_continuous(labels = err_summary_dt[, prob_bounds[1:4]]) +
+  scale_y_continuous(transform = "log1p", n.breaks = 7, labels = scales::scientific_format()) +
   xlab("") +
   ylab("") +
   theme_bw() +
-  theme(legend.position="bottom")
+  theme(legend.position="bottom", axis.text.y = element_text(size = 12))
 #  theme(axis.text.x = element_text(angle = -30, vjust = 0.8, hjust=.1))
