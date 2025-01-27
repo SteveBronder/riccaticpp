@@ -95,6 +95,8 @@ class RiccatiSolver:
             self.init, range[0], 1e-1, self.solver_args["epsh"]
         )
         global_timer.stop_nocall(self.name)
+        if range[0] > range[1]:
+            init_step = -init_step
         return {
             "info": self.init,
             "xi": range[0],
@@ -231,7 +233,7 @@ def energy_mismatch_functor(
         left_boundary = -(current_energy**0.25) - 2.0
         right_boundary = -left_boundary
         midpoint = 0.5
-        left_range, right_range = (left_boundary, midpoint), (midpoint, right_boundary)
+        left_range, right_range = (left_boundary, midpoint), (right_boundary, midpoint)
 
         # Evolve (integrate) from left to midpoint
         left_wavefunction, left_derivative = problem.solve(
@@ -321,7 +323,6 @@ with open(base_output_path + "schrodinger_times2.csv", mode="a") as time_file:
               for energy_ref, bound in zip(energy_reference, bounds):
                   schrodinger = SchrodingerProblem(1.0, 0.5, *bound)
                   energy_mismatch = energy_mismatch_functor(algo, algo_iter, schrodinger)
-                  import pdb; pdb.set_trace()
                   res = sci_opt.minimize_scalar(energy_mismatch, bounds=bound, method="bounded",
                                                 tol=algo_iter[0], options = {"maxiter": 1000,
                                                                              "xatol" : algo_iter[0],
@@ -334,6 +335,7 @@ with open(base_output_path + "schrodinger_times2.csv", mode="a") as time_file:
                                                          pl.lit(benchmark_run).alias("iter"),
                                                          pl.lit(energy_ref).alias("energy_reference"))
                   algo_pl_tmp = algo_pl_tmp.with_columns((pl.col("energy") - pl.col("energy_reference")).abs().alias("energy_error"))
+                  import pdb; pdb.set_trace()
                   algo_evals_pl_lst.append(algo_pl_tmp)
         algo_pl = pl.concat(algo_evals_pl_lst)
         print(algo_pl)
