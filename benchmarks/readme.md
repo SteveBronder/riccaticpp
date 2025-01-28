@@ -32,42 +32,42 @@ We consider three ODE problems for direct time-domain integration with `solve_iv
 
 1. **Bremer Eq. 237**
    Taken from Bremer (2018), Eq. (237).
-   ``` math
+```math
        y''(x) + \lambda^2\bigl[1 - x^2 \cos(3x)\bigr]\,y(x) \;=\; 0,
-   ```
+```
    for $x \in [-1,\,1]$. The initial conditions are chosen as
-   ```math
+```math
      y(-1) = 0,
      \quad
      y'(-1) = \lambda,
-   ```
+```
    so that the problem depends strongly on $\lambda$. As $\lambda$ grows, the equation becomes increasingly oscillatory (high-frequency), which can be challenging for general-purpose ODE solvers.
 
 2. **Airy Equation**
    The classical Airy equation can be written as
-   ```math
+```math
        y''(x) - x \, y(x) \;=\; 0,
-   ```
+```
    for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form the fundamental solutions; however, here we pose initial conditions in terms of these functions at $x = 0$ and integrate out to $x = 100$. Numerically, one can write this as
-   ```math
+```math
        y'(x) = \begin{bmatrix} y_1'(x) \\ y_2'(x) \end{bmatrix}
                = \begin{bmatrix}
                    y_2(x) \\
                    -\,x\,y_1(x)
                  \end{bmatrix}.
-   ```
+```
 
 3. **Stiff Problem**
    We label this “Stiff” because it includes large and rapidly changing coefficients. The equation is
-   ```math
+```math
        y''(t) \;+\; (t + 21)\,y'(t) \;+\; 21\,t\,y(t) \;=\; 0,
-   ```
+```
    integrated on $[0,\,200]$ with initial conditions
-   ```math
+```math
        y(0) = 0,
        \quad
        y'(0) = 1.
-   ```
+```
    The combination of the $t\,y'(t)$ and $t\,y(t)$ terms can produce stiffness as $t$ grows large.
 
 In each case, we compare several solvers:
@@ -133,9 +133,9 @@ In the Schrödinger equation benchmark, we consider a one-dimensional potential
 with some mass parameter $m$ (here $m=0.5$), seeking the bound-state energies for large quantum numbers. We do so by implementing a **shooting method**:
 
 1. We define the ODE
-   ```math
+```math
        \psi''(x) \;=\; -\,2m\;\bigl[E - V(x)\bigr]\;\psi(x),
-   ```
+```
    which is a form of the time-independent Schrödinger equation.
 2. For each guess $E$ of the energy, we integrate from a left boundary to the midpoint and from a right boundary to the midpoint.
 3. We then minimize the mismatch in derivatives at the midpoint to find an accurate bound-state energy.
