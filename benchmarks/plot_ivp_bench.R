@@ -14,17 +14,26 @@ bremer_dt[, relerr := as.numeric(relerr)]
 setnafill(bremer_dt, type = "locf", cols = "relerr")
 bremer_table_dt = bremer_dt[eps == 1e-12][, .(method, walltime, lambda)]
 setkey(bremer_table_dt, lambda, method)
-bremer_table_dt[, relative_time := .SD[, walltime / walltime[3]], .(lambda)]
+#bremer_table_dt[, relative_time := .SD[, walltime / walltime[3]], .(lambda)]
 bremer_table_dt[, method := factor(method,
   levels = c("PYRICCATICPP", "BDF", "DOP853", "RK45"), ordered = TRUE)]
 setkey(bremer_table_dt, lambda, method)
-bremer_table_format_dt = copy(bremer_table_dt)
-bremer_table_format_dt[, `:=`(
-  walltime = format(walltime, scientific = TRUE),
-  relative_time = round(relative_time, digits = 2)
-  )]
-setcolorder(bremer_table_format_dt, c("method", "lambda"))
-knitr::kable(bremer_table_format_dt[method == "BDF"])
+bremer_table_format_dt = copy(bremer_table_dt[, .(method, walltime, lambda)])
+bremer_table_cast_dt = dcast(bremer_table_format_dt, formula = lambda ~ method, value.var = "walltime")
+bremer_table_cast_dt[, `:=`(
+  BDF = BDF / PYRICCATICPP,
+  DOP853 = DOP853 / PYRICCATICPP,
+  RK45 = RK45 / PYRICCATICPP
+)]
+bremer_table_cast_dt[, PYRICCATICPP := NULL]
+bremer_table_format_dt = bremer_table_cast_dt[, .(
+  lambda,
+  BDF = round(BDF, digits = 2),
+  DOP853 = round(DOP853, digits = 2),
+  RK45 = round(RK45, digits = 2)
+)]
+#setcolorder(bremer_table_format_dt, c("method", "lambda"))
+knitr::kable(bremer_table_format_dt)
 bremer_plots = ggplot(bremer_dt,
   aes(x = lambda, y = walltime, color = method)) +
   geom_line() +
@@ -117,7 +126,7 @@ stiff_err_plot = ggplot(stiff_dt, aes(x = method, y = relerr * (1.0e21), fill = 
     axis.text.y = element_text(size = 12))
 stiff_err_plot
 
-airy_err_plot = ggplot(airy_dt, aes(x = method, y = relerr * 1e12, fill = method)) +
+# airy_err_plot = ggplot(airy_dt, aes(x = method, y = relerr * 1e12, fill = method)) +
   geom_bar(stat = "identity") +
   facet_wrap(vars(eps)) +
   geom_text(aes(label = format(relerr, scientific = TRUE, digits = 3)), vjust = -0.4) +

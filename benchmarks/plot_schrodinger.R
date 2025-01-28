@@ -2,7 +2,7 @@ library(data.table)
 library(ggplot2)
 library(patchwork)
 
-bench_dt = fread("../../../riccaticpp/benchmarks/output/schrodinger_times.csv")
+bench_dt = fread("./benchmarks/output/schrodinger_times.csv")
 bench_dt[, algo := strsplit(name, " ")[[1]][1], name]
 algo_args = \(x) {
   return(paste0("[", strsplit(x, "\\[",perl = TRUE)[[1]][2]))
@@ -15,12 +15,12 @@ prob_args = \(x) {
 bench_dt[1, prob_args(name)]
 bench_dt[, prob_args := prob_args(name), .I]
 bench_dt[, name := NULL]
-bench_dt[grep("1e-06", algo_args), eps := 1e-06]
-bench_dt[!grep("1e-06", algo_args), eps := 1e-12]
+bench_dt[grepl("1e-06", algo_args), eps := 1e-06]
+bench_dt[!grepl("1e-06", algo_args), eps := 1e-12]
 bench_dt[, algo_plus := algo]
-bench_dt[grep("n=20", algo_args), algo_plus := paste0(algo, ":n=20")]
-bench_dt[grep("n=35", algo_args), algo_plus := paste0(algo, ":n=35")]
-bench_dt = bench_dt[!grep("n=20", algo_args)]
+bench_dt[grepl("n=20", algo_args), algo_plus := paste0(algo, ":n=20")]
+bench_dt[grepl("n=35", algo_args), algo_plus := paste0(algo, ":n=35")]
+bench_dt = bench_dt[!grepl("n=20", algo_args)]
 setkey(bench_dt, eps, algo_plus)
 bench_sum_dt = bench_dt[, .(sum_time = sum(time), sum_count = sum(count)),
   .(algo, algo_plus, algo_args, eps)]
@@ -30,7 +30,8 @@ schrod_bench_plot = ggplot(bench_sum_dt, aes(x = algo, y = per_call, fill = algo
   geom_bar(stat = "identity") +
   scale_y_continuous(transform = "log1p", breaks = c(0, 0.25, .5, 1, 2, 4, 8, 13)) +
   facet_wrap(vars(eps)) +
-  ggtitle("Schrodinger: Average Seconds For ODE Solver Calls") +
+  ggtitle("Schrodinger: Average Seconds For ODE Solver Calls",
+    "Average Time is over all optimizations for each quantum number") +
   xlab("") +
   ylab("") +
   theme_bw() +
@@ -40,17 +41,54 @@ schrod_bench_plot
 ggsave("./benchmarks/plots/schrodinger.png", schrod_bench_plot,
   width = 6, height = 4, units = "in")
 
+bench_sum_dt = bench_dt[, .(sum_time = sum(time), sum_count = sum(count)),
+  .(algo, algo_plus, algo_args, eps, prob_args)]
+bench_sum_dt[, per_call := sum_time / sum_count]
+bench_sum_dt[, lb := as.numeric(sub(".*\\blb=([0-9]+).*", "\\1", prob_args)), .I]
+bench_sum_dt[, rb := as.numeric(sub(".*\\brb=([0-9]+).*", "\\1", prob_args)), .I]
+bench_sum_dt[, prob_bounds := paste0(lb, "-", rb)]
+bench_sum_dt[, prob_bounds := factor(prob_bounds, ordered = TRUE, levels =
+    c("416-417", "1035-1037", "21930-21940", "471100-471110"))]
+bench_sum_dt[, quantum_number := rep(c(50, 100, 1000, 10000),8)]
+bench_sum_table_dt = bench_sum_dt[eps == 1e-6, .(algo, quantum_number, per_call)]
+bench_sum_table_dt = dcast(bench_sum_table_dt, quantum_number ~ algo, value.var = "per_call")
+bench_sum_table_dt[, `:=`(
+  BDF = BDF / PYRICCATICPP,
+  DOP853 = DOP853 / PYRICCATICPP,
+  RK45 = RK45 / PYRICCATICPP
+)]
+bench_sum_table_dt[, PYRICCATICPP := NULL]
+bench_sum_table_dt = bench_sum_table_dt[, lapply(.SD, \(x) format(x, digits = 4))]
+knitr::kable(bench_sum_table_dt)
+bench_sum_x_scale_dt = bench_sum_dt[1:4]
+bench_sum_x_scale_dt[, quantum_number := c(50, 100, 1000, 10000)]
+bench_per_energy_plot = ggplot(bench_sum_dt, aes(x = lb, y = per_call, group = algo, color = algo)) +
+  geom_line() +
+  geom_point() +
+  ggtitle("Schrodinger: Average Seconds For ODE Solver Calls By",
+    "By Quantum Number") +
+  scale_y_log10(breaks = c(0.01, 0.05, 0.1, 1, 10, 50)) +
+  scale_x_log10(breaks = bench_sum_x_scale_dt[, lb], labels = bench_sum_x_scale_dt[, quantum_number]) +
+  xlab("") +
+  ylab("") +
+  facet_wrap(vars(eps)) +
+  theme_bw() +
+  theme(legend.position="bottom")
+bench_per_energy_plot
+ggsave("./benchmarks/plots/schrodinger_energy.png", bench_per_energy_plot,
+  width = 6, height = 4, units = "in")
 
+bench_sum_dt[eps == 1e-12 & grepl("lb=471100;rb=471110", prob_args)]
 # Error rates
 err_dt = fread("../../../riccaticpp/benchmarks/output/schrod.csv")
 err_dt[, algo := strsplit(name, " ")[[1]][1], name]
 err_dt[, algo_args := algo_args(name), .I]
 err_dt[, prob_args := prob_args(name), .I]
-err_dt[grep("1e-06", algo_args), eps := 1e-06]
-err_dt[!grep("1e-06", algo_args), eps := 1e-12]
+err_dt[grepl("1e-06", algo_args), eps := 1e-06]
+err_dt[!grepl("1e-06", algo_args), eps := 1e-12]
 err_dt[, algo_plus := algo]
-err_dt[grep("n=20", algo_args), algo_plus := paste0(algo, ":n=20")]
-err_dt[grep("n=35", algo_args), algo_plus := paste0(algo, ":n=35")]
+err_dt[grepl("n=20", algo_args), algo_plus := paste0(algo, ":n=20")]
+err_dt[grepl("n=35", algo_args), algo_plus := paste0(algo, ":n=35")]
 err_dt[, rel_energy_err := abs(energy_error / energy_reference)]
 # Just look at a slice
 err_sub_dt = err_dt[energy_reference == 471103.666]
@@ -65,7 +103,7 @@ err_summary_dt = err_dt[,
   .(total_err = mean(energy_error),
     err_val = mean(rel_energy_err)),
   .(algo, algo_args, prob_args, eps)]
-err_summary_dt = err_summary_dt[!grep("n=20", algo_args)]
+err_summary_dt = err_summary_dt[!grepl("n=20", algo_args)]
 setkey(err_summary_dt, algo, eps, prob_args)
 err_summary_dt[, lb := as.numeric(sub(".*\\blb=([0-9]+).*", "\\1", prob_args)), .I]
 err_summary_dt[, rb := as.numeric(sub(".*\\brb=([0-9]+).*", "\\1", prob_args)), .I]
@@ -90,9 +128,9 @@ schrod_err_plot = ggplot(err_summary_dt,
   geom_bar(stat = "identity") +
   facet_wrap(vars(eps), nrow = 2, ncol = 1) +
   ggtitle("Schrodinger: Relative Error of Energy Per ODE") +
-  scale_x_continuous(labels = err_summary_dt[, prob_bounds[1:4]]) +
+  scale_x_continuous(labels = c(50, 100, 1000, 10000)) +
   scale_y_continuous(transform = "log10", labels = \(x) x / 1000000) +
-  xlab("") +
+  xlab("Quantum Number") +
   ylab("") +
   theme_bw() +
   theme(legend.position="bottom", axis.text.y = element_text(size = 12))
