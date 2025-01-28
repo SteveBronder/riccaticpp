@@ -35,20 +35,20 @@ We consider three ODE problems for direct time-domain integration with `solve_iv
    ``` math
        y''(x) + \lambda^2\bigl[1 - x^2 \cos(3x)\bigr]\,y(x) \;=\; 0,
    ```
-   for \(x \in [-1,\,1]\). The initial conditions are chosen as
+   for $x \in [-1,\,1]$. The initial conditions are chosen as
    ```math
      y(-1) = 0,
      \quad
      y'(-1) = \lambda,
    ```
-   so that the problem depends strongly on \(\lambda\). As \(\lambda\) grows, the equation becomes increasingly oscillatory (high-frequency), which can be challenging for general-purpose ODE solvers.
+   so that the problem depends strongly on $\lambda$. As $\lambda$ grows, the equation becomes increasingly oscillatory (high-frequency), which can be challenging for general-purpose ODE solvers.
 
 2. **Airy Equation**
    The classical Airy equation can be written as
    ```math
        y''(x) - x \, y(x) \;=\; 0,
    ```
-   for \(x \in [0,\,100]\). The Airy functions \(\mathrm{Ai}\) and \(\mathrm{Bi}\) form the fundamental solutions; however, here we pose initial conditions in terms of these functions at \(x = 0\) and integrate out to \(x = 100\). Numerically, one can write this as
+   for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form the fundamental solutions; however, here we pose initial conditions in terms of these functions at $x = 0$ and integrate out to $x = 100$. Numerically, one can write this as
    ```math
        y'(x) = \begin{bmatrix} y_1'(x) \\ y_2'(x) \end{bmatrix}
                = \begin{bmatrix}
@@ -62,13 +62,13 @@ We consider three ODE problems for direct time-domain integration with `solve_iv
    ```math
        y''(t) \;+\; (t + 21)\,y'(t) \;+\; 21\,t\,y(t) \;=\; 0,
    ```
-   integrated on \([0,\,200]\) with initial conditions
+   integrated on $[0,\,200]$ with initial conditions
    ```math
        y(0) = 0,
        \quad
        y'(0) = 1.
    ```
-   The combination of the \(t\,y'(t)\) and \(t\,y(t)\) terms can produce stiffness as \(t\) grows large.
+   The combination of the $t\,y'(t)$ and $t\,y(t)$ terms can produce stiffness as $t$ grows large.
 
 In each case, we compare several solvers:
 
@@ -81,10 +81,10 @@ Times for each graph below are on a logarithmic scale to accommodate the rapid g
 
 ## Timing Results
 
-Below is a representative plot (`ivp_bench.png`) of the average runtime (in seconds) each solver takes for the Bremer, Airy, and Stiff equations across two different tolerances (\(10^{-12}\) and \(10^{-6}\)). As \(\lambda\) or problem stiffness increases, one observes that standard Runge–Kutta-based solvers can become extremely slow, whereas `pyriccaticpp` remains comparatively fast.
+Below is a representative plot (`ivp_bench.png`) of the average runtime (in seconds) each solver takes for the Bremer, Airy, and Stiff equations across two different tolerances ($10^{-12}$ and $10^{-6}$). As $\lambda$ or problem stiffness increases, one observes that standard Runge–Kutta-based solvers can become extremely slow, whereas `pyriccaticpp` remains comparatively fast.
 
 - **Bremer (Eq. 237)**:
-  For \(\lambda = 10\), the ODE solver times are the closest, but `pyriccaticpp` is still faster than all others by more than 4 orders of magnitude. As \(\lambda\) increases to \(10^4, 10^5, 10^6\), `pyriccaticpp` retains a very low wall time, while `BDF`, `RK45`, and `DOP853` grow by orders of magnitude.
+  For $\lambda = 10$, the ODE solver times are the closest, but `pyriccaticpp` is still faster than all others by more than 4 orders of magnitude. As $\lambda$ increases to $10^4, 10^5, 10^6$, `pyriccaticpp` retains a very low wall time, while `BDF`, `RK45`, and `DOP853` grow by orders of magnitude.
 
   The table below shows `wall time method / wall time pyriccaticpp` for each lambda value of the Bremer equation benchmarked. The highlighted values in each row show the fastest method relative to pyriccaticpp. Even in the most favorable scenario for the classical methods (the smallest $\lambda = 10$) DOP853 is still 4.7× slower than pyriccaticpp; for large $\lambda$, the classical solvers are orders of magnitude slower.
 
@@ -102,7 +102,7 @@ Below is a representative plot (`ivp_bench.png`) of the average runtime (in seco
 
 
 - **Airy**:
-  The Airy benchmark is integrated out to a relatively large domain \([0,100]\). The specialized approach in `pyriccaticpp` is, in the most competitive case when the relative error is `1e-6`, 37 times faster than it's closest competitor `DOP853`.
+  The Airy benchmark is integrated out to a relatively large domain $[0,100]$. The specialized approach in `pyriccaticpp` is, in the most competitive case when the relative error is `1e-6`, 37 times faster than it's closest competitor `DOP853`.
 
 - **Stiff**:
   As the name suggests, the presence of a rapidly varying coefficient makes this ODE a good test of stiff integrators. While `BDF` is able to compete with `pyriccaticpp` for a relative tolerance of `1e-6`, when asking for a relative tolerance of `1e-12` the graph shows that `pyriccaticpp` is 3 orders of magnitude faster than `BDF`.
@@ -117,7 +117,7 @@ Below is a representative plot (`ivp_bench.png`) of the average runtime (in seco
 
 Below is a plot (`ivp_bench_errs.png`) illustrating the relative error of the final solution for each method against a reference “high-precision” solution. We highlight the following:
 
-- **Bremer**: With smaller \(\lambda\), all methods achieve very good accuracy. At large \(\lambda\), some methods degrade or appear to clamp at an error near \(10^{-3}\) for the less stringent tolerance setting. `pyriccaticpp` generally holds a very small error even as \(\lambda\) increases.
+- **Bremer**: With smaller $\lambda$, all methods achieve very good accuracy. At large $\lambda$, some methods degrade or appear to clamp at an error near $10^{-3}$ for the less stringent tolerance setting. `pyriccaticpp` generally holds a very small error even as $\lambda$ increases.
 - **Airy**: Most standard solvers maintain good accuracy here. The specialized approach also works very well, typically matching or outperforming BDF and DOP853.
 - **Stiff**: All methods can reach very low errors if allowed a sufficiently tight tolerance. However, once again, `pyriccaticpp` can achieve extremely small relative error in the same or less time than standard solvers, illustrating its suitability for stiff or high-frequency problems alike.
 ![ivp_bench_err](/benchmarks/plots/ivp_bench_errs.png)
@@ -130,21 +130,21 @@ In the Schrödinger equation benchmark, we consider a one-dimensional potential
 ```math
    V(x) \;=\; x^2 \;+\; l\,x^4,
 ```
-with some mass parameter \(m\) (here \(m=0.5\)), seeking the bound-state energies for large quantum numbers. We do so by implementing a **shooting method**:
+with some mass parameter $m$ (here $m=0.5$), seeking the bound-state energies for large quantum numbers. We do so by implementing a **shooting method**:
 
 1. We define the ODE
    ```math
        \psi''(x) \;=\; -\,2m\;\bigl[E - V(x)\bigr]\;\psi(x),
    ```
    which is a form of the time-independent Schrödinger equation.
-2. For each guess \(E\) of the energy, we integrate from a left boundary to the midpoint and from a right boundary to the midpoint.
+2. For each guess $E$ of the energy, we integrate from a left boundary to the midpoint and from a right boundary to the midpoint.
 3. We then minimize the mismatch in derivatives at the midpoint to find an accurate bound-state energy.
 
 We compare the same four solvers `BDF`, `DOP853`, `RK45`, and `pyriccaticpp`. But in this scenario each integration is part of a root-finding (optimization) loop.
 
 ### Timing Results
 
-Below (`schrodinger.png`) we plot the average time spent in these ODE solves for each method, combined over different quantum numbers (roughly corresponding to the energy range). Two relative tolerances were used, \(10^{-12}\) (high precision) and \(10^{-6}\) (moderate precision).
+Below (`schrodinger.png`) we plot the average time spent in these ODE solves for each method, combined over different quantum numbers (roughly corresponding to the energy range). Two relative tolerances were used, $10^{-12}$ (high precision) and $10^{-6}$ (moderate precision).
 
 - As the quantum number grows, the wavefunction oscillates more in the classically allowed region, much like the high-frequency case in the Bremer problem. Standard ODE solvers require more steps or smaller steps.
 - `pyriccaticpp` retains consistently low wall-time for large quantum numbers, indicating it handles rapidly oscillatory wavefunctions efficiently.
