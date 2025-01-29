@@ -168,17 +168,31 @@ inline auto to_arena(dummy_allocator& arena, const Expr& expr) noexcept {
   return eval(expr);
 }
 
-template <typename T, typename Expr>
+template <typename Expr, typename T>
 inline auto empty_arena_matrix(arena_allocator<T, arena_alloc>& alloc, Expr&& expr) {
   using plain_type_t = typename std::decay_t<Expr>::PlainObject;
   return arena_matrix<plain_type_t>(alloc, expr.rows(), expr.cols());
 }
 
-template <typename T, typename Expr>
+template <typename Expr>
 inline auto empty_arena_matrix(dummy_allocator& arena, Expr&& expr) {
   using plain_type_t = typename std::decay_t<Expr>::PlainObject;
   return plain_type_t(expr.rows(), expr.cols());
 }
+
+template <typename Expr, typename T>
+inline auto empty_arena_matrix(arena_allocator<T, arena_alloc>& alloc, Eigen::Index rows, Eigen::Index cols) {
+  using plain_type_t = typename std::decay_t<Expr>::PlainObject;
+  return arena_matrix<plain_type_t>(alloc, rows, cols);
+}
+
+template <typename Expr>
+inline auto empty_arena_matrix(dummy_allocator& arena, Eigen::Index rows, Eigen::Index cols) {
+  using plain_type_t = typename std::decay_t<Expr>::PlainObject;
+  return plain_type_t(rows, cols);
+}
+
+
 
 template <typename T>
 inline void print(const char* name, const arena_matrix<T>& x) {

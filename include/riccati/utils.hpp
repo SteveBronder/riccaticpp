@@ -1,6 +1,6 @@
 #ifndef INCLUDE_RICCATI_UTILS_HPP
 #define INCLUDE_RICCATI_UTILS_HPP
-
+#define RICCATI_DEBUG
 #include <Eigen/Dense>
 #include <type_traits>
 #ifdef RICCATI_DEBUG
@@ -205,7 +205,7 @@ inline auto sin(T x) {
   return std::sin(x);
 }
 
-template <typename T, require_not_floating_point<T>* = nullptr>
+template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
 inline auto sin(T&& x) {
   return x.sin();
 }
@@ -215,7 +215,7 @@ inline auto cos(T x) {
   return std::cos(x);
 }
 
-template <typename T, require_not_floating_point<T>* = nullptr>
+template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
 inline auto cos(T&& x) {
   return x.cos();
 }
@@ -225,7 +225,7 @@ inline auto sqrt(T x) {
   return std::sqrt(x);
 }
 
-template <typename T, require_not_floating_point<T>* = nullptr>
+template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
 inline auto sqrt(T&& x) {
   return x.sqrt();
 }
@@ -235,7 +235,7 @@ inline auto square(T x) {
   return x * x;
 }
 
-template <typename T, require_not_floating_point<T>* = nullptr>
+template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
 inline auto square(T&& x) {
   return x.square();
 }
@@ -245,7 +245,7 @@ inline auto array(T x) {
   return x;
 }
 
-template <typename T, require_not_floating_point<T>* = nullptr>
+template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
 inline auto array(T&& x) {
   return x.array();
 }
@@ -255,7 +255,7 @@ inline auto matrix(T x) {
   return x;
 }
 
-template <typename T, require_not_floating_point<T>* = nullptr>
+template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
 inline auto matrix(T&& x) {
   return x.matrix();
 }
@@ -265,7 +265,7 @@ inline constexpr T zero_like(T x) {
   return static_cast<T>(0.0);
 }
 
-template <typename T, require_not_floating_point<T>* = nullptr>
+template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
 inline auto zero_like(const T& x) {
   return std::decay_t<typename T::PlainObject>::Zero(x.rows(), x.cols());
 }
@@ -275,9 +275,19 @@ inline auto pow(T1 x, T2 y) {
   return std::pow(x, y);
 }
 
-template <typename T1, typename T2, require_not_floating_point<T1>* = nullptr>
+template <typename T1, typename T2, require_not_floating_point_or_complex<T1>* = nullptr>
 inline auto pow(T1&& x, T2 y) {
   return x.array().pow(y);
+}
+
+template <typename T1, require_floating_point_or_complex<T1>* = nullptr>
+inline auto real(T1 x) {
+  return std::real(x);
+}
+
+template <typename T1, require_not_floating_point_or_complex<T1>* = nullptr>
+inline auto real(T1&& x) {
+  return x.real();
 }
 
 template <typename T, int R, int C>

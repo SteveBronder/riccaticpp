@@ -60,25 +60,44 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
   auto dyprev = std::get<1>(cheby);
   auto xprev = std::get<2>(cheby);
   int iter = 0;
-  while (maxerr > epsres) {
+  std::cout << "x0: " << x0 << std::endl;
+  std::cout << "h: " << h << std::endl;
+  std::cout << "y0: " << y0 << std::endl;
+  std::cout << "dy0: " << dy0 << std::endl;
+  std::string msg_start = "[nonosc_step]";
+  while (std::abs((epsres*yprev(0) + epsres)/maxerr) < 1) {
+    info.logger().template log<LogLevel::INFO>(msg_start +
+    std::string("[N = ") +
+      std::to_string(N) +
+      std::string("]") +
+    std::string("[Nmax = ") +
+      std::to_string(Nmax) +
+      std::string("]") +
+      std::string("[maxerr = ") +
+      std::to_string(maxerr) +
+      std::string("]"));
     iter++;
     N *= 2;
-    if (N > Nmax) {
-      return std::make_tuple(false, complex_t(0.0, 0.0), complex_t(0.0, 0.0),
-                             maxerr, yprev, dyprev, iter);
-    }
+    N = std::min(N, Nmax);
     auto cheb_num = static_cast<int>(std::log2(N / info.nini_));
+    std::cout << "cheb_num: " << cheb_num << std::endl;
     auto cheby2 = spectral_chebyshev(info, x0, h, y0, dy0, cheb_num);
     auto y = std::get<0>(std::move(cheby2));
     auto dy = std::get<1>(std::move(cheby2));
     auto x = std::get<2>(std::move(cheby2));
-    maxerr = std::abs((yprev(0) - y(0)) / y(0));
+    std::cout << "yprev(0): " << yprev(0) << std::endl;
+    std::cout << "y(0): " << y(0) << std::endl;
+    maxerr = yprev(0).real() - y(0).real();
     if (std::isnan(maxerr)) {
       maxerr = std::numeric_limits<Scalar>::infinity();
     }
     yprev = std::move(y);
     dyprev = std::move(dy);
     xprev = std::move(x);
+    if (N >= Nmax) {
+      return std::make_tuple(false, complex_t(0.0, 0.0), complex_t(0.0, 0.0),
+                             maxerr, yprev, dyprev, iter);
+    }
   }
   return std::make_tuple(true, yprev(0), dyprev(0), maxerr, yprev, dyprev,
                          iter);
@@ -139,11 +158,20 @@ template <bool DenseOut, typename SolverInfo, typename OmegaVec,
 inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
                      Scalar x0, Scalar h, YScalar y0, YScalar dy0,
                      Scalar epsres) {
+  std::cout << "osc_step====================\n";
+  print("omega_s", omega_s);
+  print("gamma_s", gamma_s);
+  print("x0", x0);
+  print("h", h);
+  print("y0", y0);
+  print("dy0", dy0);
+  print("epsres", epsres);
   using complex_t = std::complex<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   bool success = true;
   auto &&Dn = info.Dn();
   auto y = eval(info.alloc_, complex_t(0.0, 1.0) * omega_s);
+  print("start y", y);
   auto delta = [&](const auto &r, const auto &y) {
     return (-r.array() / (Scalar{2.0} * (y.array() + gamma_s.array())))
         .matrix()
@@ -159,19 +187,29 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
   Scalar maxerr = Ry.array().abs().maxCoeff();
   arena_matrix<vectorc_t> deltay(info.alloc_, Ry.size(), 1);
   Scalar prev_err = std::numeric_limits<Scalar>::infinity();
+  int iter = 0;
+  std::cout << "START OSCSTEP LOOP:===========\n";
   while (maxerr > epsres) {
+    print("\titer", iter);
+    iter++;
     deltay = delta(Ry, y);
     y += deltay;
     Ry = R(deltay);
     maxerr = Ry.array().abs().maxCoeff();
+    print("\ty", y);
+    print("\tdeltay", deltay);
+    print("\tRy", Ry);
+    print("\tmaxerr", maxerr);
     if (maxerr >= (Scalar{2.0} * prev_err)) {
       success = false;
       break;
     }
     prev_err = maxerr;
   }
+  std::cout << "END OSCSTEP LOOP:===========\n";
   deltay = delta(Ry, y);
   y += deltay;
+  print("y", y);
   Ry = R(deltay);
   maxerr = Ry.array().abs().maxCoeff();
   if (maxerr >= (Scalar{2.0} * prev_err)) {
@@ -189,6 +227,7 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     auto ap = ap_top / ap_bottom;
     auto am = (dy0 - y0 * y(y.size() - 1))
               / (du2(du2.size() - 1) - y(y.size() - 1));
+    // Print everything in this block
     auto y1 = eval(info.alloc_, ap * f1 + am * f2);
     auto dy1 = eval(info.alloc_,
                     ap * y.cwiseProduct(f1) + am * du2.cwiseProduct(f2));
@@ -196,6 +235,9 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     return std::make_tuple(success, y1(0), dy1(0), maxerr, phase, u1, y,
                            std::make_pair(ap, am));
   } else {
+    print("y", y);
+    print("info.quadwts_", info.quadwts_);
+    print("h", h);
     auto u1 = (h / Scalar{2.0} * (info.quadwts_.dot(y)));
     complex_t f1 = std::exp(u1);
     auto f2 = std::conj(f1);
@@ -207,6 +249,16 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
               / (du2(du2.size() - 1) - y(y.size() - 1));
     auto y1 = (ap * f1 + am * f2);
     auto dy1 = (ap * y * f1 + am * du2 * f2).eval();
+    print("u1", u1);
+    print("f1", f1);
+    print("f2", f2);
+    print("du2", du2);
+    print("ap_top", ap_top);
+    print("ap_bottom", ap_bottom);
+    print("ap", ap);
+    print("am", am);
+    print("y1", y1);
+    print("dy1", dy1);
     Scalar phase = std::imag(f1);
     return std::make_tuple(success, y1, dy1(0), maxerr, phase,
                            arena_matrix<vectorc_t>(info.alloc_, y.size()),

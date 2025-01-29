@@ -28,7 +28,7 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                             FloatingPoint h,
                                             FloatingPoint epsilon_h) {
   auto ws = omega(info, riccati::scale(info.xp(), x0, h));
-  while (ws.maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
+  while (real(ws).maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
     h /= 2.0;
     ws = omega(info, riccati::scale(info.xp(), x0, h));
   }
@@ -62,21 +62,32 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
 template <typename SolverInfo, typename FloatingPoint>
 inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                 FloatingPoint h, FloatingPoint epsilon_h) {
+  std::cout << "choose_osc_stepsize====================\n";
   FloatingPoint max_err = std::numeric_limits<FloatingPoint>::infinity();
+  print("max_err", max_err);
   auto t = empty_arena_matrix(info.alloc_, info.xp_interp());
   auto s = empty_arena_matrix(info.alloc_, info.xp());
-  auto omega_analytic = empty_arena_matrix(info.alloc_, t);
-  auto omega_estimate = empty_arena_matrix(info.alloc_, t);
-  auto gamma_analytic = empty_arena_matrix(info.alloc_, t);
-  auto gamma_estimate = empty_arena_matrix(info.alloc_, t);
-  Eigen::VectorXd ws(t.size());
-  Eigen::VectorXd gs(t.size());
+  using omega_vec_ret_t = std::decay_t<decltype(eval(omega(info, info.xp_interp())))>;
+  using gamma_vec_ret_t = std::decay_t<decltype(eval(gamma(info, info.xp())))>;
+  auto omega_analytic = empty_arena_matrix<omega_vec_ret_t>(info.alloc_, t.rows(), t.cols());
+  auto omega_estimate = empty_arena_matrix<omega_vec_ret_t>(info.alloc_, t.rows(), t.cols());
+  auto gamma_analytic = empty_arena_matrix<gamma_vec_ret_t>(info.alloc_, t.rows(), t.cols());
+  auto gamma_estimate = empty_arena_matrix<gamma_vec_ret_t>(info.alloc_, t.rows(), t.cols());
+  omega_vec_ret_t ws(t.size());
+  gamma_vec_ret_t gs(t.size());
+  int Iter = 0;
   do {
+    print("Iter: ", Iter);
+    print("h: ", h);
+    Iter++;
+    // FIXME: 1.0 should be h/2.0?
     t = (x0 + (h / 2.0) * (1.0 + info.xp_interp().array())).matrix();
     s = (x0 + (h / 2.0) * (1.0 + info.xp().array())).matrix();
-    // TODO: Use a memory arena for these
     ws = omega(info, s);
     gs = gamma(info, s);
+    print("s: ", s);
+    print("ws: ", ws);
+    print("gs: ", gs);
     omega_analytic = omega(info, t);
     omega_estimate = info.L() * ws;
     gamma_analytic = gamma(info, t);
@@ -99,12 +110,13 @@ inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
               .abs())
               .maxCoeff();
     }
-    max_err = std::max(max_omega_err, max_gamma_err);
+    max_err = std::max(std::abs(max_omega_err), std::abs(max_gamma_err));
     auto h_scaling = static_cast<FloatingPoint>(std::min(
       0.7, 0.9 * std::pow(epsilon_h / max_err, (1.0 / (info.p_ - 1.0)))));
     h *= (max_err <= epsilon_h) ? 1 : h_scaling;
   } while (max_err > epsilon_h);
   if (info.p_ != info.n_) {
+    std::cout << "THIS IS HAPPENING!!!\n";
     auto xn_scaled = eval(info.alloc_, riccati::scale(info.xn(), x0, h));
     ws = omega(info, xn_scaled);
     gs = gamma(info, xn_scaled);
