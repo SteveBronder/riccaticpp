@@ -445,12 +445,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   Eigen::Index iter = 0;
   while (std::abs(xcurrent - xf) > Scalar(1e-8)
          && direction * xcurrent < direction * xf) {
-    std::cout << "==============\n";
-    std::cout << "Iter: " << iter << std::endl;
     iter++;
-    std::cout << "xcurrent: " << xcurrent << std::endl;
-    print("omega_n", omega_n);
-    print("gamma_n", gamma_n);
     Scalar phase{0.0};
     bool success = false;
     bool steptype = true;
@@ -484,13 +479,13 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       steptype = 1;
       solver_counts[get_idx(LogInfo::RICCSTEP)].second++;
     }
-    if (unlikely(log_level == LogLevel::INFO && !success)) {
+    if (unlikely(log_level >= LogLevel::INFO && !success)) {
       info.logger().template log<LogLevel::INFO>(
         std::string("[oscillatory step = failure][x = ") +
         std::to_string(xcurrent) + std::string("][stepsize = ") +
         std::to_string(hosc) + std::string("]")
       );
-    } else if (unlikely(log_level == LogLevel::INFO)) {
+    } else if (unlikely(log_level >= LogLevel::INFO)) {
       info.logger().template log<LogLevel::INFO>(
         std::string("[oscillatory step = success][x = ") +
         std::to_string(xcurrent) + std::string("][stepsize = ") +
@@ -504,13 +499,13 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       solver_counts[get_idx(LogInfo::CHEBSTEP)].second++;
       solver_counts[get_idx(LogInfo::LS)].second += cheb_N + 1;
       steptype = 0;
-      if (unlikely(log_level == LogLevel::INFO && !success)) {
+      if (unlikely(log_level >= LogLevel::INFO && !success)) {
         info.logger().template log<LogLevel::INFO>(
           std::string("[nonoscillatory step = failure][x = ") +
           std::to_string(xcurrent) + std::string("][stepsize = ") +
           std::to_string(hslo) + std::string("]")
         );
-      } else if (unlikely(log_level == LogLevel::INFO)) {
+      } else if (unlikely(log_level >= LogLevel::INFO)) {
         info.logger().template log<LogLevel::INFO>(
           std::string("[nonoscillatory step = success][x = ") +
           std::to_string(xcurrent) + std::string("][stepsize = ") +
@@ -525,10 +520,6 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
                                 + std::to_string(direction * hslo));
       }
     }
-    std::cout << "yprev: " << yprev << std::endl;
-    std::cout << "y" << y << std::endl;
-    std::cout << "dyprev: " << dyprev << std::endl;
-    std::cout << "dy: " << dy << std::endl;
     auto h = steptype ? hosc : hslo;
     if constexpr (dense_output) {
       Eigen::Index dense_size = 0;

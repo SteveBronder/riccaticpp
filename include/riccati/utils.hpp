@@ -1,6 +1,5 @@
 #ifndef INCLUDE_RICCATI_UTILS_HPP
 #define INCLUDE_RICCATI_UTILS_HPP
-#define RICCATI_DEBUG
 #include <Eigen/Dense>
 #include <type_traits>
 #ifdef RICCATI_DEBUG
@@ -191,6 +190,9 @@ template <typename T>
 struct is_complex : internal::is_complex_impl<std::decay_t<T>> {};
 
 template <typename T>
+inline constexpr bool is_complex_v = is_complex<T>::value;
+
+template <typename T>
 using require_floating_point_or_complex
     = std::enable_if_t<std::is_floating_point<std::decay_t<T>>::value
                        || is_complex<std::decay_t<T>>::value>;
@@ -289,6 +291,25 @@ template <typename T1, require_not_floating_point_or_complex<T1>* = nullptr>
 inline auto real(T1&& x) {
   return x.real();
 }
+
+template <typename T, require_floating_point_or_complex<T>* = nullptr>
+inline auto to_complex(T x) {
+  if constexpr (is_complex_v<value_type_t<T>>) {
+    return x;
+  } else {
+    return std::complex(x);
+  }
+}
+
+template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
+inline auto to_complex(T&& x) {
+  if constexpr (is_complex_v<value_type_t<T>>) {
+    return std::forward<T>(x);
+  } else {
+    return x.template cast<std::complex<value_type_t<T>>>();
+  }
+}
+
 
 template <typename T, int R, int C>
 inline void print(const char* name, const Eigen::Matrix<T, R, C>& x) {
