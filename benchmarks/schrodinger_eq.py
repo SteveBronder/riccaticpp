@@ -298,7 +298,7 @@ else:
     base_output_path = "./benchmarks/output/"
 all_algo_pl_lst: List[pl.DataFrame] = []
 first_write = True
-with open(base_output_path + "schrodinger_times2.csv", mode="a") as time_file:
+with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
     for algo, algo_params in algorithm_dict.items():
         algo_evals_pl_lst = []
         for benchmark_run in range(1):
@@ -340,7 +340,7 @@ with open(base_output_path + "schrodinger_times2.csv", mode="a") as time_file:
                   algo_evals_pl_lst.append(algo_pl_tmp)
         algo_pl = pl.concat(algo_evals_pl_lst)
         print(algo_pl)
-        algo_pl.write_csv(base_output_path + f"schrod2_{str(algo)}.csv")
+        algo_pl.write_csv(base_output_path + f"schrod_{str(algo)}.csv")
         all_algo_pl_lst.append(algo_pl)
         time_pl_lst = []
         for algo_key, time_st in global_timer.execs.items():
@@ -362,7 +362,7 @@ with open(base_output_path + "schrodinger_times2.csv", mode="a") as time_file:
             time_pl.write_csv(time_file, include_header=False)
 
 all_algo_pl = pl.concat(all_algo_pl_lst)
-all_algo_pl.write_csv(f"{base_output_path}schrod2.csv")
+all_algo_pl.write_csv(f"{base_output_path}schrod.csv")
 # %%
 # %%
 time_pl_lst = []

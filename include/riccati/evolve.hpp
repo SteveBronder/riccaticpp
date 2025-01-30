@@ -443,7 +443,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   std::pair<complex_t, complex_t> a_pair;
   std::array<std::pair<LogInfo, std::size_t>, 5> solver_counts = info.info();
   Eigen::Index iter = 0;
-  while (std::abs(xcurrent - xf) > Scalar(1e-8)
+  while (std::abs(xcurrent - xf) > std::numeric_limits<Scalar>::epsilon()
          && direction * xcurrent < direction * xf) {
     iter++;
     Scalar phase{0.0};
@@ -614,6 +614,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   }
   if constexpr (!std::is_same_v<std::decay_t<decltype(info.logger())>, EmptyLogger>) {
     if (unlikely(log_level == LogLevel::INFO)) {
+      info.logger().template log<LogLevel::INFO>(std::string("[x = ") + std::to_string(xcurrent) + " ]");
       std::size_t riccati_steps = 0;
       std::size_t rk_steps = 0;
       for (auto& success : successes) {
