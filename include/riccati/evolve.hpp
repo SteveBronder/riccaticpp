@@ -493,7 +493,6 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       );
     }
     while (!success) {
-      hslo = choose_nonosc_stepsize(info, xcurrent, hslo, epsilon_h);
       std::tie(success, y, dy, err, y_eval, dy_eval, cheb_N)
           = nonosc_step(info, xcurrent, hslo, yprev, dyprev, eps);
       solver_counts[get_idx(LogInfo::CHEBSTEP)].second++;
