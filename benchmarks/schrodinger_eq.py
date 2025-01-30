@@ -167,7 +167,7 @@ class SchrodingerProblem:
         return np.sqrt(2.0) * (n - 0.5)
 
     def w_gen(self, energy):
-        return lambda x: np.sqrt(2 * self.m * (complex(energy) - self.potential(x)))
+        return lambda x: np.sqrt(2.0 * (energy - self.potential(x)))
 
     def g_gen(self):
         return lambda x: np.zeros_like(x)
@@ -175,8 +175,7 @@ class SchrodingerProblem:
     def f_gen(self, energy):
         def f(x, y):
             psi, dpsi = y
-            return [dpsi, -2 * self.m * (complex(energy) - self.potential(x)) * psi]
-
+            return [dpsi, (self.potential(x) - energy) * psi]
         return f
 
     def yi_init(self):

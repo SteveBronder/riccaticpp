@@ -456,8 +456,11 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
     if (unlikely(log_level == LogLevel::INFO)) {
       info.logger().template log<LogLevel::INFO>(
         std::string("[x = ") +
-        std::to_string(xcurrent) + std::string("][w(x) = ") +
-        std::to_string(std::real(wnext)) + std::string("]")
+        std::to_string(xcurrent) +
+        std::string("][w(x) = ") +
+        std::to_string(std::real(wnext)) +
+        std::string("][1/w(x) = ") +
+        std::to_string(1.0/std::real(wnext)) + std::string("]")
       );
     }
     if (direction * hosc > (direction * hslo)) {
