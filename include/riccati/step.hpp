@@ -52,13 +52,13 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
                         YScalar dy0, Scalar epsres) {
   using complex_t = std::complex<Scalar>;
 
-  Scalar maxerr = 10 * epsres;
   auto N = info.nini_;
   auto Nmax = info.nmax_;
   auto cheby = spectral_chebyshev(info, x0, h, y0, dy0, 0);
   auto yprev = std::get<0>(cheby);
   auto dyprev = std::get<1>(cheby);
   auto xprev = std::get<2>(cheby);
+  Scalar maxerr = 10 * epsres;
   int iter = 0;
   while (std::abs((epsres*yprev(0) + epsres)/maxerr) < 1) {
     iter++;
@@ -69,8 +69,8 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
     auto y = std::get<0>(std::move(cheby2));
     auto dy = std::get<1>(std::move(cheby2));
     auto x = std::get<2>(std::move(cheby2));
-    maxerr = yprev(0).real() - y(0).real();
-    if (std::isnan(maxerr)) {
+    maxerr = std::abs(yprev(0) - y(0));
+    if (std::isnan(std::real(maxerr))) {
       maxerr = std::numeric_limits<Scalar>::infinity();
     }
     yprev = std::move(y);
@@ -167,9 +167,12 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     y += deltay;
     Ry = R(deltay);
     maxerr = Ry.array().abs().maxCoeff();
-    if (maxerr >= (Scalar{2.0} * prev_err)) {
+    if (maxerr >= (Scalar{2.0} * prev_err) || std::isnan(maxerr)) {
       success = false;
-      break;
+      return std::make_tuple(success, y0, dy0, maxerr, Scalar{0.0},
+                           arena_matrix<vectorc_t>(info.alloc_, y.size()),
+                           arena_matrix<vectorc_t>(info.alloc_, y.size()),
+                           std::make_pair(YScalar(0), YScalar(0)));
     }
     prev_err = maxerr;
   }
@@ -177,8 +180,12 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
   y += deltay;
   Ry = R(deltay);
   maxerr = Ry.array().abs().maxCoeff();
-  if (maxerr >= (Scalar{2.0} * prev_err)) {
+  if (maxerr >= (Scalar{2.0} * prev_err) || std::isnan(maxerr)) {
     success = false;
+    return std::make_tuple(success, y0, dy0, maxerr, Scalar{0.0},
+                      arena_matrix<vectorc_t>(info.alloc_, y.size()),
+                      arena_matrix<vectorc_t>(info.alloc_, y.size()),
+                      std::make_pair(YScalar(0), YScalar(0)));
   }
   prev_err = maxerr;
   if constexpr (DenseOut) {
@@ -211,6 +218,19 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     auto y1 = (ap * f1 + am * f2);
     auto dy1 = (ap * y * f1 + am * du2 * f2).eval();
     Scalar phase = std::imag(f1);
+    print("y", y);
+    print("u1", u1);
+    print("f2", f2);
+    print("du2", du2);
+    print("ap_top", ap_top);
+    print("ap_bottom", ap_bottom);
+    print("ap: ", ap);
+    print("am: ", am);
+    print("y1: ", y1);
+    print("dy1: ", dy1);
+    if (std::isnan(std::real(y1)) || std::isnan(std::imag(dy1(0)))) {
+      success = false;
+    }
     return std::make_tuple(success, y1, dy1(0), maxerr, phase,
                            arena_matrix<vectorc_t>(info.alloc_, y.size()),
                            arena_matrix<vectorc_t>(info.alloc_, y.size()),

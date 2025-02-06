@@ -139,39 +139,72 @@ auto get_slice(T&& x_eval, Scalar start, Scalar end) {
   return std::make_pair(dense_start, dense_size);
 }
 
+
+/**
+ * Checks if a type's pointer is convertible to a templated base type's pointer.
+ * If the arbitrary function
+ * ```
+ * std::true_type f(const Base<Derived>*)
+ * ```
+ * is well formed for input `std::declval<Derived*>() this has a member
+ *  value equal to `true`, otherwise the value is false.
+ * @tparam Base The templated base type for valid pointer conversion.
+ * @tparam Derived The type to check
+ * @ingroup type_trait
+ */
+template <template <typename> class Base, typename Derived>
+struct is_base_pointer_convertible {
+  static std::false_type f(const void *);
+  template <typename OtherDerived>
+  static std::true_type f(const Base<OtherDerived> *);
+  enum {
+    value
+    = decltype(f(std::declval<std::remove_reference_t<Derived> *>()))::value
+  };
+};
+
+template <template <typename> class Base, typename Derived>
+inline constexpr bool is_base_pointer_convertible_v = is_base_pointer_convertible<Base, Derived>::value;
+
+template <typename T>
+struct is_eigen
+    : std::bool_constant<is_base_pointer_convertible_v<Eigen::EigenBase, std::decay_t<T>>> {};
+
+template <typename T>
+inline constexpr bool is_eigen_v = is_eigen<T>::value;
+
 template <typename T>
 using require_not_floating_point
-    = std::enable_if_t<!std::is_floating_point<std::decay_t<T>>::value>;
+    = std::enable_if_t<!std::is_floating_point_v<std::decay_t<T>>>;
 
 template <typename T>
 using require_floating_point
-    = std::enable_if_t<std::is_floating_point<std::decay_t<T>>::value>;
+    = std::enable_if_t<std::is_floating_point_v<std::decay_t<T>>>;
 
 template <typename T1, typename T2>
 using require_same
-    = std::enable_if_t<std::is_same<std::decay_t<T1>, std::decay_t<T2>>::value>;
+    = std::enable_if_t<std::is_same_v<std::decay_t<T1>, std::decay_t<T2>>>;
 
 template <typename T1, typename T2>
-using require_not_same = std::enable_if_t<
-    !std::is_same<std::decay_t<T1>, std::decay_t<T2>>::value>;
+using require_not_same = std::enable_if_t<!std::is_same_v<std::decay_t<T1>, std::decay_t<T2>>>;
+
+template <typename MatrixType>
+class arena_matrix;
 
 namespace internal {
-template <typename T>
+template <typename T, typename Enable = void>
 struct value_type_impl {
-  using type = double;
+  static_assert(1,"Should never be used!");
+  using type = T;
 };
-template <>
-struct value_type_impl<double> {
-  using type = double;
+template <typename T>
+struct value_type_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
+  using type = T;
 };
 
-template <typename T, int R, int C>
-struct value_type_impl<Eigen::Matrix<T, R, C>> {
-  using type = T;
-};
-template <typename T, int R, int C>
-struct value_type_impl<Eigen::Array<T, R, C>> {
-  using type = T;
+template <typename T>
+struct value_type_impl<T, std::enable_if_t<is_eigen_v<T>>> {
+  using type = typename std::decay_t<T>::Scalar;
 };
 
 }  // namespace internal
@@ -202,12 +235,16 @@ using require_not_floating_point_or_complex
     = std::enable_if_t<!std::is_floating_point<std::decay_t<T>>::value
                        && !is_complex<std::decay_t<T>>::value>;
 
+template <typename T>
+using require_eigen
+    = std::enable_if_t<is_eigen_v<std::decay_t<T>>>;
+
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
 inline auto sin(T x) {
   return std::sin(x);
 }
 
-template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
+template <typename T, require_eigen<T>* = nullptr>
 inline auto sin(T&& x) {
   return x.sin();
 }
@@ -217,7 +254,7 @@ inline auto cos(T x) {
   return std::cos(x);
 }
 
-template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
+template <typename T, require_eigen<T>* = nullptr>
 inline auto cos(T&& x) {
   return x.cos();
 }
@@ -227,7 +264,7 @@ inline auto sqrt(T x) {
   return std::sqrt(x);
 }
 
-template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
+template <typename T, require_eigen<T>* = nullptr>
 inline auto sqrt(T&& x) {
   return x.sqrt();
 }
@@ -237,7 +274,7 @@ inline auto square(T x) {
   return x * x;
 }
 
-template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
+template <typename T, require_eigen<T>* = nullptr>
 inline auto square(T&& x) {
   return x.square();
 }
@@ -247,7 +284,7 @@ inline auto array(T x) {
   return x;
 }
 
-template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
+template <typename T, require_eigen<T>* = nullptr>
 inline auto array(T&& x) {
   return x.array();
 }
@@ -257,7 +294,7 @@ inline auto matrix(T x) {
   return x;
 }
 
-template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
+template <typename T, require_eigen<T>* = nullptr>
 inline auto matrix(T&& x) {
   return x.matrix();
 }
@@ -267,7 +304,7 @@ inline constexpr T zero_like(T x) {
   return static_cast<T>(0.0);
 }
 
-template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
+template <typename T, require_eigen<T>* = nullptr>
 inline auto zero_like(const T& x) {
   return std::decay_t<typename T::PlainObject>::Zero(x.rows(), x.cols());
 }
@@ -277,7 +314,7 @@ inline auto pow(T1 x, T2 y) {
   return std::pow(x, y);
 }
 
-template <typename T1, typename T2, require_not_floating_point_or_complex<T1>* = nullptr>
+template <typename T1, typename T2, require_eigen<T1>* = nullptr>
 inline auto pow(T1&& x, T2 y) {
   return x.array().pow(y);
 }
@@ -287,7 +324,7 @@ inline auto real(T1 x) {
   return std::real(x);
 }
 
-template <typename T1, require_not_floating_point_or_complex<T1>* = nullptr>
+template <typename T1, require_eigen<T1>* = nullptr>
 inline auto real(T1&& x) {
   return x.real();
 }
@@ -301,7 +338,7 @@ inline auto to_complex(T x) {
   }
 }
 
-template <typename T, require_not_floating_point_or_complex<T>* = nullptr>
+template <typename T, require_eigen<T>* = nullptr>
 inline auto to_complex(T&& x) {
   if constexpr (is_complex_v<value_type_t<T>>) {
     return std::forward<T>(x);

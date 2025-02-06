@@ -405,20 +405,21 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   auto scale_xi = scale(info.xp().array(), xi, init_stepsize).eval();
   auto omega_is = omega(info, scale_xi).eval();
   auto gamma_is = gamma(info, scale_xi).eval();
+  std::cout << "omega_is:\n" << omega_is << std::endl;
   using omega_scalar_t = value_type_t<decltype(omega_is)>;
   using gamma_scalar_t = value_type_t<decltype(gamma_is)>;
-  omega_scalar_t wi = omega_is.mean();
-  omega_scalar_t dwi = (2.0 / init_stepsize * (info.Dn() * omega_is)).mean();
-  gamma_scalar_t gi = gamma_is.mean();
-  gamma_scalar_t dgi = (2.0 / init_stepsize * (info.Dn() * gamma_is)).mean();
+  omega_scalar_t omega_i = omega_is.mean();
+  omega_scalar_t domega_i = (2.0 / init_stepsize * (info.Dn() * omega_is)).mean();
+  gamma_scalar_t gamma_i = gamma_is.mean();
+  gamma_scalar_t dgamma_i = (2.0 / init_stepsize * (info.Dn() * gamma_is)).mean();
   Scalar hslo_ini = direction
                     * std::min(static_cast<Scalar>(1e8),
-                               static_cast<Scalar>(std::abs(1.0 / wi)));
+                               static_cast<Scalar>(std::abs(1.0 / omega_i)));
   Scalar hosc_ini
       = direction
         * std::min(std::min(static_cast<Scalar>(1e8),
-                            static_cast<Scalar>(std::abs(wi / dwi))),
-                   std::abs(gi / dgi));
+                            static_cast<Scalar>(std::abs(omega_i / domega_i))),
+                   std::abs(gamma_i / dgamma_i));
 
   if (hard_stop) {
     if (direction * (xi + hosc_ini) > direction * xf) {
@@ -428,15 +429,21 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       hslo_ini = xf - xi;
     }
   }
-  auto hslo = choose_nonosc_stepsize(info, xi, hslo_ini, Scalar(0.2));
+  auto hslo = choose_nonosc_stepsize(info, xi, hslo_ini, epsilon_h);
   // o and g written here
   auto osc_step_tup = choose_osc_stepsize(info, xi, hosc_ini, epsilon_h);
-  auto hosc = std::get<0>(osc_step_tup);
+  Scalar hosc;
+  if (is_complex_v<omega_scalar_t>) {
+    hosc = 0.0;
+  } else {
+    hosc = std::get<0>(osc_step_tup);
+  }
   // NOTE: Calling choose_osc_stepsize will update these values
   auto &&omega_n = std::get<1>(osc_step_tup);
   auto &&gamma_n = std::get<2>(osc_step_tup);
   Scalar xcurrent = xi;
-  omega_scalar_t wnext = wi;
+  omega_scalar_t wnext = omega_i;
+  std::cout << "omega_i: " << omega_i << std::endl;
   using matrixc_t = matrix_t<complex_t>;
   matrixc_t y_eval;
   matrixc_t dy_eval;
@@ -454,46 +461,61 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
     arena_matrix<vectorc_t> un(info.alloc_, omega_n.size(), 1);
     arena_matrix<vectorc_t> d_un(info.alloc_, omega_n.size(), 1);
     if (unlikely(log_level == LogLevel::INFO)) {
+      std::string w_print;
+      std::string w1_print;
+      auto w1 = 1.0 / wnext;
+      if constexpr (is_complex_v<omega_scalar_t>) {
+        w_print = std::string("(") + std::to_string(std::real(wnext)) + std::string(", ")
+                  + std::to_string(std::imag(wnext)) + std::string(")");
+        w1_print = std::string("(") + std::to_string(std::real(w1)) + std::string(", ")
+                  + std::to_string(std::imag(w1)) + std::string(")");
+      } else {
+        w_print = std::to_string(wnext);
+        w1_print = std::to_string(w1);
+      }
       info.logger().template log<LogLevel::INFO>(
         std::string("[x = ") +
         std::to_string(xcurrent) +
         std::string("][w(x) = ") +
-        std::to_string(std::real(wnext)) +
-        std::string("][1/w(x) = ") +
-        std::to_string(1.0/std::real(wnext)) + std::string("]")
+        w_print + std::string("][1/w(x) = ") +
+        w1_print + std::string("]")
       );
     }
-    if (direction * hosc > (direction * hslo)) {
-      if (hard_stop) {
-        if (direction * (xcurrent + hosc) > direction * xf) {
-          hosc = xf - xcurrent;
-          auto xp_scaled = scale(info.xp().array(), xcurrent, hosc).eval();
-          omega_n = omega(info, xp_scaled);
-          gamma_n = gamma(info, xp_scaled);
+    if constexpr (!is_complex_v<omega_scalar_t>) {
+      if (direction * hosc > (direction * hslo)) {
+        if (hard_stop) {
+          if (direction * (xcurrent + hosc) > direction * xf) {
+            hosc = xf - xcurrent;
+            auto xp_scaled = scale(info.xp().array(), xcurrent, hosc).eval();
+            omega_n = omega(info, xp_scaled);
+            gamma_n = gamma(info, xp_scaled);
+          }
+          if (direction * (xcurrent + hslo) > direction * xf) {
+            hslo = xf - xcurrent;
+          }
         }
-        if (direction * (xcurrent + hslo) > direction * xf) {
-          hslo = xf - xcurrent;
-        }
+        // o and g read here
+        std::tie(success, y, dy, err, phase, un, d_un, a_pair)
+            = osc_step<dense_output>(info, omega_n, gamma_n, xcurrent, hosc,
+                                    yprev, dyprev, eps);
+        steptype = 1;
+        solver_counts[get_idx(LogInfo::RICCSTEP)].second++;
       }
-      // o and g read here
-      std::tie(success, y, dy, err, phase, un, d_un, a_pair)
-          = osc_step<dense_output>(info, omega_n, gamma_n, xcurrent, hosc,
-                                   yprev, dyprev, eps);
-      steptype = 1;
-      solver_counts[get_idx(LogInfo::RICCSTEP)].second++;
-    }
-    if (unlikely(log_level >= LogLevel::INFO && !success)) {
-      info.logger().template log<LogLevel::INFO>(
-        std::string("[oscillatory step = failure][x = ") +
-        std::to_string(xcurrent) + std::string("][stepsize = ") +
-        std::to_string(hosc) + std::string("]")
-      );
-    } else if (unlikely(log_level >= LogLevel::INFO)) {
-      info.logger().template log<LogLevel::INFO>(
-        std::string("[oscillatory step = success][x = ") +
-        std::to_string(xcurrent) + std::string("][stepsize = ") +
-        std::to_string(hosc) + std::string("]")
-      );
+      if (unlikely(log_level >= LogLevel::INFO && !success)) {
+        info.logger().template log<LogLevel::INFO>(
+          std::string("[oscillatory step = failure][x = ") +
+          std::to_string(xcurrent) + std::string("][stepsize = ") +
+          std::to_string(hosc) + std::string("]")
+        );
+      } else if (unlikely(log_level >= LogLevel::INFO)) {
+        info.logger().template log<LogLevel::INFO>(
+          std::string("[oscillatory step = success][x = ") +
+          std::to_string(xcurrent) + std::string("][stepsize = ") +
+          std::to_string(hosc) + std::string("]")
+        );
+      }
+    } else {
+      success = 0;
     }
     while (!success) {
       std::tie(success, y, dy, err, y_eval, dy_eval, cheb_N)
@@ -568,6 +590,19 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       }
     }
     // Finish appending and ending conditions
+      if (unlikely(log_level == LogLevel::INFO)) {
+      auto y_print = std::string("(") + std::to_string(std::real(y)) + std::string(", ")
+                + std::to_string(std::imag(y)) + std::string(")");
+      auto dy_print = std::string("(") + std::to_string(std::real(dy)) + std::string(", ")
+                + std::to_string(std::imag(dy)) + std::string(")");
+      info.logger().template log<LogLevel::INFO>(
+        std::string("[y = ") + y_print +
+        std::string("][dy = ") + dy_print +
+        std::string("][x_next = ") + std::to_string(xcurrent + h) +
+        std::string("][phase = ") + std::to_string(phase) +
+        std::string("][steptype = ") + std::to_string(steptype) + "]"
+      );
+    }
     ys.push_back(y);
     dys.push_back(dy);
     xs.push_back(xcurrent + h);

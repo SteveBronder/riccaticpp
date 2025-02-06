@@ -101,9 +101,10 @@ def wavefunction_mismatch(E):
         y0=[psi_left_init, dpsi_left_init],
         E=E,
         potential_fn=potential_fn,
-        max_step=0.01,
+        max_step=1,
         rtol=1e-8,
-        atol=1e-8
+        atol=1e-8,
+        method="DOP853"
     )
     psi_left = ys_left[-1, 0]   # ψ at midpoint
     dpsi_left = ys_left[-1, 1]  # ψ' at midpoint
@@ -145,44 +146,6 @@ bounds = [(416.5, 417.5), (1035, 1037), (21930, 21940), (471100, 471110)]
 
 if __name__ == "__main__":
 
-    print("=== Using root finding (root_scalar) ===")
-    energies_root = []
-    for (low, high) in bounds:
-        # We attempt to find E in [low, high] that zeroes the derivative mismatch
-        # Actually, 'wavefunction_mismatch' is not guaranteed to cross zero,
-        # so strictly speaking, root_scalar might fail unless the mismatch
-        # function crosses from negative to positive.
-        # Sometimes, we define a function that tries to match sign changes
-        # (e.g. by hooking in a phase condition).
-        #
-        # A common trick is to define mismatch(E) as something that is
-        # negative on one side of the 'correct' E and positive on the other.
-        # If mismatch() is always positive, you can still try root_scalar
-        # if you manipulate the function or do sign-based checks.
-        #
-        # For demonstration, let's guess mismatch(E) might get close to 0
-        # at the correct E.
-        # We'll do a simple bracket check:
-        f_low = wavefunction_mismatch(low)
-        f_high = wavefunction_mismatch(high)
-
-        if np.sign(f_low - 1e-6) != np.sign(f_high + 1e-6):
-            # There's a possible sign crossing or near zero
-            sol = root_scalar(
-                wavefunction_mismatch,
-                bracket=[low, high],
-                method='brentq'
-            )
-            if sol.converged:
-                energies_root.append(sol.root)
-                print(f"Bracket {low} - {high}, found root E = {sol.root:.6f}")
-            else:
-                print(f"Bracket {low} - {high}, root finding did not converge.")
-        else:
-            # If mismatch never crosses zero, root_scalar won't help.
-            # We'll skip or we can attempt a direct minimization approach.
-            print(f"No sign change in mismatch; skipping bracket [{low}, {high}]")
-
     print("\n=== Using direct minimization (minimize_scalar) ===")
     energies_minimized = []
     for (low, high) in bounds:
@@ -198,5 +161,4 @@ if __name__ == "__main__":
         else:
             print(f"Bracket {low} - {high}, minimization did not converge.")
 
-    print("\nRoot-finding energies = ", energies_root)
     print("Minimized energies    = ", energies_minimized)

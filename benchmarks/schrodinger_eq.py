@@ -15,8 +15,6 @@ import signal
 from typing import Any, Callable, Dict, List, Tuple
 from collections.abc import Iterable
 import scipy.optimize as sci_opt
-import matplotlib
-from matplotlib import pyplot as plt
 
 
 class Algo(Enum):
@@ -158,7 +156,7 @@ class SchrodingerProblem:
         Potential function V(x) = x^2 + l*x^4
         """
         x_sq = x**2
-        return x_sq + self.l * (x_sq * x_sq)
+        return x_sq + (self.l * x_sq * x_sq)
 
     def analytic_energy(n):
         """
@@ -167,7 +165,7 @@ class SchrodingerProblem:
         return np.sqrt(2.0) * (n - 0.5)
 
     def w_gen(self, energy):
-        return lambda x: np.sqrt(2.0 * (energy - self.potential(x)))
+        return lambda x: np.sqrt(2.0 * self.m * (energy - self.potential(x)))
 
     def g_gen(self):
         return lambda x: np.zeros_like(x)
