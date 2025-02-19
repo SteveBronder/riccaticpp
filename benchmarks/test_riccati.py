@@ -43,7 +43,6 @@ def f(E):
     wfunc = lambda t: w(t, E)
     gfunc = lambda t: np.zeros_like(t)
     info = riccati.solversetup(wfunc, gfunc, n = 32, p = 32)
-    import pdb; pdb.set_trace()
     ricc_ts_l, ricc_ys_l, ricc_dys_l, *rest_l = riccati.solve(info, tl, tm, 0, 1e-3, eps = 1e-5, epsh = 1e-6, hard_stop = True)
     ricc_ts_r, ricc_ys_r, ricc_dys_r, *rest_r = riccati.solve(info, tr, tm, 0, 1e-3, eps = 1e-5, epsh = 1e-6, hard_stop = True)
 
@@ -65,7 +64,7 @@ bounds = [ (416.5,417.5)]#,(1035,1037)]#,(21930,21940), (471100,471110)]
 ress = []
 for bound in bounds:
     res = minimize_scalar(f,bounds=bound,method='bounded')
-    print(res.x,f(res.x),res.success,res.message)
+    print("x: ", res.x, "f(x): ", f(res.x), "Pass: ", res.success, "Msg: ", res.message)
 
 
 class Algo(Enum):
@@ -157,8 +156,8 @@ def f2(E):
                 "p": 32,
             },
             {"eps": 1e-5, "epsh": 1e-6})
-    _, ricc_ys_l, ricc_dys_l, *unused = ric.evolve(info, tl, tm, 0, 1e-3, eps = 1e-5, init_stepsize = 1, epsh = 1e-6, hard_stop = True)
-    _, ricc_ys_r, ricc_dys_r, *unused = ric.evolve(info, tr, tm, 0, 1e-3, eps = 1e-5, init_stepsize = -1, epsh = 1e-6, hard_stop = True)
+    _, ricc_ys_l, ricc_dys_l, *unused = ric.evolve(info=info, xi=tl, xf=tm, yi=complex(1e-3), dyi=complex(1e-3), eps = 1e-5, init_stepsize = 1e-6, epsilon_h = 1e-6, hard_stop = True)
+    _, ricc_ys_r, ricc_dys_r, *unused = ric.evolve(info, tr, tm, complex(0.0), complex(1e-3), eps = 1e-5, init_stepsize = -1.0, epsilon_h = 1e-6, hard_stop = True)
 #    for (t, y, dy) in  zip(ricc_ts, ricc_ys, ricc_dys):
 #        print(t, y, dy)
     #for step, sol, dsol in zip(sol_l["t"], sol_l["sol"], sol_l["dsol"]):
@@ -168,6 +167,10 @@ def f2(E):
     dpsi_l = ricc_dys_l[-1]
     dpsi_r = ricc_dys_r[-1]
     print(psi_l, psi_r, dpsi_l, dpsi_r)
+    print(ricc_ys_l)
+    print(ricc_ys_r)
+    print(ricc_dys_l)
+    print(ricc_dys_r)
     try:
         return abs(dpsi_l/psi_l - dpsi_r/psi_r)
     except ZeroDivisionError:
@@ -177,4 +180,4 @@ bounds = [ (416.5,417.5)]#,(1035,1037)]#,(21930,21940), (471100,471110)]
 ress = []
 for bound in bounds:
     res = minimize_scalar(f2,bounds=bound,method='bounded')
-    print(res.x,f(res.x),res.success,res.message)
+    print("x: ", res.x, "f(x): ", f(res.x), "Pass: ", res.success, "Msg: ", res.message)
