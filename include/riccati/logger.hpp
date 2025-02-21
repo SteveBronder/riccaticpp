@@ -12,6 +12,7 @@
 #include <array>
 #include <utility>
 #include <stdexcept>
+#include <iostream>
 
 namespace riccati {
 
@@ -189,6 +190,23 @@ class PtrLogger : public LoggerBase<PtrLogger<Ptr>> {
   RICCATI_NO_INLINE explicit PtrLogger(const std::shared_ptr<Stream>& output)
       : output_(output) {}
 
+
+
+  template <LogLevel Level, typename T, typename... Args>
+  inline auto concat_string(std::stringstream& stream, T&& arg, Args&&... args) {
+      stream << std::forward<T>(arg);
+    if constexpr (sizeof...(Args) == 0) {
+      std::string msg = stream.str();
+    std::string full_msg = log_level<Level>() + time_mi() + "[";
+    full_msg += msg;
+    full_msg += std::string("]");
+    *output_ << full_msg + "\n";
+      return;
+    } else {
+      return concat_string<Level>(stream, std::forward<Args>(args)...);
+    }
+  }
+
   /**
    * @brief Logs a message with a specified log level.
    *
@@ -196,7 +214,10 @@ class PtrLogger : public LoggerBase<PtrLogger<Ptr>> {
    * @param msg The message to log.
    */
   template <LogLevel Level>
-  inline void log(std::string_view msg) {
+  inline void log(LogLevel UserLevel, const std::string_view& msg) {
+  if (Level != UserLevel) {
+    return;
+  }
 #ifdef RICCATI_DEBUG
 #define RICCATI_DEBUG_VAL true
 #else
@@ -209,6 +230,33 @@ class PtrLogger : public LoggerBase<PtrLogger<Ptr>> {
     full_msg += msg;
     full_msg += std::string("]");
     *output_ << full_msg + "\n";
+  }
+    template <LogLevel Level>
+  inline void log(LogLevel UserLevel, const std::string& msg) {
+  if (Level != UserLevel) {
+    return;
+  }
+#ifdef RICCATI_DEBUG
+#define RICCATI_DEBUG_VAL true
+#else
+#define RICCATI_DEBUG_VAL false
+#endif
+    if constexpr (!RICCATI_DEBUG_VAL && Level == LogLevel::DEBUG) {
+      return;
+    }
+    std::string full_msg = log_level<Level>() + time_mi() + "[";
+    full_msg += msg;
+    full_msg += std::string("]");
+    *output_ << full_msg + "\n";
+  }
+  template <LogLevel Level, typename... Args>
+  inline void log(LogLevel UserLevel, Args&&... args) {
+  if (Level != UserLevel) {
+    return;
+  }
+    std::stringstream stream;
+    stream << std::setprecision(18);
+    concat_string<Level>(stream, std::forward<Args>(args)...);
   }
 };
 

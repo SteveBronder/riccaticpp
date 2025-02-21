@@ -218,16 +218,6 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     auto y1 = (ap * f1 + am * f2);
     auto dy1 = (ap * y * f1 + am * du2 * f2).eval();
     Scalar phase = std::imag(f1);
-    print("y", y);
-    print("u1", u1);
-    print("f2", f2);
-    print("du2", du2);
-    print("ap_top", ap_top);
-    print("ap_bottom", ap_bottom);
-    print("ap: ", ap);
-    print("am: ", am);
-    print("y1: ", y1);
-    print("dy1: ", dy1);
     if (std::isnan(std::real(y1)) || std::isnan(std::imag(dy1(0)))) {
       success = false;
     }

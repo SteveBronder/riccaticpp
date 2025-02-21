@@ -405,7 +405,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   auto scale_xi = scale(info.xp().array(), xi, init_stepsize).eval();
   auto omega_is = omega(info, scale_xi).eval();
   auto gamma_is = gamma(info, scale_xi).eval();
-  std::cout << "omega_is:\n" << omega_is << std::endl;
+//  std::cout << "omega_is:\n" << omega_is.transpose().eval() << std::endl;
   using omega_scalar_t = value_type_t<decltype(omega_is)>;
   using gamma_scalar_t = value_type_t<decltype(gamma_is)>;
   omega_scalar_t omega_i = omega_is.mean();
@@ -420,7 +420,10 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
         * std::min(std::min(static_cast<Scalar>(1e8),
                             static_cast<Scalar>(std::abs(omega_i / domega_i))),
                    std::abs(gamma_i / dgamma_i));
-
+  info.logger().template log<LogLevel::INFO>(log_level,
+    std::string("[setup][hslo_ini = ") +
+    std::to_string(hslo_ini) + std::string("]")
+  );
   if (hard_stop) {
     if (direction * (xi + hosc_ini) > direction * xf) {
       hosc_ini = xf - xi;
@@ -443,7 +446,6 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   auto &&gamma_n = std::get<2>(osc_step_tup);
   Scalar xcurrent = xi;
   omega_scalar_t wnext = omega_i;
-  std::cout << "omega_i: " << omega_i << std::endl;
   using matrixc_t = matrix_t<complex_t>;
   matrixc_t y_eval;
   matrixc_t dy_eval;
@@ -452,6 +454,12 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   Eigen::Index iter = 0;
   while (std::abs(xcurrent - xf) > std::numeric_limits<Scalar>::epsilon()
          && direction * xcurrent < direction * xf) {
+//    std::cout << "=============Iter (" << iter << ")=============\n" << std::endl;
+    info.logger().template log<LogLevel::INFO>(log_level,
+      "[iter = ", iter,
+      "][std::abs(xcurrent - xf) = ", std::abs(xcurrent - xf),
+    "][direction * xcurrent = ", direction * xcurrent, "]");
+
     iter++;
     Scalar phase{0.0};
     bool success = false;
@@ -473,7 +481,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
         w_print = std::to_string(wnext);
         w1_print = std::to_string(w1);
       }
-      info.logger().template log<LogLevel::INFO>(
+      info.logger().template log<LogLevel::INFO>(log_level,
         std::string("[x = ") +
         std::to_string(xcurrent) +
         std::string("][w(x) = ") +
@@ -502,13 +510,13 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
         solver_counts[get_idx(LogInfo::RICCSTEP)].second++;
       }
       if (unlikely(log_level >= LogLevel::INFO && !success)) {
-        info.logger().template log<LogLevel::INFO>(
+        info.logger().template log<LogLevel::INFO>(log_level,
           std::string("[oscillatory step = failure][x = ") +
           std::to_string(xcurrent) + std::string("][stepsize = ") +
           std::to_string(hosc) + std::string("]")
         );
       } else if (unlikely(log_level >= LogLevel::INFO)) {
-        info.logger().template log<LogLevel::INFO>(
+        info.logger().template log<LogLevel::INFO>(log_level,
           std::string("[oscillatory step = success][x = ") +
           std::to_string(xcurrent) + std::string("][stepsize = ") +
           std::to_string(hosc) + std::string("]")
@@ -518,23 +526,38 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       success = 0;
     }
     while (!success) {
+
+        info.logger().template log<LogLevel::INFO>(log_level,
+          std::string("[begin nonoscillatory step][x = ") +
+          std::to_string(xcurrent) +
+          std::string("][stepsize = ") + std::to_string(hslo) +
+          std::string("][yprev = ") + std::to_string(yprev.real()) +
+          std::string("][dyprev = ") + std::to_string(dyprev.real()) +
+          std::string("]"));
       std::tie(success, y, dy, err, y_eval, dy_eval, cheb_N)
           = nonosc_step(info, xcurrent, hslo, yprev, dyprev, eps);
       solver_counts[get_idx(LogInfo::CHEBSTEP)].second++;
       solver_counts[get_idx(LogInfo::LS)].second += cheb_N + 1;
       steptype = 0;
-      if (unlikely(log_level >= LogLevel::INFO && !success)) {
-        info.logger().template log<LogLevel::INFO>(
-          std::string("[nonoscillatory step = failure][x = ") +
-          std::to_string(xcurrent) + std::string("][stepsize = ") +
-          std::to_string(hslo) + std::string("]")
-        );
-      } else if (unlikely(log_level >= LogLevel::INFO)) {
-        info.logger().template log<LogLevel::INFO>(
+      info.logger().template log<LogLevel::INFO>(log_level,
+        "[nonoscillatory step][",
+      (success ? "success]" : "failures]"),
+      "[x = ", xcurrent,
+      "][stepsize = ", hslo,
+      "][y = ", y.real(),
+      "][dy = ", dy.real(),
+      "][err = ", std::real(err),
+      "][cheb_steps = ", cheb_N,
+      "]");
+      if (unlikely(log_level == LogLevel::INFO)) {
+        info.logger().template log<LogLevel::INFO>(log_level,
           std::string("[nonoscillatory step = success][x = ") +
-          std::to_string(xcurrent) + std::string("][stepsize = ") +
-          std::to_string(hslo) + std::string("]")
-        );
+          std::to_string(xcurrent) +
+          std::string("][stepsize = ") + std::to_string(hslo) +
+          std::string("][y = ") + std::to_string(y.real()) +
+          std::string("][dy = ") + std::to_string(dy.real()) +
+          std::string("][cheb_steps = ") + std::to_string(cheb_N) +
+          std::string("]"));
       }
       if (!success) {
         hslo *= Scalar{0.5};
@@ -553,7 +576,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
           = get_slice(x_eval, xcurrent, (xcurrent + h));
       if (dense_size != 0) {
         if (unlikely(log_level == LogLevel::INFO)) {
-          info.logger().template log<LogLevel::INFO>(
+          info.logger().template log<LogLevel::INFO>(log_level,
             std::string("[Dense output][x_start = ") +
             std::to_string(xcurrent) + std::string("][x_end =") +
             std::to_string(xcurrent + h) + std::string("]")
@@ -595,7 +618,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
                 + std::to_string(std::imag(y)) + std::string(")");
       auto dy_print = std::string("(") + std::to_string(std::real(dy)) + std::string(", ")
                 + std::to_string(std::imag(dy)) + std::string(")");
-      info.logger().template log<LogLevel::INFO>(
+      info.logger().template log<LogLevel::INFO>(log_level,
         std::string("[y = ") + y_print +
         std::string("][dy = ") + dy_print +
         std::string("][x_next = ") + std::to_string(xcurrent + h) +
@@ -649,9 +672,15 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
     }
     info.alloc_.recover_memory();
   }
+  info.logger().template log<LogLevel::INFO>(log_level,
+    "[DONE = ", iter,
+    "][std::abs(xcurrent - xf) = ", std::abs(xcurrent - xf),
+    "][direction * xcurrent = ", direction * xcurrent, "]");
+
   if constexpr (!std::is_same_v<std::decay_t<decltype(info.logger())>, EmptyLogger>) {
     if (unlikely(log_level == LogLevel::INFO)) {
-      info.logger().template log<LogLevel::INFO>(std::string("[x = ") + std::to_string(xcurrent) + " ]");
+      info.logger().template log<LogLevel::INFO>(log_level,
+      std::string("[x = ") + std::to_string(xcurrent) + " ]");
       std::size_t riccati_steps = 0;
       std::size_t rk_steps = 0;
       for (auto& success : successes) {
@@ -661,11 +690,11 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
           rk_steps++;
         }
       }
-      info.logger().template log<LogLevel::INFO>(
+      info.logger().template log<LogLevel::INFO>(log_level,
         std::string("Total Steps = ") + std::to_string(successes.size())
       );
       for (auto&& info_pair : solver_counts) {
-        info.logger().template log<LogLevel::INFO>(
+        info.logger().template log<LogLevel::INFO>(log_level,
           std::string(to_string(info_pair.first)) + " = " + std::to_string(info_pair.second)
         );
       }

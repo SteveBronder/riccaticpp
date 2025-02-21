@@ -44,7 +44,7 @@ constexpr Eigen::Index compile_size_v
  */
 template <typename Scalar, typename Vector>
 inline auto scale(Vector&& x, Scalar x0, Scalar h) {
-  return (x0 + h / 2.0 + h / 2.0 * x.array()).matrix();
+  return (x0 + (h / 2.0) + (h / 2.0) * x.array()).matrix();
 }
 
 /**
