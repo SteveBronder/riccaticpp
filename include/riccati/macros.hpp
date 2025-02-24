@@ -20,6 +20,10 @@ namespace riccati {
 #ifdef __has_attribute
 #if __has_attribute(noinline) && __has_attribute(cold)
 #ifndef RICCATI_COLD_PATH
+#ifndef RKY_COLD
+#define RKY_COLD __attribute__((cold))
+#endif
+
 /**
  * Functions tagged with this attribute are not inlined and moved
  *  to a cold branch to tell the CPU to not attempt to pre-fetch

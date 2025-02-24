@@ -28,7 +28,7 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                             FloatingPoint h,
                                             FloatingPoint epsilon_h) {
   auto ws = omega(info, riccati::scale(info.xp(), x0, h)).eval();
-  while (ws.array().abs().maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
+  while (ws.real().array().maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
     h /= 2.0;
     ws = omega(info, riccati::scale(info.xp(), x0, h));
   }
@@ -73,12 +73,9 @@ inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
   auto gamma_estimate = empty_arena_matrix<gamma_vec_ret_t>(info.alloc_, t.rows(), t.cols());
   omega_vec_ret_t ws(t.size());
   gamma_vec_ret_t gs(t.size());
-  int Iter = 0;
   do {
-    Iter++;
-    // FIXME: 1.0 should be h/2.0?
-    t = (x0 + (h / 2.0) * (1.0 + info.xp_interp().array())).matrix();
-    s = (x0 + (h / 2.0) * (1.0 + info.xp().array())).matrix();
+    t = (x0 + (h / 2.0) + ((h / 2.0) * info.xp_interp().array())).matrix();
+    s = (x0 + (h / 2.0) + ((h / 2.0) * info.xp().array())).matrix();
     ws = omega(info, s);
     gs = gamma(info, s);
     omega_analytic = omega(info, t);

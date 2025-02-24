@@ -48,7 +48,7 @@ TEST(RiccatiLoggerTest, EmptyLoggerTest) {
   EmptyLogger logger;
 
   // Test that logging does not throw and does nothing
-  EXPECT_NO_THROW(logger.log<LogLevel::INFO>("This is a test"));
+  EXPECT_NO_THROW(logger.log<LogLevel::INFO>(LogLevel::DEBUG, "This is a test"));
 }
 
 /**
@@ -61,7 +61,7 @@ TEST(RiccatiLoggerTest, DefaultLoggerLoggingTest) {
       std::make_unique<std::stringstream>()};
 
   // Log an INFO message
-  logger.log<LogLevel::INFO>("Test message");
+  logger.log<LogLevel::INFO>(LogLevel::DEBUG, "Test message");
 
   // Check that the output contains the expected log level and message
   std::string output = logger.output_->str();
@@ -73,7 +73,7 @@ TEST(RiccatiLoggerTest, DefaultLoggerLoggingTest) {
   logger.output_->clear();
 
   // Log an ERROR message
-  logger.log<LogLevel::ERROR>("Error occurred");
+  logger.log<LogLevel::ERROR>(LogLevel::DEBUG, "Error occurred");
 
   // Check that the output contains the expected log level and message
   output = logger.output_->str();
@@ -92,7 +92,7 @@ TEST(RiccatiLoggerTest, DefaultLoggerDebugLoggingDisabled) {
       std::make_unique<std::stringstream>()};
 
   // Log a DEBUG message
-  logger.log<LogLevel::DEBUG>("Debug message");
+  logger.log<LogLevel::DEBUG>(LogLevel::DEBUG, "Debug message");
   // Check that the output is empty (since RICCATI_DEBUG is not defined)
   std::string output = logger.output_->str();
   EXPECT_EQ(output.find("[DEBUG]"), std::string::npos);
@@ -108,7 +108,7 @@ TEST(RiccatiLoggerTest, DefaultLoggerDebugLoggingEnabled) {
       std::make_unique<std::stringstream>()};
 
   // Log a DEBUG message
-  logger.log<LogLevel::DEBUG>("Debug message");
+  logger.log<LogLevel::DEBUG>(LogLevel::DEBUG, "Debug message");
 
   // Check that the output contains the DEBUG message
   std::string output = logger.output_->str();
@@ -129,7 +129,7 @@ TEST(RiccatiLoggerTest, DefaultLoggerMoveAssignment) {
     std::make_unique<std::stringstream>()
   };
 
-  logger1.log<LogLevel::INFO>("Logger1 message");
+  logger1.log<LogLevel::INFO>(LogLevel::DEBUG, "Logger1 message");
 
   // Move logger1 into logger2
   logger2 = std::move(logger1);
@@ -148,7 +148,7 @@ TEST(RiccatiLoggerTest, DefaultLoggerEmptyMessage) {
       std::make_unique<std::stringstream>()};
 
   // Log an empty message
-  logger.log<LogLevel::INFO>("");
+  logger.log<LogLevel::INFO>(LogLevel::DEBUG, "");
 
   // Check that the output contains the log level but no message
   std::string output = logger.output_->str();
