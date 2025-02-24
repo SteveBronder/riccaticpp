@@ -28,21 +28,10 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                             FloatingPoint h,
                                             FloatingPoint epsilon_h) {
   auto ws = omega(info, riccati::scale(info.xp(), x0, h)).eval();
-//  std::cout << "begin: choose_nonosc_stepsize: \n";
-//  std::cout << "ws: " << ws << std::endl;
-  int sentinal = 0;
-//  std::cout << "check_size: " << ((1.0 + epsilon_h) / std::abs(h)) << "\n";
-//  std::cout << "check val: " << ws.array().abs().maxCoeff() << "\n";
   while (ws.real().array().maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
     h /= 2.0;
     ws = omega(info, riccati::scale(info.xp(), x0, h));
-//    std::cout << "i: " << sentinal++ << std::endl;
-//    std::cout << "ws: " << ws << std::endl;
-//    std::cout << "check_size: " << ((1.0 + epsilon_h) / std::abs(h)) << "\n";
-//  std::cout << "check val: " << ws.array().abs().maxCoeff() << "\n";
   }
- // std::cout << "Final h: " << h << "\n";
-//  std::cout << "end: choose_nonosc_stepsize: \n";
   return h;
 }
 
@@ -73,13 +62,6 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
 template <typename SolverInfo, typename FloatingPoint>
 inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                 FloatingPoint h, FloatingPoint epsilon_h) {
-/*
-  std::cout << "osc_stepsize: \n";
-  std::cout << "Input: \n" <<
-  "\tx0: " << x0 <<
-  "\th: " << h <<
-  " epsh: " << epsilon_h << "\n";
-*/
   FloatingPoint max_err = std::numeric_limits<FloatingPoint>::infinity();
   auto t = empty_arena_matrix(info.alloc_, info.xp_interp());
   auto s = empty_arena_matrix(info.alloc_, info.xp());
@@ -91,23 +73,11 @@ inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
   auto gamma_estimate = empty_arena_matrix<gamma_vec_ret_t>(info.alloc_, t.rows(), t.cols());
   omega_vec_ret_t ws(t.size());
   gamma_vec_ret_t gs(t.size());
-  int Iter = 0;
   do {
-//    std::cout << "=====Iter: " << Iter << "======\n";
-    Iter++;
-    // FIXME: 1.0 should be h/2.0?
     t = (x0 + (h / 2.0) + ((h / 2.0) * info.xp_interp().array())).matrix();
     s = (x0 + (h / 2.0) + ((h / 2.0) * info.xp().array())).matrix();
     ws = omega(info, s);
     gs = gamma(info, s);
-/*
-    std::cout << "xpinterp: \n" << info.xp_interp().transpose().eval() << "\n";
-    std::cout << "xp: \n" << info.xp().transpose().eval() << "\n";
-    std::cout << "t: \n" << t.transpose().eval() << "\n";
-    std::cout << "s: \n" << s.transpose().eval() << "\n";
-    std::cout << "ws: \n" << ws.transpose().eval() << "\n";
-    std::cout << "gs: \n" << gs.transpose().eval() << "\n";
-*/
     omega_analytic = omega(info, t);
     omega_estimate = info.L() * ws;
     gamma_analytic = gamma(info, t);

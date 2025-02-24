@@ -27,7 +27,10 @@ def w(t,E):
     return np.sqrt(2*m*(complex(E)-V(t)))
 
 DEBUG = False
+energy_path_lst = []
+energy_diff_lst = []
 def f(E):
+    energy_path_lst.append(E)
     """
     Function to minimize wrt E to give the energy eigenvalues
     """
@@ -46,8 +49,8 @@ def f(E):
     info = riccati.solversetup(wfunc, gfunc, n = 32, p = 32)
     if DEBUG:
       import pdb; pdb.set_trace()
-    ricc_ts_l, ricc_ys_l, ricc_dys_l, *rest_l = riccati.solve(info, tl, tm, 0, 1e-3, eps = 1e-5, epsh = 1e-6, hard_stop = True)
-    ricc_ts_r, ricc_ys_r, ricc_dys_r, *rest_r = riccati.solve(info, tr, tm, 0, 1e-3, eps = 1e-5, epsh = 1e-6, hard_stop = True)
+    ricc_ts_l, ricc_ys_l, ricc_dys_l, *rest_l = riccati.solve(info, tl, tm, 0, 1e-3, eps = 1e-12, epsh = 1e-13, hard_stop = True)
+    ricc_ts_r, ricc_ys_r, ricc_dys_r, *rest_r = riccati.solve(info, tr, tm, 0, 1e-3, eps = 1e-12, epsh = 1e-13, hard_stop = True)
     if DEBUG:
       ricc_ts = np.array(ricc_ts_l)
       ricc_ys = np.array(ricc_ys_l)
@@ -72,6 +75,7 @@ def f(E):
     dpsi_l = ricc_dys_l[-1]
     dpsi_r = ricc_dys_r[-1]
     energy_diff = abs(dpsi_l/psi_l - dpsi_r/psi_r)
+    energy_diff_lst.append(energy_diff)
     print("Iter: ")
     print("Energy: ")
     print(f"{E:.50f}")
@@ -85,8 +89,8 @@ def f(E):
     except ZeroDivisionError:
         return 1000.0
 print("Test run")
-f(21940.0)
-f(21936.1803400516510009765625)
+#for i in range(10):
+#    f(21_930.0 + i)
 print("test done")
 
 bounds = [ #(416.5,417.5),(1035.0,1037.0),
@@ -96,6 +100,9 @@ for bound in bounds:
     res = minimize_scalar(f,bounds=bound,method='bounded')
     print("x: ", res.x, "f(x): ", f(res.x), "Pass: ", res.success, "Msg: ", res.message)
 
+
+print("Path: \n", energy_path_lst)
+print("Diff: \n", energy_diff_lst)
 
 class Algo(Enum):
     """Enumeration of available algorithms for solving differential equations."""
@@ -125,9 +132,6 @@ def f2(E):
     tm = 0.5
 
     # Grid of w, g
-    t = np.linspace(tl.real,tr.real,30000)
-    ws = np.log(w(t,E))
-    g = np.zeros(t.shape)
     wfunc = lambda t: w(t, E)
     gfunc = lambda t: np.zeros_like(t)
     info = ric.Init(wfunc, gfunc, 8, 32, 32, 32)

@@ -116,7 +116,7 @@ inline const auto& eval(const Eigen::Array<T, R, C>& x) {
 }
 
 template <typename T, typename Scalar>
-auto get_slice(T&& x_eval, Scalar start, Scalar end) {
+inline auto get_slice(T&& x_eval, Scalar start, Scalar end) {
   Eigen::Index i = 0;
   Eigen::Index dense_start = 0;
   if (start > end) {
@@ -238,6 +238,22 @@ using require_not_floating_point_or_complex
 template <typename T>
 using require_eigen
     = std::enable_if_t<is_eigen_v<std::decay_t<T>>>;
+
+
+namespace internal {
+template <typename>
+struct is_pair : std::false_type {};
+
+template <typename T, typename U>
+struct is_pair<std::pair<T, U>> : std::true_type {};
+
+}
+
+template <typename T>
+struct is_pair : internal::is_pair<std::decay_t<T>> {};
+
+template <typename T>
+inline constexpr bool is_pair_v = is_pair<std::decay_t<T>>::value;
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
 inline auto sin(T x) {

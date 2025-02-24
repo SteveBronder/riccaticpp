@@ -140,7 +140,7 @@ template <bool DenseOut, typename SolverInfo, typename OmegaVec,
 inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
                      Scalar x0, Scalar h, YScalar y0, YScalar dy0,
                      Scalar epsres) {
-  using complex_t = std::complex<Scalar>;
+  using complex_t = std::conditional_t<is_complex_v<Scalar>, Scalar, std::complex<Scalar>>;
   using vectorc_t = vector_t<complex_t>;
   bool success = true;
   auto &&Dn = info.Dn();
@@ -169,10 +169,7 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
     maxerr = Ry.array().abs().maxCoeff();
     if (maxerr >= (Scalar{2.0} * prev_err) || std::isnan(maxerr)) {
       success = false;
-      return std::make_tuple(success, y0, dy0, maxerr, Scalar{0.0},
-                           arena_matrix<vectorc_t>(info.alloc_, y.size()),
-                           arena_matrix<vectorc_t>(info.alloc_, y.size()),
-                           std::make_pair(YScalar(0), YScalar(0)));
+      break;
     }
     prev_err = maxerr;
   }
@@ -182,10 +179,6 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
   maxerr = Ry.array().abs().maxCoeff();
   if (maxerr >= (Scalar{2.0} * prev_err) || std::isnan(maxerr)) {
     success = false;
-    return std::make_tuple(success, y0, dy0, maxerr, Scalar{0.0},
-                      arena_matrix<vectorc_t>(info.alloc_, y.size()),
-                      arena_matrix<vectorc_t>(info.alloc_, y.size()),
-                      std::make_pair(YScalar(0), YScalar(0)));
   }
   prev_err = maxerr;
   if constexpr (DenseOut) {
@@ -207,7 +200,7 @@ inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
                            std::make_pair(ap, am));
   } else {
     auto u1 = (h / Scalar{2.0} * (info.quadwts_.dot(y)));
-    complex_t f1 = std::exp(u1);
+    auto f1 = std::exp(u1);
     auto f2 = std::conj(f1);
     auto du2 = y.conjugate().eval();
     auto ap_top = (dy0 - y0 * du2(du2.size() - 1));

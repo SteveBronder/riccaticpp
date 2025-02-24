@@ -14,16 +14,25 @@
 #include <stdexcept>
 #include <iostream>
 
+#ifdef RICCATI_DEBUG
+#ifndef RICCATI_DEBUG_VAL
+#define RICCATI_DEBUG_VAL true
+#endif
+#else
+#ifndef RICCATI_DEBUG_VAL
+#define RICCATI_DEBUG_VAL false
+#endif
+#endif
 namespace riccati {
 
 /**
  * @brief Enumeration of different log levels for logging.
  */
 enum class LogLevel {
-  ERROR,    // Error messages.
-  WARNING,  // Warning messages.
-  INFO,     // General information messages.
-  DEBUG,    // Detailed debug information.
+  ERROR = 0,    // Error messages.
+  WARNING = 1,  // Warning messages.
+  INFO = 2,     // General information messages.
+  DEBUG = 3,    // Detailed debug information.
 };
 
 /**
@@ -194,69 +203,62 @@ class PtrLogger : public LoggerBase<PtrLogger<Ptr>> {
 
   template <LogLevel Level, typename T, typename... Args>
   inline auto concat_string(std::stringstream& stream, T&& arg, Args&&... args) {
-      stream << std::forward<T>(arg);
+    if constexpr (is_pair_v<T>) {
+      if constexpr (std::is_same_v<LogInfo, std::decay_t<decltype(arg.first)>>) {
+        stream << to_string(arg.first) << "=";
+      } else {
+        stream << "[" << arg.first << "=";
+      }
+      if constexpr (is_complex_v<T>) {
+        stream << "(" << arg.second.real() << ", " << arg.second.imag() << ")";
+      } else {
+        stream << arg.second;
+      }
+      stream << "]";
+    } else if constexpr (is_complex_v<T>) {
+      stream << "(" << arg.real() << ", " << arg.imag() << ")";
+    } else {
+      stream << "[" << std::forward<T>(arg) << "]";
+    }
     if constexpr (sizeof...(Args) == 0) {
-      std::string msg = stream.str();
-    std::string full_msg = log_level<Level>() + time_mi() + "[";
-    full_msg += msg;
-    full_msg += std::string("]");
-    *output_ << full_msg + "\n";
-      return;
+      return stream.str();
     } else {
       return concat_string<Level>(stream, std::forward<Args>(args)...);
     }
   }
 
-  /**
-   * @brief Logs a message with a specified log level.
-   *
-   * @tparam Level The log level.
-   * @param msg The message to log.
-   */
-  template <LogLevel Level>
-  inline void log(LogLevel UserLevel, const std::string_view& msg) {
-  if (Level != UserLevel) {
-    return;
-  }
-#ifdef RICCATI_DEBUG
-#define RICCATI_DEBUG_VAL true
-#else
-#define RICCATI_DEBUG_VAL false
-#endif
+  template <LogLevel Level, typename T>
+  inline void log(LogLevel UserLevel, T&& msg) {
     if constexpr (!RICCATI_DEBUG_VAL && Level == LogLevel::DEBUG) {
       return;
     }
-    std::string full_msg = log_level<Level>() + time_mi() + "[";
-    full_msg += msg;
-    full_msg += std::string("]");
-    *output_ << full_msg + "\n";
-  }
-    template <LogLevel Level>
-  inline void log(LogLevel UserLevel, const std::string& msg) {
-  if (Level != UserLevel) {
-    return;
-  }
-#ifdef RICCATI_DEBUG
-#define RICCATI_DEBUG_VAL true
-#else
-#define RICCATI_DEBUG_VAL false
-#endif
-    if constexpr (!RICCATI_DEBUG_VAL && Level == LogLevel::DEBUG) {
+    if (Level > UserLevel) {
       return;
     }
     std::string full_msg = log_level<Level>() + time_mi() + "[";
-    full_msg += msg;
+    if constexpr (std::is_convertible<std::decay_t<T>, std::string>::value) {
+      full_msg += msg;
+    } else {
+      std::stringstream stream;
+      stream << std::setprecision(18);
+      full_msg += concat_string<Level>(stream, std::forward<T>(msg));
+    }
     full_msg += std::string("]");
     *output_ << full_msg + "\n";
   }
-  template <LogLevel Level, typename... Args>
-  inline void log(LogLevel UserLevel, Args&&... args) {
-  if (Level != UserLevel) {
-    return;
-  }
+
+  template <LogLevel Level, typename T, typename... Args,
+   std::enable_if_t<sizeof...(Args) != 0>* = nullptr>
+  inline void log(LogLevel UserLevel, T&& arg, Args&&... args) {
+    if constexpr (!RICCATI_DEBUG_VAL && Level == LogLevel::DEBUG) {
+      return;
+    }
+    if (Level > UserLevel) {
+      return;
+    }
     std::stringstream stream;
     stream << std::setprecision(18);
-    concat_string<Level>(stream, std::forward<Args>(args)...);
+    this->log<Level>(UserLevel, concat_string<Level>(stream, std::forward<T>(arg), std::forward<Args>(args)...));
   }
 };
 
