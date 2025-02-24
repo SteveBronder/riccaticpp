@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string>
 
-TEST_F(Riccati, evolve_dense_output_burst) {
+TEST_F(Riccati, evolve_burst_dense_output) {
   using namespace riccati;
   constexpr int m = 1e6;
   auto omega_fun = [m](auto&& x) {

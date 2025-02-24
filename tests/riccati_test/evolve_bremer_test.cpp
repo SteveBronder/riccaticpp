@@ -10,7 +10,7 @@
 #include <string>
 
 
-TEST_F(Riccati, nondense_output_bremer) {
+TEST_F(Riccati, evolve_bremer_nondense_output) {
   using namespace riccati;
 
   Eigen::Matrix<double, -1, -1> bremer_table{
@@ -75,7 +75,7 @@ TEST_F(Riccati, nondense_output_bremer) {
   }
 }
 
-TEST_F(Riccati, evolve_nondense_fwd_hardstop_bremer) {
+TEST_F(Riccati, evolve_bremer_nondense_fwd_hardstop) {
   using namespace riccati;
   constexpr double l = 10.0;
   auto omega_fun = [l](auto&& x) {
@@ -105,7 +105,7 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_bremer) {
   //std::cout << "LOGS: \n" << info.logger().output_->str();
 }
 
-TEST_F(Riccati, vectorizer_evolve_nondense_fwd_hardstop_bremer) {
+TEST_F(Riccati, evolve_bremer_vectorizer_nondense_fwd_hardstop) {
   using namespace riccati;
   constexpr double l = 10.0;
   auto omega_scalar = [l](auto&& x) {

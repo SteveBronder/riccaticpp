@@ -213,7 +213,19 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
         + std::to_string(xi) + std::string(", ") + std::to_string(xf)
         + std::string(")!"));
   }
+  init_stepsize = choose_nonosc_stepsize(info, xi, init_stepsize, epsilon_h);
   auto nonosc_ret = nonosc_step(info, xi, init_stepsize, yi, dyi, eps);
+  while (!std::get<0>(nonosc_ret)) {
+
+    if (!std::get<0>(nonosc_ret)) {
+      init_stepsize *= Scalar{0.5};
+    }
+    if (std::abs(init_stepsize) < std::numeric_limits<Scalar>::min()) {
+      throw std::domain_error(std::string("Stepsize became to small error: ")
+                              + std::to_string(init_stepsize));
+    }
+    nonosc_ret = nonosc_step(info, xi, init_stepsize, yi, dyi, eps);
+  }
   if (!std::get<0>(nonosc_ret)) {
     return std::make_tuple(false, xi, init_stepsize, nonosc_ret, vectorc_t(0),
                            vectorc_t(0), static_cast<Eigen::Index>(0),
@@ -221,7 +233,8 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
   } else {
     Eigen::Index dense_size = 0;
     Eigen::Index dense_start = 0;
-    if constexpr (compile_size_v<Vec> != 0) {
+    constexpr bool dense_output = compile_size_v<Vec> != 0;
+    if constexpr (dense_output) {
       // Assuming x_eval is sorted we just want start and size
       std::tie(dense_start, dense_size)
           = get_slice(x_eval, sign * xi, sign * (xi + init_stepsize));
@@ -398,20 +411,19 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   vectorc_t yeval(x_eval.size());
   vectorc_t dyeval(x_eval.size());
 
-  complex_t y = yi;
-  complex_t dy = dyi;
-  complex_t yprev = y;
-  complex_t dyprev = dy;
+  auto y = yi;
+  auto dy = dyi;
+  auto yprev = y;
+  auto dyprev = dy;
   auto scale_xi = scale(info.xp().array(), xi, init_stepsize).eval();
   auto omega_is = omega(info, scale_xi).eval();
   auto gamma_is = gamma(info, scale_xi).eval();
-//  std::cout << "omega_is:\n" << omega_is.transpose().eval() << std::endl;
   using omega_scalar_t = value_type_t<decltype(omega_is)>;
   using gamma_scalar_t = value_type_t<decltype(gamma_is)>;
-  omega_scalar_t omega_i = omega_is.mean();
-  omega_scalar_t domega_i = (2.0 / init_stepsize * (info.Dn() * omega_is)).mean();
-  gamma_scalar_t gamma_i = gamma_is.mean();
-  gamma_scalar_t dgamma_i = (2.0 / init_stepsize * (info.Dn() * gamma_is)).mean();
+  auto omega_i = omega_is.mean();
+  auto domega_i = (2.0 / init_stepsize * (info.Dn() * omega_is)).mean();
+  auto gamma_i = gamma_is.mean();
+  auto dgamma_i = (2.0 / init_stepsize * (info.Dn() * gamma_is)).mean();
   Scalar hslo_ini = direction
                     * std::min(static_cast<Scalar>(1e8),
                                static_cast<Scalar>(std::abs(1.0 / omega_i)));

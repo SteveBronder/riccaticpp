@@ -15,7 +15,7 @@
  * Tests a path of the python riccati running through Brent with
  * eps 1e-12 and epsh 1e-13
  */
-TEST_F(Riccati, evolve_nondense_fwd_path_optimize_schrodinger) {
+TEST_F(Riccati, evolve_schrodinger_nondense_fwd_path_optimize) {
   constexpr std::array energy_arr{
     21933.819660112502,
     21936.180339887498,
@@ -72,7 +72,6 @@ TEST_F(Riccati, evolve_nondense_fwd_path_optimize_schrodinger) {
         = [current_energy, potential, m](auto&& x) {
           return eval(matrix(riccati::sqrt(2.0 * m * (std::complex(current_energy) - potential(array(x))))));
           };
-    std::cout << std::setprecision(30);
     auto cout_ptr = std::unique_ptr<std::ostream, deleter_noop>(&std::cout, deleter_noop{});
     DefaultLogger<std::ostream, deleter_noop> logger{std::move(cout_ptr)};
     auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
@@ -114,7 +113,7 @@ TEST_F(Riccati, evolve_nondense_fwd_path_optimize_schrodinger) {
     auto dpsi_r = right_dy_est.tail(1)[0];
     auto energy_diff = std::abs((dpsi_l / psi_l) - (dpsi_r / psi_r));
     auto abs_target_energy_diff = std::abs(energy_diff - target_energy_diff);
-#ifdef RICCATI_DEBUG
+#ifdef RICCATI_DEBUG_SCHROD
     std::cout << "===LEFT SOLVE===\n";
     std::cout << "Info: \n";
     std::cout << "Energy: " << current_energy << "\n";
@@ -141,7 +140,7 @@ TEST_F(Riccati, evolve_nondense_fwd_path_optimize_schrodinger) {
   }
 }
 
-TEST_F(Riccati, evolve_nondense_fwd_full_optimize_schrodinger) {
+TEST_F(Riccati, evolve_schrodinger_nondense_fwd_full_optimize) {
   auto energy_difference = [&](auto current_energy) {
   using namespace riccati;
   constexpr double l = 1.0;

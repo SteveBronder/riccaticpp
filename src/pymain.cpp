@@ -22,45 +22,48 @@ template <bool B>
 using bool_constant = std::integral_constant<bool, B>;
 
 template <typename T>
-struct is_scalar : bool_constant<std::is_floating_point<std::decay_t<T>>::value
-                                 || std::is_integral<std::decay_t<T>>::value> {
-};
+struct is_scalar : bool_constant<std::is_floating_point_v<std::decay_t<T>>
+                                 || std::is_integral_v<std::decay_t<T>>
+                                 || is_complex_v<T>> {};
+
+template <typename T>
+constexpr bool is_scalar_v = is_scalar<T>::value;
 
 template <
     typename SolverInfo, typename Scalar,
     std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::gamma_type,
                                   pybind11::object>::value>* = nullptr,
-    std::enable_if_t<is_scalar<Scalar>::value>* = nullptr>
+    std::enable_if_t<is_scalar_v<Scalar>>* = nullptr>
 inline auto gamma(SolverInfo&& info, const Scalar& x) {
-  return info.gamma_fun_(x).template cast<Scalar>();
+  return info.gamma_fun_(x);
 }
 
 template <
     typename SolverInfo, typename Scalar,
     std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::omega_type,
                                   pybind11::object>::value>* = nullptr,
-    std::enable_if_t<is_scalar<Scalar>::value>* = nullptr>
+    std::enable_if_t<is_scalar_v<Scalar>>* = nullptr>
 inline auto omega(SolverInfo&& info, const Scalar& x) {
-  return info.omega_fun_(x).template cast<Scalar>();
+  return info.omega_fun_(x);
 }
 template <
-    typename SolverInfo, typename Scalar,
+    typename SolverInfo, typename EigVec,
     std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::gamma_type,
                                   pybind11::object>::value>* = nullptr,
-    std::enable_if_t<is_eigen<Scalar>::value>* = nullptr>
-inline auto gamma(SolverInfo&& info, const Scalar& x) {
-  return info.gamma_fun_(x.eval())
-      .template cast<typename Scalar::PlainObject>();
+    std::enable_if_t<is_eigen_v<EigVec>>* = nullptr>
+inline auto gamma(SolverInfo&& info, const EigVec& x) {
+  using plain_type = typename std::decay_t<EigVec>::PlainObject;
+  return info.gamma_fun_(x.eval()).template cast<plain_type>();
 }
 
 template <
-    typename SolverInfo, typename Scalar,
+    typename SolverInfo, typename EigVec,
     std::enable_if_t<std::is_same<typename std::decay_t<SolverInfo>::omega_type,
                                   pybind11::object>::value>* = nullptr,
-    std::enable_if_t<is_eigen<Scalar>::value>* = nullptr>
-inline auto omega(SolverInfo&& info, const Scalar& x) {
-  return info.omega_fun_(x.eval())
-      .template cast<typename Scalar::PlainObject>();
+    std::enable_if_t<is_eigen_v<EigVec>>* = nullptr>
+inline auto omega(SolverInfo&& info, const EigVec& x) {
+  using plain_type = typename std::decay_t<EigVec>::PlainObject;
+  return info.omega_fun_(x.eval()).template cast<plain_type>();
 }
 
 template <typename SolverInfo, typename Scalar>
@@ -93,15 +96,6 @@ inline auto nonosc_evolve(SolverInfo& info, Scalar xi, Scalar xf,
                        not_used, hard_stop);
 }
 
-template <typename SolverInfo, typename Scalar>
-inline auto step_(SolverInfo& info, Scalar xi, Scalar xf,
-                  std::complex<Scalar> yi, std::complex<Scalar> dyi, Scalar eps,
-                  Scalar epsilon_h, Scalar init_stepsize,
-                  bool hard_stop = false) {
-  Eigen::VectorXd not_used;
-  return step(info, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize, not_used,
-              hard_stop);
-}
 template <typename SolverInfo, typename FloatingPoint>
 inline auto choose_osc_stepsize_(SolverInfo& info, FloatingPoint x0,
                                  FloatingPoint h, FloatingPoint epsilon_h) {
@@ -197,78 +191,6 @@ PYBIND11_MODULE(pyriccaticpp, m) {
               (Number of Chebyshev nodes - 1) to use for computing Riccati steps.
           """
             )pbdoc");
-
-  m.def(
-      "step",
-      [](py::object& info, double xi, double xf, std::complex<double> yi,
-         std::complex<double> dyi, double eps, double epsilon_h,
-         double init_stepsize, py::object x_eval, bool hard_stop) {
-        if (py::isinstance<riccati::init_f64_i64>(info)) {
-          auto info_ = info.cast<riccati::init_f64_i64>();
-          if (x_eval.is_none()) {
-            auto ret = riccati::step_<riccati::init_f64_i64, double>(
-                info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize,
-                hard_stop);
-            info_.alloc_.recover_memory();
-            return ret;
-          } else {
-            auto ret = riccati::step<riccati::init_f64_i64, double>(
-                info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize,
-                x_eval.cast<Eigen::VectorXd>(), hard_stop);
-            info_.alloc_.recover_memory();
-            return ret;
-          }
-        } else {
-          throw std::invalid_argument("Invalid SolverInfo object.");
-        }
-      },
-      py::arg("info"), py::arg("xi"), py::arg("xf"), py::arg("yi"),
-      py::arg("dyi"), py::arg("eps"), py::arg("epsilon_h"),
-      py::arg("init_stepsize") = 0.01, py::arg("x_eval") = py::none(),
-      py::arg("hard_stop") = false, R"pbdoc(
-    """
-    Solves the differential equation y'' + 2gy' + w^2y = 0 over a given interval.
-
-    This function solves the differential equation on the interval (xi, xf), starting from the initial conditions
-    y(xi) = yi and y'(xi) = dyi. It keeps the residual of the ODE below eps, and returns an interpolated solution
-    (dense output) at the points specified in x_eval.
-
-    Parameters
-    ----------
-    info : SolverInfo
-        SolverInfo object containing necessary information for the solver, such as differentiation matrices, etc.
-    xi : float
-        Starting value of the independent variable.
-    xf : float
-        Ending value of the independent variable.
-    yi : complex
-        Initial value of the dependent variable at xi.
-    dyi : complex
-        Initial derivative of the dependent variable at xi.
-    eps : float
-        Relative tolerance for the local error of both Riccati and Chebyshev type steps.
-    epsilon_h : float
-        Relative tolerance for choosing the stepsize of Riccati steps.
-    init_stepsize : float
-        Initial stepsize for the integration.
-    x_eval : numpy.ndarray[numpy.float64], optional
-        List of x-values where the solution is to be interpolated (dense output) and returned.
-    hard_stop : bool, optional
-        If True, forces the solver to have a potentially smaller last stepsize to stop exactly at xf. Default is False.
-
-    Returns
-    -------
-    tuple[list[float], list[complex], list[complex], list[int], list[float], list[int]]
-        A tuple containing multiple elements representing the results of the ODE solving process:
-        - list[float]: x-values at which the solution was evaluated or interpolated, including points in x_eval if dense output was requested.
-        - list[complex]: The solution y(x) of the differential equation at each x-value.
-        - list[complex]: The derivative of the solution, y'(x), at each x-value.
-        - list[int]: Indicates the success status of the solver at each step (1 for success, 0 for failure).
-        - list[int]: Indicates the type of step taken at each point (1 for oscillatory step, 0 for non-oscillatory step).
-        - list[float]: The phase angle at each step of the solution process (relevant for oscillatory solutions).
-    """
-          )pbdoc");
-
   m.def(
       "evolve",
       [](py::object& info, double xi, double xf, std::complex<double> yi,

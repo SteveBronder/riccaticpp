@@ -9,13 +9,14 @@
 #include <stdlib.h>
 #include <string>
 // TODO: Test more boundaries
-TEST_F(Riccati, evolve_nondense_fwd_bounds_airy) {
+
+TEST_F(Riccati, evolve_airy_nondense_fwd_bounds) {
   using namespace riccati;
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
-                                           32, 20, 20);
+                                           35, 32, 32);
   constexpr double xi = 0.0;
   constexpr double xf = 1e6;
   constexpr auto eps = 1e-12;
@@ -24,7 +25,7 @@ TEST_F(Riccati, evolve_nondense_fwd_bounds_airy) {
   auto dyi = riccati::test::airy_i_prime(xi);
   Eigen::Matrix<double, 0, 0> x_eval;
   auto res
-      = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 0.1, x_eval, true);
+      = riccati::evolve(info, xi, xf, yi, dyi, eps, epsh, 1.0, x_eval, true);
   auto x_steps = Eigen::Map<Eigen::VectorXd>(std::get<0>(res).data(),
                                              std::get<0>(res).size());
   auto ytrue = riccati::test::airy_i(x_steps.array()).matrix().eval();
@@ -38,7 +39,7 @@ TEST_F(Riccati, evolve_nondense_fwd_bounds_airy) {
   EXPECT_LE(y_err.maxCoeff(), 9e-6);
 }
 
-TEST_F(Riccati, osc_evolve_dense_fwd_airy) {
+TEST_F(Riccati, evolve_airy_evolve_dense_fwd) {
   using namespace riccati;
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
@@ -93,17 +94,17 @@ TEST_F(Riccati, osc_evolve_dense_fwd_airy) {
   }
 }
 
-TEST_F(Riccati, nonosc_evolve_dense_output_airy) {
+TEST_F(Riccati, evolve_airy_nonosc_dense_output) {
   using namespace riccati;
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
                                            32, 32, 32);
-  double xi = 1e0;
+  double xi = 1.0;
   constexpr double xf = 4e1;
   constexpr auto eps = 1e-12;
-  constexpr auto epsh = 0.2;
+  constexpr auto epsh = 1e-13;
   auto yi = riccati::test::airy_i(xi);
   auto dyi = riccati::test::airy_i_prime(xi);
   Eigen::Index Neval = 1e3;
@@ -113,8 +114,7 @@ TEST_F(Riccati, nonosc_evolve_dense_output_airy) {
       = (riccati::test::airy_ai(-x_eval)
          + std::complex<double>(0.0, 1.0) * riccati::test::airy_bi(-x_eval))
             .eval();
-  auto hi = 1.0 / omega_fun(xi);
-  hi = choose_nonosc_stepsize(info, xi, hi, epsh);
+  auto hi = choose_nonosc_stepsize(info, xi, xf - xi, epsh);
   bool x_validated = false;
   while (xi < xf) {
     auto res
@@ -151,7 +151,7 @@ TEST_F(Riccati, nonosc_evolve_dense_output_airy) {
   }
 }
 
-TEST_F(Riccati, evolve_dense_output_airy) {
+TEST_F(Riccati, evolve_airy_dense_output) {
   using namespace riccati;
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
@@ -179,7 +179,7 @@ TEST_F(Riccati, evolve_dense_output_airy) {
   EXPECT_LE(y_err.maxCoeff(), 9e-6);
 }
 
-TEST_F(Riccati, evolve_nondense_output_airy) {
+TEST_F(Riccati, evolve_airy_nondense_output) {
   using namespace riccati;
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
@@ -209,7 +209,7 @@ TEST_F(Riccati, evolve_nondense_output_airy) {
   EXPECT_LE(y_err.maxCoeff(), 9e-6);
 }
 
-TEST_F(Riccati, evolve_nondense_reverse_hardstop_airy) {
+TEST_F(Riccati, evolve_airy_nondense_reverse_hardstop) {
   using namespace riccati;
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
@@ -240,7 +240,7 @@ TEST_F(Riccati, evolve_nondense_reverse_hardstop_airy) {
 
 
 
-TEST_F(Riccati, evolve_nondense_fwd_hardstop_airy) {
+TEST_F(Riccati, evolve_airy_nondense_fwd_hardstop) {
   using namespace riccati;
   auto omega_fun
       = [](auto&& x) { return eval(matrix(riccati::sqrt(array(x)))); };
@@ -268,3 +268,4 @@ TEST_F(Riccati, evolve_nondense_fwd_hardstop_airy) {
   }
   EXPECT_LE(y_err.maxCoeff(), 9e-6);
 }
+

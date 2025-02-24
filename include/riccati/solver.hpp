@@ -269,6 +269,11 @@ class SolverInfo {
     return std::get<1>(chebyshev_[idx]);
   }
 
+  RICCATI_ALWAYS_INLINE const auto cheby_size() const noexcept {
+    return chebyshev_.size();
+  }
+
+
   /**
    * Values of the independent variable evaluated at (`n` + 1) Chebyshev
    * nodes over the interval [x, x + `h`], where x is the value of the
