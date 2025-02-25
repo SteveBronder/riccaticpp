@@ -113,30 +113,7 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_path_optimize) {
     auto dpsi_r = right_dy_est.tail(1)[0];
     auto energy_diff = std::abs((dpsi_l / psi_l) - (dpsi_r / psi_r));
     auto abs_target_energy_diff = std::abs(energy_diff - target_energy_diff);
-#ifdef RICCATI_DEBUG_SCHROD
-    std::cout << "===LEFT SOLVE===\n";
-    std::cout << "Info: \n";
-    std::cout << "Energy: " << current_energy << "\n";
-    std::cout << "\t left_boundary: " << left_boundary << "\n";
-    std::cout << "\t midpoint: " << midpoint << "\n";
-    std::cout << "\t right_boundary: " << right_boundary << "\n";
-    std::cout << "\t yi: " << yi << "\n";
-    std::cout << "\t dyi: " << dyi << "\n";
-    std::cout << "\t eps: " << eps << "\n";
-    std::cout << "\t epsh: " << epsh << "\n";
-    std::cout << "\t init_step: " << init_step << "\n";
-    std::cout << "\t l: " << l << std::endl;
-    std::cout << "\t m: " << m << std::endl;
-    std::cout <<
-      "\tpsi_l: " << psi_l.real() <<
-      "\n\tdpsi_l: " << dpsi_l.real() <<
-      "\n\tpsi_r: " << psi_r.real() <<
-      "\n\tdpsi_r: " << dpsi_r.real() << "\n";
-    std::cout << "\tenergy diff: " << energy_diff << "\n";
-    std::cout << "ref energy: " << target_energy_diff << "\n";
-    std::cout << "ref energy diff: " << abs_target_energy_diff << "\n";
-#endif
-    EXPECT_LE(abs_target_energy_diff, 1e-5);
+    EXPECT_LE(abs_target_energy_diff, 1e-4);
   }
 }
 

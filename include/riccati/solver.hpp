@@ -120,8 +120,8 @@ class SolverInfo {
     for (Integral i = 0; i <= n_nodes; ++i) {
       auto it_v = nini * std::pow(2, i);
       cheb_nodes.push_back(it_v);
-      n_found = n_found || (it_v == n);
-      p_found = p_found || (it_v == p);
+      n_found |= (it_v == n);
+      p_found |= (it_v == p);
     }
     if (!n_found) {
       cheb_nodes.push_back(n);

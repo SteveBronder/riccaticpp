@@ -48,7 +48,7 @@ namespace riccati {
  * reached the desired `epsres` residual, `0` otherwise.
  */
 template <typename SolverInfo, typename Scalar, typename YScalar>
-inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
+RICCATI_ALWAYS_INLINE auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
                         YScalar dy0, Scalar epsres) {
   using complex_t = std::complex<Scalar>;
 
@@ -60,10 +60,10 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
   auto dyprev = std::get<1>(cheby);
   auto xprev = std::get<2>(cheby);
   Scalar maxerr = 10 * epsres;
-  auto max_iter = info.cheby_size();
+  auto max_iter = info.cheby_size() - 1;
   while (iter <= max_iter && std::abs((epsres*yprev(0) + epsres)/maxerr) < 1) {
     iter++;
-    if (iter > max_iter) {
+    if (iter == max_iter) {
       return std::make_tuple(false, complex_t(0.0, 0.0), complex_t(0.0, 0.0),
                              maxerr, yprev, dyprev, iter);
     }
@@ -137,7 +137,7 @@ inline auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
  */
 template <bool DenseOut, typename SolverInfo, typename OmegaVec,
           typename GammaVec, typename Scalar, typename YScalar>
-inline auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
+RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
                      Scalar x0, Scalar h, YScalar y0, YScalar dy0,
                      Scalar epsres) {
   using complex_t = std::conditional_t<is_complex_v<Scalar>, Scalar, std::complex<Scalar>>;

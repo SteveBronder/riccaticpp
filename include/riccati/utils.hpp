@@ -1,5 +1,6 @@
 #ifndef INCLUDE_RICCATI_UTILS_HPP
 #define INCLUDE_RICCATI_UTILS_HPP
+#include <riccati/macros.hpp>
 #include <Eigen/Dense>
 #include <type_traits>
 #ifdef RICCATI_DEBUG
@@ -43,7 +44,7 @@ constexpr Eigen::Index compile_size_v
  * scaled and shifted to the new interval `[x0, x0 + h]`.
  */
 template <typename Scalar, typename Vector>
-inline auto scale(Vector&& x, Scalar x0, Scalar h) {
+RICCATI_ALWAYS_INLINE auto scale(Vector&& x, Scalar x0, Scalar h) {
   return (x0 + (h / 2.0) + (h / 2.0) * x.array()).matrix();
 }
 
@@ -70,53 +71,53 @@ inline constexpr T pi() {
   return static_cast<T>(3.141592653589793238462643383279);
 }
 
-inline double eval(double x) { return x; }
+RICCATI_ALWAYS_INLINE double eval(double x) { return x; }
 template <typename T>
-inline std::complex<T>& eval(std::complex<T>& x) {
+RICCATI_ALWAYS_INLINE std::complex<T>& eval(std::complex<T>& x) {
   return x;
 }
 template <typename T>
-inline std::complex<T> eval(std::complex<T>&& x) {
+RICCATI_ALWAYS_INLINE std::complex<T> eval(std::complex<T>&& x) {
   return x;
 }
 
 template <typename T>
-inline auto eval(T&& x) {
+RICCATI_ALWAYS_INLINE auto eval(T&& x) {
   return x.eval();
 }
 
 template <typename T, Eigen::Index R, Eigen::Index C>
-inline Eigen::Matrix<T, R, C> eval(Eigen::Matrix<T, R, C>&& x) {
+RICCATI_ALWAYS_INLINE Eigen::Matrix<T, R, C> eval(Eigen::Matrix<T, R, C>&& x) {
   return std::move(x);
 }
 
 template <typename T, Eigen::Index R, Eigen::Index C>
-inline auto& eval(Eigen::Matrix<T, R, C>& x) {
+RICCATI_ALWAYS_INLINE auto& eval(Eigen::Matrix<T, R, C>& x) {
   return x;
 }
 
 template <typename T, Eigen::Index R, Eigen::Index C>
-inline const auto& eval(const Eigen::Matrix<T, R, C>& x) {
+RICCATI_ALWAYS_INLINE const auto& eval(const Eigen::Matrix<T, R, C>& x) {
   return x;
 }
 
 template <typename T, Eigen::Index R, Eigen::Index C>
-inline Eigen::Array<T, R, C> eval(Eigen::Array<T, R, C>&& x) {
+RICCATI_ALWAYS_INLINE Eigen::Array<T, R, C> eval(Eigen::Array<T, R, C>&& x) {
   return std::move(x);
 }
 
 template <typename T, Eigen::Index R, Eigen::Index C>
-inline auto& eval(Eigen::Array<T, R, C>& x) {
+RICCATI_ALWAYS_INLINE auto& eval(Eigen::Array<T, R, C>& x) {
   return x;
 }
 
 template <typename T, Eigen::Index R, Eigen::Index C>
-inline const auto& eval(const Eigen::Array<T, R, C>& x) {
+RICCATI_ALWAYS_INLINE const auto& eval(const Eigen::Array<T, R, C>& x) {
   return x;
 }
 
 template <typename T, typename Scalar>
-inline auto get_slice(T&& x_eval, Scalar start, Scalar end) {
+RICCATI_ALWAYS_INLINE auto get_slice(T&& x_eval, Scalar start, Scalar end) {
   Eigen::Index i = 0;
   Eigen::Index dense_start = 0;
   if (start > end) {
@@ -256,97 +257,97 @@ template <typename T>
 inline constexpr bool is_pair_v = is_pair<std::decay_t<T>>::value;
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline auto sin(T x) {
+RICCATI_ALWAYS_INLINE auto sin(T x) {
   return std::sin(x);
 }
 
 template <typename T, require_eigen<T>* = nullptr>
-inline auto sin(T&& x) {
+RICCATI_ALWAYS_INLINE auto sin(T&& x) {
   return x.sin();
 }
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline auto cos(T x) {
+RICCATI_ALWAYS_INLINE auto cos(T x) {
   return std::cos(x);
 }
 
 template <typename T, require_eigen<T>* = nullptr>
-inline auto cos(T&& x) {
+RICCATI_ALWAYS_INLINE auto cos(T&& x) {
   return x.cos();
 }
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline auto sqrt(T x) {
+RICCATI_ALWAYS_INLINE auto sqrt(T x) {
   return std::sqrt(x);
 }
 
 template <typename T, require_eigen<T>* = nullptr>
-inline auto sqrt(T&& x) {
+RICCATI_ALWAYS_INLINE auto sqrt(T&& x) {
   return x.sqrt();
 }
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline auto square(T x) {
+RICCATI_ALWAYS_INLINE auto square(T x) {
   return x * x;
 }
 
 template <typename T, require_eigen<T>* = nullptr>
-inline auto square(T&& x) {
+RICCATI_ALWAYS_INLINE auto square(T&& x) {
   return x.square();
 }
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline auto array(T x) {
+RICCATI_ALWAYS_INLINE auto array(T x) {
   return x;
 }
 
 template <typename T, require_eigen<T>* = nullptr>
-inline auto array(T&& x) {
+RICCATI_ALWAYS_INLINE auto array(T&& x) {
   return x.array();
 }
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline auto matrix(T x) {
+RICCATI_ALWAYS_INLINE auto matrix(T x) {
   return x;
 }
 
 template <typename T, require_eigen<T>* = nullptr>
-inline auto matrix(T&& x) {
+RICCATI_ALWAYS_INLINE auto matrix(T&& x) {
   return x.matrix();
 }
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline constexpr T zero_like(T x) {
+RICCATI_ALWAYS_INLINE constexpr T zero_like(T x) {
   return static_cast<T>(0.0);
 }
 
 template <typename T, require_eigen<T>* = nullptr>
-inline auto zero_like(const T& x) {
+RICCATI_ALWAYS_INLINE auto zero_like(const T& x) {
   return std::decay_t<typename T::PlainObject>::Zero(x.rows(), x.cols());
 }
 
 template <typename T1, typename T2, require_floating_point<T1>* = nullptr>
-inline auto pow(T1 x, T2 y) {
+RICCATI_ALWAYS_INLINE auto pow(T1 x, T2 y) {
   return std::pow(x, y);
 }
 
 template <typename T1, typename T2, require_eigen<T1>* = nullptr>
-inline auto pow(T1&& x, T2 y) {
+RICCATI_ALWAYS_INLINE auto pow(T1&& x, T2 y) {
   return x.array().pow(y);
 }
 
 template <typename T1, require_floating_point_or_complex<T1>* = nullptr>
-inline auto real(T1 x) {
+RICCATI_ALWAYS_INLINE auto real(T1 x) {
   return std::real(x);
 }
 
 template <typename T1, require_eigen<T1>* = nullptr>
-inline auto real(T1&& x) {
+RICCATI_ALWAYS_INLINE auto real(T1&& x) {
   return x.real();
 }
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-inline auto to_complex(T x) {
+RICCATI_ALWAYS_INLINE auto to_complex(T x) {
   if constexpr (is_complex_v<value_type_t<T>>) {
     return x;
   } else {
@@ -355,7 +356,7 @@ inline auto to_complex(T x) {
 }
 
 template <typename T, require_eigen<T>* = nullptr>
-inline auto to_complex(T&& x) {
+RICCATI_ALWAYS_INLINE auto to_complex(T&& x) {
   if constexpr (is_complex_v<value_type_t<T>>) {
     return std::forward<T>(x);
   } else {
@@ -426,7 +427,7 @@ inline void print(const char* name, const std::vector<T>& x) {
   }
 }
 
-inline void local_time(const time_t* timer, struct tm* buf) noexcept {
+RICCATI_ALWAYS_INLINE void local_time(const time_t* timer, struct tm* buf) noexcept {
 #ifdef _WIN32
   // Windows switches the order of the arguments?
   localtime_s(buf, timer);
@@ -436,7 +437,7 @@ inline void local_time(const time_t* timer, struct tm* buf) noexcept {
 }
 
 /* Get the current time with microseconds */
-inline std::string time_mi() noexcept {
+RICCATI_ALWAYS_INLINE std::string time_mi() noexcept {
     auto now = std::chrono::system_clock::now();
     time_t epoch = std::chrono::system_clock::to_time_t(now);
     struct tm tms{};

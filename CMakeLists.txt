@@ -5,12 +5,12 @@ project(
     LANGUAGES C CXX)
 
 include(FetchContent)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED NO)
 cmake_policy(SET CMP0135 NEW)
 cmake_policy(SET CMP0077 NEW)
 set(CMAKE_CXX_EXTENSIONS NO)
-if (CMAKE_BUILD_TYPE MATCHES Debug)
+if (CMAKE_BUILD_TYPE MATCHES DEBUG)
   set(CMAKE_VERBOSE_MAKEFILE YES)
 endif()
 option(RICCATI_BUILD_TESTING "Build the test targets for the library" OFF)
@@ -69,7 +69,7 @@ endif()
 
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   set(CMAKE_CXX_FLAGS_RELEASE
-      "-O3 -march=native -mtune=native -DRICCATI_DEBUG=false"
+      "-O3 -march=native -mtune=native"
       CACHE STRING "Flags used by the C++ compiler during Release builds."
       FORCE)
 endif()

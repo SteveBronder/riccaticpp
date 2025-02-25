@@ -47,7 +47,7 @@ TEST_F(Riccati, evolve_bremer_nondense_output) {
         auto gamma_fun = [](auto&& x) { return zero_like(x); };
         // Initialize solver
         auto info = riccati::make_solver<double>(
-            omega_fun, gamma_fun, allocator, 8, std::max(32, n), n, n);
+            omega_fun, gamma_fun, allocator, 8, std::max(35, n), n, n);
         // Choose initial step size
         auto init_step = choose_nonosc_stepsize(info, xi, 1.0, epsh);
         // Perform the evolution
