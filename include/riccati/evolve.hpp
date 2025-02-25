@@ -634,7 +634,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       // o and g written here
       osc_step_tup = choose_osc_stepsize(info, xcurrent, hosc_ini, epsilon_h);
       hosc = std::get<0>(osc_step_tup);
-      hslo = choose_nonosc_stepsize(info, xcurrent, hslo_ini, Scalar{0.2});
+      hslo = choose_nonosc_stepsize(info, xcurrent, hslo_ini, epsilon_h);
       yprev = y;
       dyprev = dy;
     }

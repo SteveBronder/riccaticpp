@@ -6,6 +6,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/numpy.h>
 #include <pybind11/complex.h>
+#include <pybind11/complex.h>
 #include <riccati/evolve.hpp>
 #include <riccati/solver.hpp>
 #include <Eigen/Dense>
@@ -35,7 +36,8 @@ template <
                                   pybind11::object>::value>* = nullptr,
     std::enable_if_t<is_scalar_v<Scalar>>* = nullptr>
 inline auto gamma(SolverInfo&& info, const Scalar& x) {
-  return info.gamma_fun_(x);
+  using return_scalar_t = typename std::decay_t<SolverInfo>::GammaReturn;
+  return info.gamma_fun_(x).template cast<return_scalar_t>();
 }
 
 template <
@@ -44,7 +46,8 @@ template <
                                   pybind11::object>::value>* = nullptr,
     std::enable_if_t<is_scalar_v<Scalar>>* = nullptr>
 inline auto omega(SolverInfo&& info, const Scalar& x) {
-  return info.omega_fun_(x);
+  using return_scalar_t = typename std::decay_t<SolverInfo>::OmegaReturn;
+  return info.omega_fun_(x).template cast<return_scalar_t>();
 }
 template <
     typename SolverInfo, typename EigVec,
@@ -52,8 +55,9 @@ template <
                                   pybind11::object>::value>* = nullptr,
     std::enable_if_t<is_eigen_v<EigVec>>* = nullptr>
 inline auto gamma(SolverInfo&& info, const EigVec& x) {
-  using plain_type = typename std::decay_t<EigVec>::PlainObject;
-  return info.gamma_fun_(x.eval()).template cast<plain_type>();
+  using return_scalar_t = typename std::decay_t<SolverInfo>::GammaReturn;
+  using return_t = Eigen::Matrix<return_scalar_t, -1, 1>;
+  return info.gamma_fun_(x.eval()).template cast<return_t>().eval();
 }
 
 template <
@@ -62,8 +66,9 @@ template <
                                   pybind11::object>::value>* = nullptr,
     std::enable_if_t<is_eigen_v<EigVec>>* = nullptr>
 inline auto omega(SolverInfo&& info, const EigVec& x) {
-  using plain_type = typename std::decay_t<EigVec>::PlainObject;
-  return info.omega_fun_(x.eval()).template cast<plain_type>();
+  using return_scalar_t = typename std::decay_t<SolverInfo>::OmegaReturn;
+  using return_t = Eigen::Matrix<return_scalar_t, -1, 1>;
+  return info.omega_fun_(x.eval()).template cast<return_t>().eval();
 }
 
 template <typename SolverInfo, typename Scalar>
@@ -117,10 +122,34 @@ struct py_print {
     return *this;
   }
 };
-using init_f64_i64
+// Define the SolverInfo type for Python
+// Omega: double and Gamma: double
+using init_of64_gf64_f64_i64
     = riccati::SolverInfo<py::object, py::object, double, int64_t,
     riccati::arena_allocator<double, riccati::arena_alloc>,
-    riccati::SharedLogger<riccati::py_print>>;
+    riccati::SharedLogger<riccati::py_print>,
+    double, double>;
+
+// Omega: complex and Gamma: double
+using init_oc64_gf64_f64_i64
+    = riccati::SolverInfo<py::object, py::object, double, int64_t,
+    riccati::arena_allocator<double, riccati::arena_alloc>,
+    riccati::SharedLogger<riccati::py_print>,
+    std::complex<double>, double>;
+
+// Omega: double and Gamma: complex
+using init_of64_gc64_f64_i64
+    = riccati::SolverInfo<py::object, py::object, double, int64_t,
+    riccati::arena_allocator<double, riccati::arena_alloc>,
+    riccati::SharedLogger<riccati::py_print>,
+    double, std::complex<double>>;
+
+// Omega: complex and Gamma: complex
+using init_oc64_gc64_f64_i64
+    = riccati::SolverInfo<py::object, py::object, double, int64_t,
+    riccati::arena_allocator<double, riccati::arena_alloc>,
+    riccati::SharedLogger<riccati::py_print>,
+    std::complex<double>, std::complex<double>>;
 
 template <typename Mat>
 inline auto hard_copy_arena(arena_matrix<Mat>&& x) {
@@ -150,28 +179,7 @@ auto hard_copy_arena(std::tuple<Tuple>&& tup) {
       std::move(tup));
 }
 
-
-}  // namespace riccati
-
-PYBIND11_MODULE(pyriccaticpp, m) {
-  m.doc() = "Riccati solver module";
-  py::enum_<riccati::LogLevel>(m, "LogLevel", py::arithmetic(), "Log levels for eveolve")
-      .value("ERROR", riccati::LogLevel::ERROR, "Report Only Errors")
-      .value("WARNING", riccati::LogLevel::WARNING, "Report up to warnings")
-      .value("INFO", riccati::LogLevel::INFO, "Report all information")
-      .value("DEBUG", riccati::LogLevel::DEBUG, "DEV ONLY: Report all information and debug info")
-      .export_values();
-  // Expose LogInfo
-  py::enum_<riccati::LogInfo>(m, "LogInfo", "Information types for logging")
-      .value("CHEBNODES", riccati::LogInfo::CHEBNODES)
-      .value("CHEBSTEP", riccati::LogInfo::CHEBSTEP)
-      .value("CHEBITS", riccati::LogInfo::CHEBITS)
-      .value("LS", riccati::LogInfo::LS)
-      .value("RICCSTEP", riccati::LogInfo::RICCSTEP)
-      .export_values();
-  py::class_<riccati::init_f64_i64>(m, "Init").def(
-      py::init<py::object, py::object, int64_t, int64_t, int64_t, int64_t>(),
-      R"pbdoc(
+constexpr const char* init_docs =R"pbdoc(
           """
           Construct a new SolverInfo object.
 
@@ -190,30 +198,97 @@ PYBIND11_MODULE(pyriccaticpp, m) {
           p : int
               (Number of Chebyshev nodes - 1) to use for computing Riccati steps.
           """
-            )pbdoc");
+            )pbdoc";
+
+}  // namespace riccati
+
+template <typename F, typename Solver, typename XEval, typename... Args>
+inline auto evolve_call_and_clean(F&& f, Solver&& info, XEval&& x_eval, Args&&... args) {
+    if (x_eval.is_none()) {
+      auto ret = riccati::hard_copy_arena(
+        f(info, Eigen::Matrix<double, 0, 0>{}, std::forward<Args>(args)...)
+                                  );
+      info.alloc_.recover_memory();
+      return ret;
+    } else {
+      auto ret = riccati::hard_copy_arena(
+                f(info, x_eval.template cast<Eigen::VectorXd>(), std::forward<Args>(args)...)
+      );
+      info.alloc_.recover_memory();
+      return ret;
+    }
+}
+
+template <typename F, typename... Args>
+inline auto evolve_info_caster(F&& f, py::object info, py::object x_eval, Args&&... args) {
+  if (py::isinstance<riccati::init_of64_gf64_f64_i64>(info)) {
+    auto info_ = info.cast<riccati::init_of64_gf64_f64_i64>();
+    return evolve_call_and_clean(std::forward<F>(f), info_, x_eval, std::forward<Args>(args)...);
+  } else if (py::isinstance<riccati::init_oc64_gf64_f64_i64>(info)) {
+    auto info_ = info.cast<riccati::init_oc64_gf64_f64_i64>();
+    return evolve_call_and_clean(std::forward<F>(f), info_, x_eval, std::forward<Args>(args)...);
+  } else if (py::isinstance<riccati::init_of64_gc64_f64_i64>(info)) {
+    auto info_ = info.cast<riccati::init_of64_gc64_f64_i64>();
+    return evolve_call_and_clean(std::forward<F>(f), info_, x_eval, std::forward<Args>(args)...);
+  } else if (py::isinstance<riccati::init_oc64_gc64_f64_i64>(info)) {
+    auto info_ = info.cast<riccati::init_oc64_gc64_f64_i64>();
+    return evolve_call_and_clean(std::forward<F>(f), info_, x_eval, std::forward<Args>(args)...);
+  } else{
+    throw std::invalid_argument("Invalid SolverInfo object.");
+  }
+}
+PYBIND11_MODULE(pyriccaticpp, m) {
+  m.doc() = "Riccati solver module";
+  py::enum_<riccati::LogLevel>(m, "LogLevel", py::arithmetic(), "Log levels for eveolve")
+      .value("ERROR", riccati::LogLevel::ERROR, "Report Only Errors")
+      .value("WARNING", riccati::LogLevel::WARNING, "Report up to warnings")
+      .value("INFO", riccati::LogLevel::INFO, "Report all information")
+      .value("DEBUG", riccati::LogLevel::DEBUG, "DEV ONLY: Report all information and debug info")
+      .export_values();
+  // Expose LogInfo
+  py::enum_<riccati::LogInfo>(m, "LogInfo", "Information types for logging")
+      .value("CHEBNODES", riccati::LogInfo::CHEBNODES)
+      .value("CHEBSTEP", riccati::LogInfo::CHEBSTEP)
+      .value("CHEBITS", riccati::LogInfo::CHEBITS)
+      .value("LS", riccati::LogInfo::LS)
+      .value("RICCSTEP", riccati::LogInfo::RICCSTEP)
+      .export_values();
+    // Omega: double, Gamma: double
+    py::class_<riccati::init_of64_gf64_f64_i64>(m, "Init_OF64_GF64")
+      .def(py::init<py::object, py::object, int64_t, int64_t, int64_t, int64_t>(),
+           riccati::init_docs);
+
+    // Omega: complex, Gamma: double
+    py::class_<riccati::init_oc64_gf64_f64_i64>(m, "Init_OC64_GF64")
+      .def(py::init<py::object, py::object, int64_t, int64_t, int64_t, int64_t>(),
+           riccati::init_docs);
+
+    // Omega: double, Gamma: complex
+    py::class_<riccati::init_of64_gc64_f64_i64>(m, "Init_OF64_GC64")
+      .def(py::init<py::object, py::object, int64_t, int64_t, int64_t, int64_t>(),
+           riccati::init_docs);
+
+    // Omega: complex, Gamma: complex
+    py::class_<riccati::init_oc64_gc64_f64_i64>(m, "Init_OC64_GC64")
+      .def(py::init<py::object, py::object, int64_t, int64_t, int64_t, int64_t>(),
+           riccati::init_docs);
   m.def(
       "evolve",
       [](py::object& info, double xi, double xf, std::complex<double> yi,
-         std::complex<double> dyi, double eps, double epsilon_h,
-         double init_stepsize, py::object x_eval, bool hard_stop,
-         riccati::LogLevel log_level) {
-        if (py::isinstance<riccati::init_f64_i64>(info)) {
-          auto info_ = info.cast<riccati::init_f64_i64>();
-          if (x_eval.is_none()) {
-            auto ret = riccati::hard_copy_arena(riccati::evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
-                                       init_stepsize, hard_stop, log_level));
-            info_.alloc_.recover_memory();
-            return ret;
-          } else {
-            auto ret = riccati::hard_copy_arena(riccati::evolve(
-                info_, xi, xf, yi, dyi, eps, epsilon_h, init_stepsize,
-                x_eval.cast<Eigen::VectorXd>(), hard_stop, log_level));
-            info_.alloc_.recover_memory();
-            return ret;
-          }
-        } else {
-          throw std::invalid_argument("Invalid SolverInfo object.");
-        }
+        std::complex<double> dyi, double eps, double epsilon_h,
+        double init_stepsize, py::object x_eval, bool hard_stop,
+        riccati::LogLevel log_level) {
+        return evolve_info_caster([](auto&& info, auto&& x_eval,
+          double xi, double xf, std::complex<double> yi,
+          std::complex<double> dyi, double eps, double epsilon_h,
+          double init_stepsize, bool hard_stop,
+          riccati::LogLevel log_level) {
+              return riccati::evolve(info, xi, xf, yi, dyi, eps, epsilon_h,
+                                        init_stepsize, x_eval, hard_stop, log_level);
+          }, info, x_eval, xi, xf, yi,
+          dyi, eps, epsilon_h,
+          init_stepsize, hard_stop,
+          log_level);
       },
       py::arg("info"), py::arg("xi"), py::arg("xf"), py::arg("yi"),
       py::arg("dyi"), py::arg("eps"), py::arg("epsilon_h"),
@@ -269,8 +344,8 @@ PYBIND11_MODULE(pyriccaticpp, m) {
       [](py::object& info, double xi, double xf, std::complex<double> yi,
          std::complex<double> dyi, double eps, double epsilon_h,
          double init_stepsize, py::object x_eval, bool hard_stop) {
-        if (py::isinstance<riccati::init_f64_i64>(info)) {
-          auto info_ = info.cast<riccati::init_f64_i64>();
+        if (py::isinstance<riccati::init_of64_gf64_f64_i64>(info)) {
+          auto info_ = info.cast<riccati::init_of64_gf64_f64_i64>();
           if (x_eval.is_none()) {
             auto ret = riccati::hard_copy_arena(
                 riccati::osc_evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
@@ -298,8 +373,8 @@ PYBIND11_MODULE(pyriccaticpp, m) {
       [](py::object& info, double xi, double xf, std::complex<double> yi,
          std::complex<double> dyi, double eps, double epsilon_h,
          double init_stepsize, py::object x_eval, bool hard_stop) {
-        if (py::isinstance<riccati::init_f64_i64>(info)) {
-          auto info_ = info.cast<riccati::init_f64_i64>();
+        if (py::isinstance<riccati::init_of64_gf64_f64_i64>(info)) {
+          auto info_ = info.cast<riccati::init_of64_gf64_f64_i64>();
           if (x_eval.is_none()) {
             auto ret = riccati::hard_copy_arena(
                 riccati::nonosc_evolve(info_, xi, xf, yi, dyi, eps, epsilon_h,
@@ -325,8 +400,8 @@ PYBIND11_MODULE(pyriccaticpp, m) {
   m.def(
       "choose_osc_stepsize",
       [](py::object& info, double x0, double h, double epsilon_h) {
-        if (py::isinstance<riccati::init_f64_i64>(info)) {
-          auto info_ = info.cast<riccati::init_f64_i64>();
+        if (py::isinstance<riccati::init_of64_gf64_f64_i64>(info)) {
+          auto info_ = info.cast<riccati::init_of64_gf64_f64_i64>();
           auto ret = riccati::hard_copy_arena(
               riccati::choose_osc_stepsize(info_, x0, h, epsilon_h));
           info_.alloc_.recover_memory();
@@ -369,10 +444,10 @@ PYBIND11_MODULE(pyriccaticpp, m) {
   m.def(
       "choose_nonosc_stepsize",
       [](py::object& info, double x0, double h, double epsilon_h) {
-        if (py::isinstance<riccati::init_f64_i64>(info)) {
-          auto info_ = info.cast<riccati::init_f64_i64>();
+        if (py::isinstance<riccati::init_of64_gf64_f64_i64>(info)) {
+          auto info_ = info.cast<riccati::init_of64_gf64_f64_i64>();
           auto ret
-              = riccati::choose_nonosc_stepsize_<riccati::init_f64_i64, double>(
+              = riccati::choose_nonosc_stepsize_<riccati::init_of64_gf64_f64_i64, double>(
                   info_, x0, h, epsilon_h);
           info_.alloc_.recover_memory();
           return ret;

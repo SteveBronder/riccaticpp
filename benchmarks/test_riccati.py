@@ -76,14 +76,6 @@ def f(E):
     dpsi_r = ricc_dys_r[-1]
     energy_diff = abs(dpsi_l/psi_l - dpsi_r/psi_r)
     energy_diff_lst.append(energy_diff)
-    print("Iter: ")
-    print("Energy: ")
-    print(f"{E:.50f}")
-    print("\tpsi_l: ", psi_l)
-    print("\tdpsi_l: ", dpsi_l)
-    print("\tpsi_r: ", psi_r)
-    print("\tdpsi_r: ", dpsi_r)
-    print("\tenergy_diff: ", energy_diff)
     try:
         return energy_diff
     except ZeroDivisionError:
@@ -93,11 +85,12 @@ print("Test run")
 #    f(21_930.0 + i)
 print("test done")
 
-bounds = [ #(416.5,417.5),(1035.0,1037.0),
-          (21_930.0,21_940.0)]#, (471_100.0,471_110.0)]
-ress = []
+bounds = [(416.5,417.5),(1035.0,1037.0),
+          (21_930.0,21_940.0), (471_100.0,471_110.0)]
+ress_rc = []
 for bound in bounds:
     res = minimize_scalar(f,bounds=bound,method='bounded')
+    ress_rc.append(res)
     print("x: ", res.x, "f(x): ", f(res.x), "Pass: ", res.success, "Msg: ", res.message)
 
 
@@ -135,8 +128,8 @@ def f2(E):
     wfunc = lambda t: w(t, E)
     gfunc = lambda t: np.zeros_like(t)
     info = ric.Init(wfunc, gfunc, 8, 32, 32, 32)
-    _, ricc_ys_l, ricc_dys_l, *unused = ric.evolve(info=info, xi=tl, xf=tm, yi=complex(1e-3), dyi=complex(1e-3), eps = 1e-5, init_stepsize = 1e-6, epsilon_h = 1e-6, hard_stop = True)
-    _, ricc_ys_r, ricc_dys_r, *unused = ric.evolve(info, tr, tm, complex(0.0), complex(1e-3), eps = 1e-5, init_stepsize = -1.0, epsilon_h = 1e-6, hard_stop = True)
+    _, ricc_ys_l, ricc_dys_l, *unused = ric.evolve(info=info, xi=tl, xf=tm, yi=complex(1e-3), dyi=complex(1e-3), eps = 1e-5, init_stepsize = 1, epsilon_h = 1e-6, hard_stop = True)
+    _, ricc_ys_r, ricc_dys_r, *unused = ric.evolve(info, tr, tm, complex(0.0), complex(1e-3), eps = 1e-5, init_stepsize = -1, epsilon_h = 1e-6, hard_stop = True)
 #    for (t, y, dy) in  zip(ricc_ts, ricc_ys, ricc_dys):
 #        print(t, y, dy)
     #for step, sol, dsol in zip(sol_l["t"], sol_l["sol"], sol_l["dsol"]):
@@ -146,20 +139,21 @@ def f2(E):
     dpsi_l = ricc_dys_l[-1]
     dpsi_r = ricc_dys_r[-1]
     energy_diff = abs(dpsi_l/psi_l - dpsi_r/psi_r)
-    print("Iter: ")
-    print("Energy: ")
-    print(f"{E:.50f}")
-    print("\tpsi_l: ", psi_l)
-    print("\tdpsi_l: ", dpsi_l)
-    print("\tpsi_r: ", psi_r)
-    print("\tdpsi_r: ", dpsi_r)
-    print("\tenergy_diff: ", energy_diff)
     try:
         return energy_diff
     except ZeroDivisionError:
         return 1000.0
 
-ress = []
+ress_ric = []
 for bound in bounds:
     res = minimize_scalar(f2,bounds=bound,method='bounded')
-    print("x: ", res.x, "f(x): ", f(res.x), "Pass: ", res.success, "Msg: ", res.message)
+    ress_ric.append(res)
+    print("x: ", res.x, "f(x): ", f2(res.x), "Pass: ", res.success, "Msg: ", res.message)
+
+for (rc_ans, ric_ans, bound) in zip(ress_rc, ress_ric, bounds):
+    print("Bounds: ", bound)
+    print("Riccati: ")
+    print("x: ", rc_ans.x, "f(x): ", f2(rc_ans.x), "Pass: ", rc_ans.success, "Msg: ", rc_ans.message)
+    print("PyRiccaticpp")
+    print("x: ", ric_ans.x, "f(x): ", f2(ric_ans.x), "Pass: ", ric_ans.success, "Msg: ", ric_ans.message)
+    print("difference: ", rc_ans.x - ric_ans.x)

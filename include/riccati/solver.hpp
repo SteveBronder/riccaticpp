@@ -47,7 +47,9 @@ inline auto omega(SolverInfo&& info, const Scalar& x) {
 template <typename OmegaFun, typename GammaFun, typename Scalar_,
           typename Integral_,
           typename Allocator = arena_allocator<Scalar_, arena_alloc>,
-          typename Logger = ::riccati::EmptyLogger>
+          typename Logger = ::riccati::EmptyLogger,
+          typename OmegaReturn_ = double,
+          typename GammaReturn_ = double>
 class SolverInfo {
  public:
   using Scalar = Scalar_;
@@ -58,6 +60,8 @@ class SolverInfo {
   using vectord_t = vector_t<Scalar>;
   using gamma_type = std::decay_t<GammaFun>;
   using omega_type = std::decay_t<OmegaFun>;
+  using OmegaReturn = OmegaReturn_;
+  using GammaReturn = GammaReturn_;
   // Frequency function
   OmegaFun omega_fun_;
   // Friction function
