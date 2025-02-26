@@ -3,7 +3,6 @@
 #include <riccati/macros.hpp>
 #include <Eigen/Dense>
 #include <type_traits>
-#define RICCATI_DEBUG
 #ifdef RICCATI_DEBUG
 #include <iostream>
 #include <iomanip>
@@ -104,6 +103,44 @@ struct is_eigen
 template <typename T>
 inline constexpr bool is_eigen_v = is_eigen<T>::value;
 
+template <typename MatrixType>
+class arena_matrix;
+
+namespace internal {
+  template <typename T>
+  struct is_arena_matrix : std::false_type {};
+  template <typename T>
+  struct is_arena_matrix<arena_matrix<T>> : std::true_type {};
+}
+
+template <typename T>
+struct is_arena_matrix : internal::is_arena_matrix<std::decay_t<T>> {};
+
+template <typename T>
+inline constexpr bool is_arena_matrix_v = is_arena_matrix<T>::value;
+
+template <typename T>
+using require_arena_matrix = std::enable_if_t<is_arena_matrix_v<T>>;
+
+namespace internal {
+template <typename T>
+struct is_tuple : std::false_type {};
+template <typename... Ts>
+struct is_tuple<std::tuple<Ts...>> : std::true_type {};
+}
+
+template <typename T>
+struct is_tuple : internal::is_tuple<std::decay_t<T>> {};
+
+template <typename T>
+inline constexpr bool is_tuple_v = is_tuple<T>::value;
+
+template <typename T>
+using require_not_tuple = std::enable_if_t<!is_tuple_v<T>>;
+
+template <typename T>
+using require_tuple = std::enable_if_t<is_tuple_v<T>>;
+
 template <typename T>
 using require_not_floating_point
     = std::enable_if_t<!std::is_floating_point_v<std::decay_t<T>>>;
@@ -118,9 +155,6 @@ using require_same
 
 template <typename T1, typename T2>
 using require_not_same = std::enable_if_t<!std::is_same_v<std::decay_t<T1>, std::decay_t<T2>>>;
-
-template <typename MatrixType>
-class arena_matrix;
 
 namespace internal {
 template <typename T, typename Enable = void>
