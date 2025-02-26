@@ -3,6 +3,7 @@
 #include <riccati/macros.hpp>
 #include <Eigen/Dense>
 #include <type_traits>
+#define RICCATI_DEBUG
 #ifdef RICCATI_DEBUG
 #include <iostream>
 #include <iomanip>
@@ -66,14 +67,18 @@ using array1d_t = Eigen::Matrix<Scalar, -1, 1>;
 template <typename Scalar>
 using row_array1d_t = Eigen::Matrix<Scalar, 1, -1>;
 
+template <typename Scalar>
+using promote_complex_t = std::conditional_t<std::is_floating_point_v<std::decay_t<Scalar>>,
+                                             std::complex<std::decay_t<Scalar>>, std::decay_t<Scalar>>;
+
 template <typename T>
 inline constexpr T pi() {
   return static_cast<T>(3.141592653589793238462643383279);
 }
 
-RICCATI_ALWAYS_INLINE double eval(double x) { return x; }
+RICCATI_ALWAYS_INLINE double eval(double x) noexcept { return x; }
 template <typename T>
-RICCATI_ALWAYS_INLINE std::complex<T>& eval(std::complex<T>& x) {
+RICCATI_ALWAYS_INLINE std::complex<T>& eval(std::complex<T>& x) noexcept {
   return x;
 }
 template <typename T>

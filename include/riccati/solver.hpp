@@ -42,6 +42,8 @@ inline auto omega(SolverInfo&& info, const Scalar& x) {
  * @tparam Integral_ Numeric integral type, typically int or long.
  * @tparam Allocator Type of the allocator for the arena memory pool.
  * @tparam Logger Type of the logger for the solver. Must inherit from
+ * @tparam OmegaReturn_ Type of the return value of the frequency function.
+ * @tparam GammaReturn_ Type of the return value of the friction function.
  * @ref riccati::LoggerBase.
  */
 template <typename OmegaFun, typename GammaFun, typename Scalar_,
@@ -54,7 +56,7 @@ class SolverInfo {
  public:
   using Scalar = Scalar_;
   using Integral = Integral_;
-  using complex_t = std::complex<Scalar>;
+  using complex_t = promote_complex_t<Scalar>;
   using matrixd_t = matrix_t<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   using vectord_t = vector_t<Scalar>;

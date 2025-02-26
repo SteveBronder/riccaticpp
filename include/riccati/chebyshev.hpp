@@ -398,7 +398,7 @@ template <typename SolverInfo, typename Scalar, typename YScalar,
 RICCATI_ALWAYS_INLINE auto spectral_chebyshev(SolverInfo&& info, Scalar x0,
                                               Scalar h, YScalar y0, YScalar dy0,
                                               Integral niter) {
-  using complex_t = std::complex<Scalar>;
+  using complex_t = promote_complex_t<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   auto x_scaled = eval(
       info.alloc_, riccati::scale(std::get<2>(info.chebyshev_[niter]), x0, h));

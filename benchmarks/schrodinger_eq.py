@@ -165,7 +165,7 @@ class SchrodingerProblem:
         return np.sqrt(2.0) * (n - 0.5)
 
     def w_gen(self, energy):
-        return lambda x: np.sqrt(2.0 * self.m * (energy - self.potential(x)))
+        return lambda x: np.sqrt(2.0 * self.m * (complex(energy) - self.potential(x)))
 
     def g_gen(self):
         return lambda x: np.zeros_like(x)

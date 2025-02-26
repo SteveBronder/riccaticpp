@@ -50,39 +50,31 @@ namespace riccati {
 template <typename SolverInfo, typename Scalar, typename YScalar>
 RICCATI_ALWAYS_INLINE auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
                         YScalar dy0, Scalar epsres) {
-  using complex_t = std::complex<Scalar>;
-
-  auto N = info.nini_;
-  auto Nmax = info.nmax_;
-  std::size_t iter = 0;
+  using complex_t = promote_complex_t<Scalar>;
   auto cheby = spectral_chebyshev(info, x0, h, y0, dy0, 0);
   auto yprev = std::get<0>(cheby);
   auto dyprev = std::get<1>(cheby);
   auto xprev = std::get<2>(cheby);
   Scalar maxerr = 10 * epsres;
-  auto max_iter = info.cheby_size() - 1;
-  while (iter <= max_iter && std::abs((epsres*yprev(0) + epsres)/maxerr) < 1) {
-    iter++;
-    if (iter == max_iter) {
-      return std::make_tuple(false, complex_t(0.0, 0.0), complex_t(0.0, 0.0),
-                             maxerr, yprev, dyprev, iter);
-    }
-    N *= 2;
-    N = std::min(N, Nmax);
+  std::size_t iter = 1;
+  const auto max_iter = info.cheby_size();
+  for (; iter < max_iter && std::abs((epsres*yprev(0) + epsres)/maxerr) < 1; iter++) {
     auto cheby2 = spectral_chebyshev(info, x0, h, y0, dy0, iter);
     auto y = std::get<0>(std::move(cheby2));
     auto dy = std::get<1>(std::move(cheby2));
     auto x = std::get<2>(std::move(cheby2));
     maxerr = std::abs(yprev(0) - y(0));
-    if (std::isnan(std::real(maxerr))) {
-      maxerr = std::numeric_limits<Scalar>::infinity();
-    }
+    maxerr = std::isnan(std::real(maxerr)) ? std::numeric_limits<Scalar>::infinity() : maxerr;
     yprev = std::move(y);
     dyprev = std::move(dy);
     xprev = std::move(x);
   }
+  if (std::abs((epsres*yprev(0) + epsres)/maxerr) < 1) {
+      return std::make_tuple(false, complex_t(0.0, 0.0), complex_t(0.0, 0.0),
+                             maxerr, yprev, dyprev, iter - 1);
+  }
   return std::make_tuple(true, yprev(0), dyprev(0), maxerr, yprev, dyprev,
-                         iter);
+                         iter - 1);
 }
 
 /**
@@ -140,7 +132,7 @@ template <bool DenseOut, typename SolverInfo, typename OmegaVec,
 RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
                      Scalar x0, Scalar h, YScalar y0, YScalar dy0,
                      Scalar epsres) {
-  using complex_t = std::conditional_t<is_complex_v<Scalar>, Scalar, std::complex<Scalar>>;
+  using complex_t = promote_complex_t<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   bool success = true;
   auto &&Dn = info.Dn();
@@ -160,9 +152,7 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, Gamma
   Scalar maxerr = Ry.array().abs().maxCoeff();
   arena_matrix<vectorc_t> deltay(info.alloc_, Ry.size(), 1);
   Scalar prev_err = std::numeric_limits<Scalar>::infinity();
-  int iter = 0;
   while (maxerr > epsres) {
-    iter++;
     deltay = delta(Ry, y);
     y += deltay;
     Ry = R(deltay);
@@ -284,13 +274,13 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, Gamma
  * values and derivatives of the solution at those points, success status of
  * each step, type of each step, and phase angles where applicable.
  */
-template <typename SolverInfo, typename Scalar, typename Vec>
+template <typename SolverInfo, typename Scalar, typename Vec, typename YScalar>
 inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
-                 std::complex<Scalar> yi, std::complex<Scalar> dyi, Scalar eps,
+                 YScalar yi, YScalar dyi, Scalar eps,
                  Scalar epsilon_h, Scalar init_stepsize, Vec &&x_eval,
                  bool hard_stop = false) {
   using vectord_t = vector_t<Scalar>;
-  using complex_t = std::complex<Scalar>;
+  using complex_t = promote_complex_t<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   Scalar direction = init_stepsize > 0 ? 1 : -1;
   if (init_stepsize * (xf - xi) < 0) {
