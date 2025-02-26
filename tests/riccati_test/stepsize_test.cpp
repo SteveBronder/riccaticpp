@@ -9,7 +9,7 @@
 
 #include <boost/math/special_functions/airy.hpp>
 
-TEST_F(Riccati, osc_stepsize_dense_output) {
+TEST_F(Riccati, stepsize_osc_dense_output) {
   using namespace riccati::test;
   using riccati::array;
   using riccati::eval;
@@ -28,7 +28,7 @@ TEST_F(Riccati, osc_stepsize_dense_output) {
   EXPECT_EQ(hi, 200.0);
 }
 
-TEST_F(Riccati, osc_stepsize_nondense_output) {
+TEST_F(Riccati, stepsize_osc_nondense_output) {
   using namespace riccati::test;
   using riccati::array;
   using riccati::eval;
@@ -47,7 +47,7 @@ TEST_F(Riccati, osc_stepsize_nondense_output) {
   EXPECT_EQ(hi, 200.0);
 }
 
-TEST_F(Riccati, nonosc_stepsize_dense_output) {
+TEST_F(Riccati, stepsize_nonosc_dense_output) {
   using namespace riccati::test;
   using riccati::array;
   using riccati::eval;
@@ -66,7 +66,7 @@ TEST_F(Riccati, nonosc_stepsize_dense_output) {
   EXPECT_EQ(hi, 0.5);
 }
 
-TEST_F(Riccati, nonosc_stepsize_nondense_output) {
+TEST_F(Riccati, stepsize_nonosc_nondense_output) {
   using namespace riccati::test;
   using riccati::array;
   using riccati::eval;

@@ -15,8 +15,6 @@ import signal
 from typing import Any, Callable, Dict, List, Tuple
 from collections.abc import Iterable
 import scipy.optimize as sci_opt
-import matplotlib
-from matplotlib import pyplot as plt
 
 
 class Algo(Enum):
@@ -157,7 +155,8 @@ class SchrodingerProblem:
         """
         Potential function V(x) = x^2 + l*x^4
         """
-        return x**2 + self.l * x**4
+        x_sq = x**2
+        return x_sq + (self.l * x_sq * x_sq)
 
     def analytic_energy(n):
         """
@@ -166,7 +165,7 @@ class SchrodingerProblem:
         return np.sqrt(2.0) * (n - 0.5)
 
     def w_gen(self, energy):
-        return lambda x: np.sqrt(2 * self.m * (complex(energy) - self.potential(x)))
+        return lambda x: np.sqrt(2.0 * self.m * (complex(energy) - self.potential(x)))
 
     def g_gen(self):
         return lambda x: np.zeros_like(x)
@@ -174,8 +173,7 @@ class SchrodingerProblem:
     def f_gen(self, energy):
         def f(x, y):
             psi, dpsi = y
-            return [dpsi, -2 * self.m * (complex(energy) - self.potential(x)) * psi]
-
+            return [dpsi, (self.potential(x) - energy) * psi]
         return f
 
     def yi_init(self):
@@ -297,7 +295,7 @@ else:
     base_output_path = "./benchmarks/output/"
 all_algo_pl_lst: List[pl.DataFrame] = []
 first_write = True
-with open(base_output_path + "schrodinger_times2.csv", mode="a") as time_file:
+with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
     for algo, algo_params in algorithm_dict.items():
         algo_evals_pl_lst = []
         for benchmark_run in range(1):
@@ -339,7 +337,7 @@ with open(base_output_path + "schrodinger_times2.csv", mode="a") as time_file:
                   algo_evals_pl_lst.append(algo_pl_tmp)
         algo_pl = pl.concat(algo_evals_pl_lst)
         print(algo_pl)
-        algo_pl.write_csv(base_output_path + f"schrod2_{str(algo)}.csv")
+        algo_pl.write_csv(base_output_path + f"schrod_{str(algo)}.csv")
         all_algo_pl_lst.append(algo_pl)
         time_pl_lst = []
         for algo_key, time_st in global_timer.execs.items():
@@ -361,7 +359,7 @@ with open(base_output_path + "schrodinger_times2.csv", mode="a") as time_file:
             time_pl.write_csv(time_file, include_header=False)
 
 all_algo_pl = pl.concat(all_algo_pl_lst)
-all_algo_pl.write_csv(f"{base_output_path}schrod2.csv")
+all_algo_pl.write_csv(f"{base_output_path}schrod.csv")
 # %%
 # %%
 time_pl_lst = []
@@ -376,112 +374,3 @@ time_pl = pl.concat(time_pl_lst)
 time_pl.write_csv(base_output_path + "schrodinger_times2.csv")
 
 
-# %%
-if False:
-    ns = [50, 100]
-    energies = solution_lst[:2]
-
-    x_plot = np.linspace(-6, 6, 500)
-    plt.figure(figsize=(10, 5))
-    plt.plot(x_plot, V(x_plot), color="black", label="V(x)")
-
-    default_init_step = 1e-12
-
-    for j, (n, current_energy) in enumerate(zip(ns, energies)):
-        # Boundaries of integration
-        left_boundary = -((current_energy) ** 0.25) - 1.0
-        right_boundary = -left_boundary
-        midpoint = 0.0
-        chebyshev_order = 32
-
-        # Initialize Riccati solver
-        riccati_info = ric.Init(
-            w_gen(current_energy),
-            g,
-            8,
-            max(32, chebyshev_order),
-            chebyshev_order,
-            chebyshev_order,
-        )
-        # Tolerances
-        eps = 1e-12
-        eps_h = eps * 1e-1
-        # First integration range
-        first_range = (left_boundary, right_boundary / 2.0)
-        init_step = ric.choose_nonosc_stepsize(riccati_info, *first_range, eps_h)
-        if init_step == 0:
-            init_step = default_init_step
-        print("iteration:", j)
-        print("quantum_number:", n)
-        print("left_boundary:", left_boundary)
-        print("right_boundary:", right_boundary)
-        print("midpoint:", midpoint)
-        print("current_energy:", current_energy)
-        print("init_step:", init_step)
-        # Solve from left_boundary up to right_boundary/2
-        full_range = (left_boundary, right_boundary)
-        x_values = np.linspace(*full_range, 50_000)
-        first_slice = x_values[x_values <= (right_boundary / 2.0)]
-        left_solution = ric.evolve(
-            riccati_info,
-            *first_range,
-            complex(0),
-            complex(1e-8),
-            eps,
-            eps_h,
-            init_step,
-            first_slice,
-            True,
-        )
-        left_times = left_solution[0]
-        left_wavefunction = left_solution[6]
-        left_step_types = left_solution[5]
-        # Print debug info
-        for i_val in range(len(left_solution)):
-            print("i:", i_val, "\t", left_solution[i_val])
-        # Find first Riccati index
-        first_riccati_index = len(left_step_types) - 1
-        for idx, step_type in enumerate(left_step_types):
-            if step_type == 1 and 0 not in left_step_types[idx:]:
-                first_riccati_index = idx
-                break
-        print("first_riccati_index:", first_riccati_index)
-        print("range:", (left_times[first_riccati_index], midpoint))
-        # Solve from right_boundary back to right_boundary/2 (or full range, whichever you need)
-        init_step = ric.choose_nonosc_stepsize(riccati_info, *full_range, eps_h)
-        if init_step == 0:
-            init_step = default_init_step
-        if full_range[0] > full_range[1]:
-            init_step = -init_step
-        print("init_step:", init_step)
-        second_slice = x_values[x_values >= (right_boundary / 2.0)]
-        right_solution = ric.evolve(
-            riccati_info,
-            *full_range,
-            complex(0),
-            complex(1e-8),
-            eps,
-            eps_h,
-            init_step,
-            second_slice,
-            True,
-        )
-        right_wavefunction = right_solution[6]
-        # Combine left and right solutions for plotting
-        combined_wavefunction = np.concatenate((left_wavefunction, right_wavefunction))
-        max_val = np.max(np.real(combined_wavefunction))
-        scaled_wavefunction = (
-            combined_wavefunction / max_val * 4.0 * np.sqrt(current_energy)
-        )
-        plt.plot(
-            x_values,
-            scaled_wavefunction + current_energy,
-            color=f"C{j}",
-            label=f"$\\Psi_n(x)$, n={n}, $E_n$={current_energy:.4f}",
-        )
-
-    plt.xlabel("x")
-    plt.legend(loc="lower left")
-    plt.show()
-
-    # %%

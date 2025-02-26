@@ -398,16 +398,18 @@ template <typename SolverInfo, typename Scalar, typename YScalar,
 RICCATI_ALWAYS_INLINE auto spectral_chebyshev(SolverInfo&& info, Scalar x0,
                                               Scalar h, YScalar y0, YScalar dy0,
                                               Integral niter) {
-  using complex_t = std::complex<Scalar>;
+  using complex_t = promote_complex_t<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   auto x_scaled = eval(
       info.alloc_, riccati::scale(std::get<2>(info.chebyshev_[niter]), x0, h));
   auto&& D = info.Dn(niter);
   auto ws = omega(info, x_scaled);
   auto gs = gamma(info, x_scaled);
-  auto D2 = eval(info.alloc_,
-                 ((D * D) + h * (gs.asDiagonal() * D)));
-  D2 += ((ws * h / 2.0).array().square()).matrix().asDiagonal();
+  auto D2 = eval(info.alloc_, ((D * D) + h * (gs.asDiagonal() * D))
+                                  + ((ws * h / 2.0).array().square())
+                                        .matrix()
+                                        .asDiagonal()
+                                        .toDenseMatrix());
   const auto n = std::round(std::get<0>(info.chebyshev_[niter]));
   auto D2ic = eval(info.alloc_, matrix_t<complex_t>::Zero(n + 3, n + 1));
   D2ic.topRows(n + 1) = D2;

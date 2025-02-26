@@ -187,6 +187,9 @@ class arena_alloc {
    * @return A pointer to the allocated memory.
    */
   RICCATI_ALWAYS_INLINE void* alloc(size_t len) {
+    if (unlikely(len == size_t{0})) {
+      return nullptr;
+    }
     size_t pad = len % 8 == 0 ? 0 : 8 - len % 8;
 
     // Typically, just return and increment the next location.
@@ -318,16 +321,16 @@ struct arena_allocator {
       : alloc_(new ArenaType{}), owns_alloc_(true) {}
 
   RICCATI_NO_INLINE arena_allocator(const arena_allocator& rhs)
-      : alloc_(rhs.alloc_), owns_alloc_(false) {};
+      : alloc_(rhs.alloc_), owns_alloc_(false){};
   template <typename U, typename UArena>
   RICCATI_NO_INLINE arena_allocator(const arena_allocator<U, UArena>& rhs)
       : alloc_(rhs.alloc_), owns_alloc_(false) {}
   template <typename U, typename UArena>
   RICCATI_NO_INLINE arena_allocator(arena_allocator&& rhs)
       : alloc_(rhs.alloc_), owns_alloc_(rhs.owns_alloc_ ? true : false) {
-        rhs.alloc_ = nullptr;
-        rhs.owns_alloc_ = false;
-      }
+    rhs.alloc_ = nullptr;
+    rhs.owns_alloc_ = false;
+  }
 
   ~arena_allocator() {
     if (owns_alloc_) {

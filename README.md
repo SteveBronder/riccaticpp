@@ -96,7 +96,6 @@ make -j4 riccati_test && ctest
 For the python tests and benchmarks it is recommended to setup a virtual environment
 
 ```bash
-git checkout feature/benchmarks
 # From the top level of this directory
 python -m venv ./.venv
 source ./.venv/bin/activate

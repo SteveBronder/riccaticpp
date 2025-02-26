@@ -65,13 +65,13 @@ namespace riccati {
  * methodology and are meant for high-accuracy interpolation between the
  * standard discrete steps of the solver.
  */
-template <typename SolverInfo, typename Scalar, typename Vec>
-inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
-                       std::complex<Scalar> yi, std::complex<Scalar> dyi,
-                       Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
-                       Vec &&x_eval, bool hard_stop = false) {
+template <typename SolverInfo, typename Scalar, typename Vec, typename YScalar>
+inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf, YScalar yi,
+                       YScalar dyi, Scalar eps, Scalar epsilon_h,
+                       Scalar init_stepsize, Vec &&x_eval,
+                       bool hard_stop = false) {
   int sign = init_stepsize > 0 ? 1 : -1;
-  using complex_t = std::complex<Scalar>;
+  using complex_t = promote_complex_t<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   auto xi_scaled
       = eval(info.alloc_, scale(info.xn().array(), xi, init_stepsize).matrix());
@@ -92,9 +92,14 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
   constexpr bool dense_output = compile_size_v<Vec> != 0;
   auto osc_ret = osc_step<dense_output>(info, omega_n, gamma_n, xi,
                                         init_stepsize, yi, dyi, eps);
+  auto make_osc_ret = [](auto &&tup) {
+    return std::make_tuple(std::get<0>(tup), std::get<1>(tup), std::get<2>(tup),
+                           std::get<3>(tup));
+  };
   if (std::get<0>(osc_ret) == 0) {
-    return std::make_tuple(false, xi, init_stepsize, osc_ret, vectorc_t(0),
-                           vectorc_t(0), static_cast<Eigen::Index>(0),
+    return std::make_tuple(false, xi, init_stepsize, make_osc_ret(osc_ret),
+                           vectorc_t(0), vectorc_t(0),
+                           static_cast<Eigen::Index>(0),
                            static_cast<Eigen::Index>(0));
   } else {
     Eigen::Index dense_size = 0;
@@ -137,8 +142,9 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
     // o and g written here
     auto h_next = choose_osc_stepsize(info, x_next, hosc_ini, epsilon_h);
     // TODO: CANNOT RETURN ARENA MATRIX FROM OSC_RET
-    return std::make_tuple(true, x_next, std::get<0>(h_next), osc_ret, yeval,
-                           dyeval, dense_start, dense_size);
+    return std::make_tuple(true, x_next, std::get<0>(h_next),
+                           make_osc_ret(osc_ret), std::move(yeval),
+                           std::move(dyeval), dense_start, dense_size);
   }
 }
 
@@ -195,12 +201,12 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
  * methodology and are meant for high-accuracy interpolation between the
  * standard discrete steps of the solver.
  */
-template <typename SolverInfo, typename Scalar, typename Vec>
-inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
-                          std::complex<Scalar> yi, std::complex<Scalar> dyi,
-                          Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
-                          Vec &&x_eval, bool hard_stop = false) {
-  using complex_t = std::complex<Scalar>;
+template <typename SolverInfo, typename Scalar, typename Vec, typename YScalar>
+inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf, YScalar yi,
+                          YScalar dyi, Scalar eps, Scalar epsilon_h,
+                          Scalar init_stepsize, Vec &&x_eval,
+                          bool hard_stop = false) {
+  using complex_t = promote_complex_t<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   vectorc_t yeval;
   vectorc_t dyeval;
@@ -213,21 +219,33 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
         + std::to_string(xi) + std::string(", ") + std::to_string(xf)
         + std::string(")!"));
   }
+  init_stepsize = choose_nonosc_stepsize(info, xi, init_stepsize, epsilon_h);
   auto nonosc_ret = nonosc_step(info, xi, init_stepsize, yi, dyi, eps);
+  while (!std::get<0>(nonosc_ret)) {
+    if (!std::get<0>(nonosc_ret)) {
+      init_stepsize *= Scalar{0.5};
+    }
+    if (std::abs(init_stepsize) <= std::numeric_limits<Scalar>::min()) {
+      throw std::domain_error(std::string("Stepsize became to small error: ")
+                              + std::to_string(init_stepsize));
+    }
+    nonosc_ret = nonosc_step(info, xi, init_stepsize, yi, dyi, eps);
+  }
   if (!std::get<0>(nonosc_ret)) {
+    std::cout << "nonosc line: " << __LINE__ << std::endl;
     return std::make_tuple(false, xi, init_stepsize, nonosc_ret, vectorc_t(0),
                            vectorc_t(0), static_cast<Eigen::Index>(0),
                            static_cast<Eigen::Index>(0));
   } else {
     Eigen::Index dense_size = 0;
     Eigen::Index dense_start = 0;
-    if constexpr (compile_size_v<Vec> != 0) {
+    constexpr bool dense_output = compile_size_v<Vec> != 0;
+    if constexpr (dense_output) {
       // Assuming x_eval is sorted we just want start and size
       std::tie(dense_start, dense_size)
           = get_slice(x_eval, sign * xi, sign * (xi + init_stepsize));
       if (dense_size != 0) {
         auto x_eval_map = x_eval.segment(dense_start, dense_size);
-
         auto xi_scaled
             = (xi + init_stepsize / 2
                + (init_stepsize / 2)
@@ -310,27 +328,26 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
  * equations.
  * 6. @ref Eigen::Matrix<std::complex<Scalar>, -1, 1>: A vector containing the
  * interpolated solution at the specified `x_eval` The function returns these
- * 7. An array of logging information for the solver process. This can be added with the
- *  info() from the `SolverInfo` object to get the total log information.
- * vectors encapsulated in a standard tuple, providing comprehensive information
- * about the solution process, including where the solution was evaluated, the
- * values and derivatives of the solution at those points, success status of
- * each step, type of each step, and phase angles where applicable.
+ * 7. An array of logging information for the solver process. This can be added
+ * with the info() from the `SolverInfo` object to get the total log
+ * information. vectors encapsulated in a standard tuple, providing
+ * comprehensive information about the solution process, including where the
+ * solution was evaluated, the values and derivatives of the solution at those
+ * points, success status of each step, type of each step, and phase angles
+ * where applicable.
  */
-template <typename SolverInfo, typename Scalar, typename Vec>
-inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
-                   std::complex<Scalar> yi, std::complex<Scalar> dyi,
-                   Scalar eps, Scalar epsilon_h, Scalar init_stepsize,
-                   Vec &&x_eval, bool hard_stop = false,
+template <typename SolverInfo, typename Scalar, typename Vec, typename YScalar>
+inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
+                   YScalar dyi, Scalar eps, Scalar epsilon_h,
+                   Scalar init_stepsize, Vec &&x_eval, bool hard_stop = false,
                    LogLevel log_level = riccati::LogLevel::ERROR) {
-  static_assert(std::is_floating_point<Scalar>::value,
-                "Scalar type must be a floating-point type.");
   using vectord_t = vector_t<Scalar>;
   Scalar direction = init_stepsize > 0 ? 1 : -1;
   if (init_stepsize * (xf - xi) < 0) {
     throw std::domain_error(
         "Direction of integration does not match stepsize sign,"
-        " adjust the direction or stepsize so that integration happens from xi to xf.");
+        " adjust the direction or stepsize so that integration happens from xi "
+        "to xf.");
   }
   // Check that yeval and x_eval are right size
   constexpr bool dense_output = compile_size_v<Vec> != 0;
@@ -373,12 +390,12 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   }
 
   // Initialize vectors for storing results
-  std::size_t output_size = 100;
+  constexpr std::size_t output_size = 100;
   using stdvecd_t = std::vector<Scalar>;
   stdvecd_t xs;
   xs.reserve(output_size + 1);
   xs.push_back(xi);
-  using complex_t = std::complex<Scalar>;
+  using complex_t = promote_complex_t<Scalar>;
   using stdvecc_t = std::vector<complex_t>;
   stdvecc_t ys;
   ys.reserve(output_size);
@@ -398,26 +415,29 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
   vectorc_t yeval(x_eval.size());
   vectorc_t dyeval(x_eval.size());
 
-  complex_t y = yi;
-  complex_t dy = dyi;
-  complex_t yprev = y;
-  complex_t dyprev = dy;
+  auto y = yi;
+  auto dy = dyi;
+  auto yprev = y;
+  auto dyprev = dy;
   auto scale_xi = scale(info.xp().array(), xi, init_stepsize).eval();
   auto omega_is = omega(info, scale_xi).eval();
   auto gamma_is = gamma(info, scale_xi).eval();
-  Scalar wi = omega_is.mean();
-  Scalar gi = gamma_is.mean();
-  Scalar dwi = (2.0 / init_stepsize * (info.Dn() * omega_is)).mean();
-  Scalar dgi = (2.0 / init_stepsize * (info.Dn() * gamma_is)).mean();
+  using omega_scalar_t = value_type_t<decltype(omega_is)>;
+  using gamma_scalar_t = value_type_t<decltype(gamma_is)>;
+  omega_scalar_t omega_i = omega_is.mean();
+  gamma_scalar_t gamma_i = gamma_is.mean();
+  auto domega_i = (2.0 / init_stepsize * (info.Dn() * omega_is)).mean();
+  auto dgamma_i = (2.0 / init_stepsize * (info.Dn() * gamma_is)).mean();
   Scalar hslo_ini = direction
                     * std::min(static_cast<Scalar>(1e8),
-                               static_cast<Scalar>(std::abs(1.0 / wi)));
+                               static_cast<Scalar>(std::abs(1.0 / omega_i)));
   Scalar hosc_ini
       = direction
         * std::min(std::min(static_cast<Scalar>(1e8),
-                            static_cast<Scalar>(std::abs(wi / dwi))),
-                   std::abs(gi / dgi));
-
+                            static_cast<Scalar>(std::abs(omega_i / domega_i))),
+                   std::abs(gamma_i / dgamma_i));
+  info.logger().template log<LogLevel::INFO>(log_level, "[setup]",
+                                             std::pair("hslo_ini", hslo_ini));
   if (hard_stop) {
     if (direction * (xi + hosc_ini) > direction * xf) {
       hosc_ini = xf - xi;
@@ -426,22 +446,30 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       hslo_ini = xf - xi;
     }
   }
-  auto hslo = choose_nonosc_stepsize(info, xi, hslo_ini, Scalar(0.2));
+  auto hslo = choose_nonosc_stepsize(info, xi, hslo_ini, epsilon_h);
   // o and g written here
   auto osc_step_tup = choose_osc_stepsize(info, xi, hosc_ini, epsilon_h);
-  auto hosc = std::get<0>(osc_step_tup);
+  Scalar hosc = is_complex_v<omega_scalar_t> ? 0.0 : std::get<0>(osc_step_tup);
   // NOTE: Calling choose_osc_stepsize will update these values
   auto &&omega_n = std::get<1>(osc_step_tup);
   auto &&gamma_n = std::get<2>(osc_step_tup);
   Scalar xcurrent = xi;
-  Scalar wnext = wi;
+  auto wnext = omega_i;
   using matrixc_t = matrix_t<complex_t>;
   matrixc_t y_eval;
   matrixc_t dy_eval;
   std::pair<complex_t, complex_t> a_pair;
   std::array<std::pair<LogInfo, std::size_t>, 5> solver_counts = info.info();
-  while (std::abs(xcurrent - xf) > Scalar(1e-8)
+  while (std::abs(xcurrent - xf) > std::numeric_limits<Scalar>::epsilon()
          && direction * xcurrent < direction * xf) {
+    if (unlikely(log_level >= LogLevel::INFO)) {
+      [&]() RICCATI_COLD_PATH {
+        info.logger().template log<LogLevel::INFO>(
+            log_level,
+            std::pair("std::abs(xcurrent - xf)", std::abs(xcurrent - xf)),
+            std::pair("direction * xcurrent", direction * xcurrent));
+      }();
+    }
     Scalar phase{0.0};
     bool success = false;
     bool steptype = true;
@@ -449,37 +477,41 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
     int cheb_N = 0;
     arena_matrix<vectorc_t> un(info.alloc_, omega_n.size(), 1);
     arena_matrix<vectorc_t> d_un(info.alloc_, omega_n.size(), 1);
-    if (direction * hosc > direction * hslo){
-      if (hard_stop) {
-        if (direction * (xcurrent + hosc) > direction * xf) {
-          hosc = xf - xcurrent;
-          auto xp_scaled = scale(info.xp().array(), xcurrent, hosc).eval();
-          omega_n = omega(info, xp_scaled);
-          gamma_n = gamma(info, xp_scaled);
+    if constexpr (!is_complex_v<omega_scalar_t>) {
+      if (direction * hosc > (direction * hslo)) {
+        if (hard_stop) {
+          if (direction * (xcurrent + hosc) > direction * xf) {
+            hosc = xf - xcurrent;
+            auto xp_scaled = scale(info.xp().array(), xcurrent, hosc).eval();
+            omega_n = omega(info, xp_scaled);
+            gamma_n = gamma(info, xp_scaled);
+          }
+          if (direction * (xcurrent + hslo) > direction * xf) {
+            hslo = xf - xcurrent;
+          }
         }
-        if (direction * (xcurrent + hslo) > direction * xf) {
-          hslo = xf - xcurrent;
+        // o and g read here
+        if constexpr (dense_output) {
+          std::tie(success, y, dy, err, phase, un, d_un, a_pair)
+              = osc_step<dense_output>(info, omega_n, gamma_n, xcurrent, hosc,
+                                       yprev, dyprev, eps);
+        } else {
+          std::tie(success, y, dy, err, phase) = osc_step<dense_output>(
+              info, omega_n, gamma_n, xcurrent, hosc, yprev, dyprev, eps);
         }
+        steptype = 1;
+        solver_counts[get_idx(LogInfo::RICCSTEP)].second++;
       }
-      // o and g read here
-      std::tie(success, y, dy, err, phase, un, d_un, a_pair)
-          = osc_step<dense_output>(info, omega_n, gamma_n, xcurrent, hosc,
-                                   yprev, dyprev, eps);
-      steptype = 1;
-      solver_counts[get_idx(LogInfo::RICCSTEP)].second++;
-    }
-    if (unlikely(log_level == LogLevel::INFO && !success)) {
-      info.logger().template log<LogLevel::INFO>(
-        std::string("[Non-oscillatory step][x = ") +
-        std::to_string(xcurrent) + std::string("][stepsize =") +
-        std::to_string(hslo) + std::string("]")
-      );
-    } else if (unlikely(log_level == LogLevel::INFO)) {
-      info.logger().template log<LogLevel::INFO>(
-        std::string("[Oscillatory step][x = ") +
-        std::to_string(xcurrent) + std::string("][stepsize =") +
-        std::to_string(hslo) + std::string("]")
-      );
+      if (unlikely(log_level >= LogLevel::INFO)) {
+        [&]() RICCATI_COLD_PATH {
+          info.logger().template log<LogLevel::INFO>(
+              log_level,
+              std::pair("oscillatory step", (success ? "success" : "failure")),
+              std::pair("x", xcurrent), std::pair("stepsize", hosc));
+        }();
+      }
+    } else {
+      success = 0;
     }
     while (!success) {
       std::tie(success, y, dy, err, y_eval, dy_eval, cheb_N)
@@ -487,6 +519,18 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       solver_counts[get_idx(LogInfo::CHEBSTEP)].second++;
       solver_counts[get_idx(LogInfo::LS)].second += cheb_N + 1;
       steptype = 0;
+      if (unlikely(log_level >= LogLevel::INFO)) {
+        [&]() RICCATI_COLD_PATH {
+          info.logger().template log<LogLevel::INFO>(
+              log_level,
+              std::pair("nonoscillatory step",
+                        (success ? "success" : "failures")),
+              std::pair("x", xcurrent), std::pair("stepsize", hslo),
+              std::pair("y", y.real()), std::pair("dy", dy.real()),
+              std::pair("err", std::real(err)),
+              std::pair("cheb_steps", cheb_N));
+        }();
+      }
       if (!success) {
         hslo *= Scalar{0.5};
       }
@@ -503,12 +547,12 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       std::tie(dense_start, dense_size)
           = get_slice(x_eval, xcurrent, (xcurrent + h));
       if (dense_size != 0) {
-        if (unlikely(log_level == LogLevel::INFO)) {
-          info.logger().template log<LogLevel::INFO>(
-            std::string("[Dense output][x_start = ") +
-            std::to_string(xcurrent) + std::string("][x_end =") +
-            std::to_string(xcurrent + h) + std::string("]")
-          );
+        if (unlikely(log_level >= LogLevel::INFO)) {
+          [&]() RICCATI_COLD_PATH {
+            info.logger().template log<LogLevel::INFO>(
+                log_level, "dense output", std::pair("x_start", xcurrent),
+                std::pair("x_end", xcurrent + h));
+          }();
         }
         auto x_eval_map
             = Eigen::Map<vectord_t>(x_eval.data() + dense_start, dense_size);
@@ -541,15 +585,23 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       }
     }
     // Finish appending and ending conditions
+    if (unlikely(log_level >= LogLevel::INFO)) {
+      [&]() RICCATI_COLD_PATH {
+        info.logger().template log<LogLevel::INFO>(
+            log_level, "step completed", std::pair("y", y), std::pair("dy", dy),
+            std::pair("x_next", xcurrent + h), std::pair("phase", phase),
+            std::pair("steptype", steptype));
+      }();
+    }
     ys.push_back(y);
     dys.push_back(dy);
     xs.push_back(xcurrent + h);
     phases.push_back(phase);
     steptypes.push_back(steptype);
     successes.push_back(success);
-    Scalar dwnext;
-    Scalar gnext;
-    Scalar dgnext;
+    omega_scalar_t dwnext;
+    gamma_scalar_t gnext;
+    gamma_scalar_t dgnext;
     if (steptype) {
       wnext = omega_n[0];
       gnext = gamma_n[0];
@@ -581,17 +633,20 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
       // o and g written here
       osc_step_tup = choose_osc_stepsize(info, xcurrent, hosc_ini, epsilon_h);
       hosc = std::get<0>(osc_step_tup);
-      hslo = choose_nonosc_stepsize(info, xcurrent, hslo_ini, Scalar{0.2});
+      hslo = choose_nonosc_stepsize(info, xcurrent, hslo_ini, epsilon_h);
       yprev = y;
       dyprev = dy;
     }
     info.alloc_.recover_memory();
   }
-  if constexpr (!std::is_same_v<std::decay_t<decltype(info.logger())>, EmptyLogger>) {
-    if (unlikely(log_level == LogLevel::INFO)) {
+  if constexpr (!std::is_same_v<std::decay_t<decltype(info.logger())>,
+                                EmptyLogger>) {
+    if (unlikely(log_level >= LogLevel::INFO)) {
+      info.logger().template log<LogLevel::INFO>(log_level,
+                                                 std::string("x", xcurrent));
       std::size_t riccati_steps = 0;
       std::size_t rk_steps = 0;
-      for (auto& success : successes) {
+      for (auto &success : successes) {
         if (success) {
           riccati_steps++;
         } else {
@@ -599,19 +654,15 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
         }
       }
       info.logger().template log<LogLevel::INFO>(
-        std::string("Total Steps = ") + std::to_string(successes.size())
-      );
-      for (auto&& info_pair : solver_counts) {
-        info.logger().template log<LogLevel::INFO>(
-          std::string(to_string(info_pair.first)) + " = " + std::to_string(info_pair.second)
-        );
+          log_level, std::pair("Total Steps", successes.size()));
+      for (auto &&info_pair : solver_counts) {
+        info.logger().template log<LogLevel::INFO>(log_level, info_pair);
       }
     }
   }
   return std::make_tuple(xs, ys, dys, successes, phases, steptypes, yeval,
-                        dyeval, 1.0);
+                         dyeval, 1.0);
 }
-
 
 }  // namespace riccati
 
