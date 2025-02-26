@@ -203,7 +203,7 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s,
     auto dy1 = eval(info.alloc_,
                     ap * y.cwiseProduct(f1) + am * du2.cwiseProduct(f2));
     Scalar phase = std::imag(f1(0));
-    return std::make_tuple(success, y1(0), dy1(0), maxerr, phase, u1, y,
+    return std::make_tuple(success, y1(0), dy1(0), maxerr, phase, std::move(u1), std::move(y),
                            std::make_pair(ap, am));
   } else {
     auto u1 = (h / Scalar{2.0} * (info.quadwts_.dot(y)));

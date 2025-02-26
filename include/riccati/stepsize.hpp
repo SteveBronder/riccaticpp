@@ -27,10 +27,17 @@ template <typename SolverInfo, typename FloatingPoint>
 inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                             FloatingPoint h,
                                             FloatingPoint epsilon_h) {
-  auto ws = omega(info, riccati::scale(info.xp(), x0, h)).eval();
-  while (ws.real().array().maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
-    h /= 2.0;
-    ws = omega(info, riccati::scale(info.xp(), x0, h));
+  auto ws = omega(info, (x0 + (std::abs(h) * 0.5) * (1.0 + info.xp().array())).matrix().eval()).eval();
+  if constexpr (is_complex_v<value_type_t<decltype(ws)>>) {
+    while (ws.array().abs().maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
+      h *= 0.5;
+      ws = omega(info, (x0 + (h * 0.5) * (1.0 + info.xp().array())).matrix().eval());
+    }
+  } else {
+    while (ws.array().maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
+      h *= 0.5;
+      ws = omega(info, (x0 + (h * 0.5) * (1.0 + info.xp().array())).matrix().eval());
+    }
   }
   return h;
 }

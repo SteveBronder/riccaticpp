@@ -298,7 +298,7 @@ first_write = True
 with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
     for algo, algo_params in algorithm_dict.items():
         algo_evals_pl_lst = []
-        for benchmark_run in range(1):
+        for benchmark_run in range(10):
           print("Algo: ", str(algo))
           if len(algo_params["args"]) > 1:
               algo_args_iter = itertools.product(
@@ -322,9 +322,8 @@ with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
                   schrodinger = SchrodingerProblem(1.0, 0.5, *bound)
                   energy_mismatch = energy_mismatch_functor(algo, algo_iter, schrodinger)
                   res = sci_opt.minimize_scalar(energy_mismatch, bounds=bound, method="bounded",
-                                                tol=algo_iter[0], options = {"maxiter": 1000,
-                                                                             "xatol" : algo_iter[0],
-                                                                             "disp" : 3})
+                                                tol=algo_iter[0], options = {"maxiter": 1500,
+                                                                             "xatol" : algo_iter[0]})
                   print("\t\tEigenenergy found: {}".format(res.x))
                   algo_key = to_string(algo, algo_iter, schrodinger)
                   algo_pl_tmp = pl.DataFrame(res)
@@ -333,7 +332,7 @@ with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
                                                          pl.lit(benchmark_run).alias("iter"),
                                                          pl.lit(energy_ref).alias("energy_reference"))
                   algo_pl_tmp = algo_pl_tmp.with_columns((pl.col("energy") - pl.col("energy_reference")).abs().alias("energy_error"))
-                  import pdb; pdb.set_trace()
+                  print("BenchMark: ", algo_pl_tmp)
                   algo_evals_pl_lst.append(algo_pl_tmp)
         algo_pl = pl.concat(algo_evals_pl_lst)
         print(algo_pl)

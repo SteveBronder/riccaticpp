@@ -32,7 +32,7 @@ class arena_matrix : public Eigen::Map<MatrixType> {
    * @param allocator The allocator to receive memory from
    */
   template <typename T>
-  arena_matrix(arena_allocator<T, arena_alloc>& allocator)
+  explicit arena_matrix(arena_allocator<T, arena_alloc>& allocator)
       : Base::Map(nullptr,
                   RowsAtCompileTime == Eigen::Dynamic ? 0 : RowsAtCompileTime,
                   ColsAtCompileTime == Eigen::Dynamic ? 0 : ColsAtCompileTime),
@@ -94,7 +94,7 @@ class arena_matrix : public Eigen::Map<MatrixType> {
    * any other `Eigen::Map` also contains memory allocated in the arena.
    * @param other expression
    */
-  arena_matrix(const Base& other)  // NOLINT
+  explicit  arena_matrix(const Base& other)  // NOLINT
       : Base::Map(other) {}
 
   /**
