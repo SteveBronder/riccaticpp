@@ -187,6 +187,9 @@ class arena_alloc {
    * @return A pointer to the allocated memory.
    */
   RICCATI_ALWAYS_INLINE void* alloc(size_t len) {
+    if (unlikely(len == size_t{0})) {
+      return nullptr;
+    }
     size_t pad = len % 8 == 0 ? 0 : 8 - len % 8;
 
     // Typically, just return and increment the next location.

@@ -60,8 +60,8 @@ class arena_matrix : public Eigen::Map<MatrixType> {
    * @param allocator The allocator to receive memory from
    * @param size number of elements
    */
-  template <typename T>
-  arena_matrix(arena_allocator<T, arena_alloc>& allocator, Eigen::Index size)
+  template <typename T, typename Int, std::enable_if_t<std::is_integral_v<Int>>* = nullptr>
+  arena_matrix(arena_allocator<T, arena_alloc>& allocator, Int size)
       : Base::Map(allocator.template allocate<Scalar>(size), size),
         allocator_(allocator) {}
 
@@ -70,7 +70,7 @@ class arena_matrix : public Eigen::Map<MatrixType> {
    * @param allocator The allocator to receive memory from
    * @param other expression
    */
-  template <typename T, typename Expr>
+  template <typename T, typename Expr, require_eigen<Expr>* = nullptr>
   arena_matrix(arena_allocator<T, arena_alloc>& allocator,
                const Expr& other)  // NOLINT
       : Base::Map(

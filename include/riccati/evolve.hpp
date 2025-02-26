@@ -483,9 +483,15 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf,
           }
         }
         // o and g read here
-        std::tie(success, y, dy, err, phase, un, d_un, a_pair)
-            = osc_step<dense_output>(info, omega_n, gamma_n, xcurrent, hosc,
-                                    yprev, dyprev, eps);
+        if constexpr (dense_output) {
+          std::tie(success, y, dy, err, phase, un, d_un, a_pair)
+              = osc_step<dense_output>(info, omega_n, gamma_n, xcurrent, hosc,
+                                      yprev, dyprev, eps);
+        } else {
+          std::tie(success, y, dy, err, phase)
+              = osc_step<dense_output>(info, omega_n, gamma_n, xcurrent, hosc,
+                                      yprev, dyprev, eps);
+        }
         steptype = 1;
         solver_counts[get_idx(LogInfo::RICCSTEP)].second++;
       }

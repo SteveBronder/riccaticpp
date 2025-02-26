@@ -69,6 +69,7 @@ RICCATI_ALWAYS_INLINE auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, Y
     dyprev = std::move(dy);
     xprev = std::move(x);
   }
+  // iter - 1 because the loop always incriments iter before checking the condition
   if (std::abs((epsres*yprev(0) + epsres)/maxerr) < 1) {
       return std::make_tuple(false, complex_t(0.0, 0.0), complex_t(0.0, 0.0),
                              maxerr, yprev, dyprev, iter - 1);
@@ -77,6 +78,19 @@ RICCATI_ALWAYS_INLINE auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, Y
                          iter - 1);
 }
 
+
+template <bool DenseOut, typename Scalar, typename Complex, typename Matrix>
+RICCATI_ALWAYS_INLINE auto return_failure() {
+    if constexpr (DenseOut) {
+      return std::make_tuple(false, Complex(0.0, 0.0), Complex(0.0, 0.0),
+        Scalar{0.0}, Scalar{0.0},                            arena_matrix<Matrix>(info.alloc_, 0),
+                          arena_matrix<Matrix>(info.alloc_, 0),
+                            std::make_pair(Complex(0.0, 0.0), Complex(0.0, 0.0)));
+    } else {
+      return std::make_tuple(false, Complex(0.0, 0.0), Complex(0.0, 0.0),
+                              Scalar{0.0}, Scalar{0.0});
+    }
+  }
 /**
  * @brief Performs a single Riccati step for solving differential equations with
  * oscillatory behavior.
@@ -158,8 +172,7 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, Gamma
     Ry = R(deltay);
     maxerr = Ry.array().abs().maxCoeff();
     if (maxerr >= (Scalar{2.0} * prev_err) || std::isnan(maxerr)) {
-      success = false;
-      break;
+      return return_failure<DenseOut, Scalar, complex_t, vectorc_t>();
     }
     prev_err = maxerr;
   }
@@ -168,9 +181,8 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, Gamma
   Ry = R(deltay);
   maxerr = Ry.array().abs().maxCoeff();
   if (maxerr >= (Scalar{2.0} * prev_err) || std::isnan(maxerr)) {
-    success = false;
+      return return_failure<DenseOut, Scalar, complex_t, vectorc_t>();
   }
-  prev_err = maxerr;
   if constexpr (DenseOut) {
     auto u1
         = eval(info.alloc_, h / Scalar{2.0} * (info.integration_matrix_ * y));
@@ -204,10 +216,7 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, Gamma
     if (std::isnan(std::real(y1)) || std::isnan(std::imag(dy1(0)))) {
       success = false;
     }
-    return std::make_tuple(success, y1, dy1(0), maxerr, phase,
-                           arena_matrix<vectorc_t>(info.alloc_, y.size()),
-                           arena_matrix<vectorc_t>(info.alloc_, y.size()),
-                           std::make_pair(ap, am));
+    return std::make_tuple(success, y1, dy1(0), maxerr, phase);
   }
 }
 
