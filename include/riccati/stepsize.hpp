@@ -74,8 +74,8 @@ inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
   omega_vec_ret_t ws(t.size());
   gamma_vec_ret_t gs(t.size());
   do {
-    t = (x0 + (h / 2.0) + ((h / 2.0) * info.xp_interp().array())).matrix();
-    s = (x0 + (h / 2.0) + ((h / 2.0) * info.xp().array())).matrix();
+    t = scale(info.xp_interp(), x0, h);
+    s = scale(info.xp(), x0, h);
     ws = omega(info, s);
     gs = gamma(info, s);
     omega_analytic = omega(info, t);

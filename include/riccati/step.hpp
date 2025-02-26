@@ -79,8 +79,8 @@ RICCATI_ALWAYS_INLINE auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, Y
 }
 
 
-template <bool DenseOut, typename Scalar, typename Complex, typename Matrix>
-RICCATI_ALWAYS_INLINE auto return_failure() {
+template <bool DenseOut, typename Scalar, typename Complex, typename Matrix, typename Info>
+RICCATI_ALWAYS_INLINE auto constexpr return_failure(Info&& info) {
     if constexpr (DenseOut) {
       return std::make_tuple(false, Complex(0.0, 0.0), Complex(0.0, 0.0),
         Scalar{0.0}, Scalar{0.0},                            arena_matrix<Matrix>(info.alloc_, 0),
@@ -172,7 +172,7 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, Gamma
     Ry = R(deltay);
     maxerr = Ry.array().abs().maxCoeff();
     if (maxerr >= (Scalar{2.0} * prev_err) || std::isnan(maxerr)) {
-      return return_failure<DenseOut, Scalar, complex_t, vectorc_t>();
+      return return_failure<DenseOut, Scalar, complex_t, vectorc_t>(info);
     }
     prev_err = maxerr;
   }
@@ -181,7 +181,7 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, Gamma
   Ry = R(deltay);
   maxerr = Ry.array().abs().maxCoeff();
   if (maxerr >= (Scalar{2.0} * prev_err) || std::isnan(maxerr)) {
-      return return_failure<DenseOut, Scalar, complex_t, vectorc_t>();
+      return return_failure<DenseOut, Scalar, complex_t, vectorc_t>(info);
   }
   if constexpr (DenseOut) {
     auto u1

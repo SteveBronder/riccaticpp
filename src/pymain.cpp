@@ -202,8 +202,6 @@ auto hard_copy_arena(std::tuple<Tuple>&& tup) {
             )pbdoc"
 #endif
 
-}  // namespace riccati
-
 template <typename F, typename Solver, typename XEval, typename... Args>
 inline auto evolve_call(F&& f, Solver&& info, XEval&& x_eval, Args&&... args) {
     if (x_eval.is_none()) {
@@ -243,6 +241,9 @@ inline auto info_caster(F&& f, py::object info, Args&&... args) {
     throw std::invalid_argument("Invalid SolverInfo object.");
   }
 }
+
+}  // namespace riccati
+
 PYBIND11_MODULE(pyriccaticpp, m) {
   m.doc() = "Riccati solver module";
   py::enum_<riccati::LogLevel>(m, "LogLevel", py::arithmetic(), "Log levels for eveolve")

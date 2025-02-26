@@ -71,81 +71,6 @@ template <typename Scalar>
 using promote_complex_t = std::conditional_t<std::is_floating_point_v<std::decay_t<Scalar>>,
                                              std::complex<std::decay_t<Scalar>>, std::decay_t<Scalar>>;
 
-template <typename T>
-inline constexpr T pi() {
-  return static_cast<T>(3.141592653589793238462643383279);
-}
-
-RICCATI_ALWAYS_INLINE double eval(double x) noexcept { return x; }
-template <typename T>
-RICCATI_ALWAYS_INLINE std::complex<T>& eval(std::complex<T>& x) noexcept {
-  return x;
-}
-template <typename T>
-RICCATI_ALWAYS_INLINE std::complex<T> eval(std::complex<T>&& x) {
-  return x;
-}
-
-template <typename T>
-RICCATI_ALWAYS_INLINE auto eval(T&& x) {
-  return x.eval();
-}
-
-template <typename T, Eigen::Index R, Eigen::Index C>
-RICCATI_ALWAYS_INLINE Eigen::Matrix<T, R, C> eval(Eigen::Matrix<T, R, C>&& x) {
-  return std::move(x);
-}
-
-template <typename T, Eigen::Index R, Eigen::Index C>
-RICCATI_ALWAYS_INLINE auto& eval(Eigen::Matrix<T, R, C>& x) {
-  return x;
-}
-
-template <typename T, Eigen::Index R, Eigen::Index C>
-RICCATI_ALWAYS_INLINE const auto& eval(const Eigen::Matrix<T, R, C>& x) {
-  return x;
-}
-
-template <typename T, Eigen::Index R, Eigen::Index C>
-RICCATI_ALWAYS_INLINE Eigen::Array<T, R, C> eval(Eigen::Array<T, R, C>&& x) {
-  return std::move(x);
-}
-
-template <typename T, Eigen::Index R, Eigen::Index C>
-RICCATI_ALWAYS_INLINE auto& eval(Eigen::Array<T, R, C>& x) {
-  return x;
-}
-
-template <typename T, Eigen::Index R, Eigen::Index C>
-RICCATI_ALWAYS_INLINE const auto& eval(const Eigen::Array<T, R, C>& x) {
-  return x;
-}
-
-template <typename T, typename Scalar>
-RICCATI_ALWAYS_INLINE auto get_slice(T&& x_eval, Scalar start, Scalar end) {
-  Eigen::Index i = 0;
-  Eigen::Index dense_start = 0;
-  if (start > end) {
-    std::swap(start, end);
-  }
-  for (; i < x_eval.size(); ++i) {
-    if ((x_eval[i] >= start && x_eval[i] <= end)) {
-      dense_start = i;
-      break;
-    }
-  }
-  Eigen::Index dense_size = 0;
-  for (; i < x_eval.size(); ++i) {
-    if ((x_eval[i] >= start && x_eval[i] <= end)) {
-      dense_size++;
-    } else {
-      break;
-    }
-  }
-  return std::make_pair(dense_start, dense_size);
-}
-
-
 /**
  * Checks if a type's pointer is convertible to a templated base type's pointer.
  * If the arbitrary function
@@ -261,6 +186,71 @@ struct is_pair : internal::is_pair<std::decay_t<T>> {};
 template <typename T>
 inline constexpr bool is_pair_v = is_pair<std::decay_t<T>>::value;
 
+
+template <typename T>
+inline constexpr T pi() {
+  return static_cast<T>(3.141592653589793238462643383279);
+}
+
+RICCATI_ALWAYS_INLINE constexpr double eval(double x) noexcept { return x; }
+template <typename T>
+RICCATI_ALWAYS_INLINE constexpr std::complex<T>& eval(std::complex<T>& x) noexcept {
+  return x;
+}
+template <typename T>
+RICCATI_ALWAYS_INLINE constexpr std::complex<T> eval(std::complex<T>&& x) noexcept {
+  return x;
+}
+
+namespace internal {
+template <typename T>
+struct is_eigen_matrix_or_array_impl : std::false_type {};
+
+template <typename T, int R, int C>
+struct is_eigen_matrix_or_array_impl<Eigen::Matrix<T, R, C>> : std::true_type {};
+template <typename T, int R, int C>
+struct is_eigen_matrix_or_array_impl<Eigen::Array<T, R, C>> : std::true_type {};
+}
+template <typename T>
+struct is_eigen_matrix_or_array : internal::is_eigen_matrix_or_array_impl<std::decay_t<T>> {};
+
+template <typename T>
+inline constexpr bool is_eigen_matrix_or_array_v = is_eigen_matrix_or_array<T>::value;
+
+template <typename T, require_eigen<T>* = nullptr>
+RICCATI_ALWAYS_INLINE decltype(auto) eval(T&& x) noexcept(is_eigen_matrix_or_array_v<T>){
+  if constexpr (is_eigen_matrix_or_array_v<T>) {
+    return std::forward<T>(x);
+  } else {
+    return x.eval();
+  }
+}
+
+template <typename T, typename Scalar>
+RICCATI_ALWAYS_INLINE auto get_slice(T&& x_eval, Scalar start, Scalar end) noexcept {
+  Eigen::Index i = 0;
+  Eigen::Index dense_start = 0;
+  if (start > end) {
+    std::swap(start, end);
+  }
+  for (; i < x_eval.size(); ++i) {
+    if ((x_eval[i] >= start && x_eval[i] <= end)) {
+      dense_start = i;
+      break;
+    }
+  }
+  Eigen::Index dense_size = 0;
+  for (; i < x_eval.size(); ++i) {
+    if ((x_eval[i] >= start && x_eval[i] <= end)) {
+      dense_size++;
+    } else {
+      break;
+    }
+  }
+  return std::make_pair(dense_start, dense_size);
+}
+
+
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
 RICCATI_ALWAYS_INLINE auto sin(T x) {
   return std::sin(x);
@@ -302,7 +292,7 @@ RICCATI_ALWAYS_INLINE auto square(T&& x) {
 }
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-RICCATI_ALWAYS_INLINE auto array(T x) {
+RICCATI_ALWAYS_INLINE auto array(T x) noexcept {
   return x;
 }
 
@@ -312,7 +302,7 @@ RICCATI_ALWAYS_INLINE auto array(T&& x) {
 }
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-RICCATI_ALWAYS_INLINE auto matrix(T x) {
+RICCATI_ALWAYS_INLINE auto matrix(T x) noexcept{
   return x;
 }
 
@@ -322,7 +312,7 @@ RICCATI_ALWAYS_INLINE auto matrix(T&& x) {
 }
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-RICCATI_ALWAYS_INLINE constexpr T zero_like(T x) {
+RICCATI_ALWAYS_INLINE constexpr T zero_like(T x) noexcept {
   return static_cast<T>(0.0);
 }
 
@@ -342,7 +332,7 @@ RICCATI_ALWAYS_INLINE auto pow(T1&& x, T2 y) {
 }
 
 template <typename T1, require_floating_point_or_complex<T1>* = nullptr>
-RICCATI_ALWAYS_INLINE auto real(T1 x) {
+RICCATI_ALWAYS_INLINE constexpr auto real(T1 x) noexcept {
   return std::real(x);
 }
 
@@ -352,7 +342,7 @@ RICCATI_ALWAYS_INLINE auto real(T1&& x) {
 }
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-RICCATI_ALWAYS_INLINE auto to_complex(T x) {
+RICCATI_ALWAYS_INLINE constexpr auto to_complex(T x) noexcept {
   if constexpr (is_complex_v<value_type_t<T>>) {
     return x;
   } else {
