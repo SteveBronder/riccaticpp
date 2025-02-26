@@ -93,7 +93,7 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
   auto osc_ret = osc_step<dense_output>(info, omega_n, gamma_n, xi,
                                         init_stepsize, yi, dyi, eps);
   auto make_osc_ret = [](auto&& tup) {
-    return std::make_tuple(std::get<0>(tup), std::get<1>(tup), std::get<3>(tup), std::get<4>(tup));
+    return std::make_tuple(std::get<0>(tup), std::get<1>(tup), std::get<2>(tup), std::get<3>(tup));
   };
   if (std::get<0>(osc_ret) == 0) {
     return std::make_tuple(false, xi, init_stepsize, make_osc_ret(osc_ret), vectorc_t(0),
@@ -140,7 +140,7 @@ inline auto osc_evolve(SolverInfo &&info, Scalar xi, Scalar xf,
     // o and g written here
     auto h_next = choose_osc_stepsize(info, x_next, hosc_ini, epsilon_h);
     // TODO: CANNOT RETURN ARENA MATRIX FROM OSC_RET
-    return std::make_tuple(true, x_next, std::get<0>(h_next),  make_osc_ret(osc_ret), std::move(yeval),
+    return std::make_tuple(true, x_next, std::get<0>(h_next), make_osc_ret(osc_ret), std::move(yeval),
                            std::move(dyeval), dense_start, dense_size);
   }
 }
