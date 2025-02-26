@@ -50,4 +50,3 @@ TEST_F(Riccati, evolve_burst_dense_output) {
       = (((ytrue - y_steps).array()).abs() / (ytrue.array()).abs()).eval();
   EXPECT_LE(y_err.maxCoeff(), 1e-8);
 }
-

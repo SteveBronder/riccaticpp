@@ -18,7 +18,7 @@ namespace riccati {
 
 template <typename T>
 constexpr Eigen::Index compile_size_v
-    = std::decay_t<T>::RowsAtCompileTime * std::decay_t<T>::ColsAtCompileTime;
+    = std::decay_t<T>::RowsAtCompileTime* std::decay_t<T>::ColsAtCompileTime;
 
 /**
  * @brief Scales and shifts a vector of Chebyshev nodes.
@@ -67,8 +67,10 @@ template <typename Scalar>
 using row_array1d_t = Eigen::Matrix<Scalar, 1, -1>;
 
 template <typename Scalar>
-using promote_complex_t = std::conditional_t<std::is_floating_point_v<std::decay_t<Scalar>>,
-                                             std::complex<std::decay_t<Scalar>>, std::decay_t<Scalar>>;
+using promote_complex_t
+    = std::conditional_t<std::is_floating_point_v<std::decay_t<Scalar>>,
+                         std::complex<std::decay_t<Scalar>>,
+                         std::decay_t<Scalar>>;
 
 /**
  * Checks if a type's pointer is convertible to a templated base type's pointer.
@@ -84,21 +86,23 @@ using promote_complex_t = std::conditional_t<std::is_floating_point_v<std::decay
  */
 template <template <typename> class Base, typename Derived>
 struct is_base_pointer_convertible {
-  static std::false_type f(const void *);
+  static std::false_type f(const void*);
   template <typename OtherDerived>
-  static std::true_type f(const Base<OtherDerived> *);
+  static std::true_type f(const Base<OtherDerived>*);
   enum {
     value
-    = decltype(f(std::declval<std::remove_reference_t<Derived> *>()))::value
+    = decltype(f(std::declval<std::remove_reference_t<Derived>*>()))::value
   };
 };
 
 template <template <typename> class Base, typename Derived>
-inline constexpr bool is_base_pointer_convertible_v = is_base_pointer_convertible<Base, Derived>::value;
+inline constexpr bool is_base_pointer_convertible_v
+    = is_base_pointer_convertible<Base, Derived>::value;
 
 template <typename T>
 struct is_eigen
-    : std::bool_constant<is_base_pointer_convertible_v<Eigen::EigenBase, std::decay_t<T>>> {};
+    : std::bool_constant<
+          is_base_pointer_convertible_v<Eigen::EigenBase, std::decay_t<T>>> {};
 
 template <typename T>
 inline constexpr bool is_eigen_v = is_eigen<T>::value;
@@ -107,11 +111,11 @@ template <typename MatrixType>
 class arena_matrix;
 
 namespace internal {
-  template <typename T>
-  struct is_arena_matrix : std::false_type {};
-  template <typename T>
-  struct is_arena_matrix<arena_matrix<T>> : std::true_type {};
-}
+template <typename T>
+struct is_arena_matrix : std::false_type {};
+template <typename T>
+struct is_arena_matrix<arena_matrix<T>> : std::true_type {};
+}  // namespace internal
 
 template <typename T>
 struct is_arena_matrix : internal::is_arena_matrix<std::decay_t<T>> {};
@@ -127,7 +131,7 @@ template <typename T>
 struct is_tuple : std::false_type {};
 template <typename... Ts>
 struct is_tuple<std::tuple<Ts...>> : std::true_type {};
-}
+}  // namespace internal
 
 template <typename T>
 struct is_tuple : internal::is_tuple<std::decay_t<T>> {};
@@ -154,12 +158,13 @@ using require_same
     = std::enable_if_t<std::is_same_v<std::decay_t<T1>, std::decay_t<T2>>>;
 
 template <typename T1, typename T2>
-using require_not_same = std::enable_if_t<!std::is_same_v<std::decay_t<T1>, std::decay_t<T2>>>;
+using require_not_same
+    = std::enable_if_t<!std::is_same_v<std::decay_t<T1>, std::decay_t<T2>>>;
 
 namespace internal {
 template <typename T, typename Enable = void>
 struct value_type_impl {
-  static_assert(1,"Should never be used!");
+  static_assert(1, "Should never be used!");
   using type = T;
 };
 template <typename T>
@@ -201,9 +206,7 @@ using require_not_floating_point_or_complex
                        && !is_complex<std::decay_t<T>>::value>;
 
 template <typename T>
-using require_eigen
-    = std::enable_if_t<is_eigen_v<std::decay_t<T>>>;
-
+using require_eigen = std::enable_if_t<is_eigen_v<std::decay_t<T>>>;
 
 namespace internal {
 template <typename>
@@ -212,14 +215,13 @@ struct is_pair : std::false_type {};
 template <typename T, typename U>
 struct is_pair<std::pair<T, U>> : std::true_type {};
 
-}
+}  // namespace internal
 
 template <typename T>
 struct is_pair : internal::is_pair<std::decay_t<T>> {};
 
 template <typename T>
 inline constexpr bool is_pair_v = is_pair<std::decay_t<T>>::value;
-
 
 template <typename T>
 inline constexpr T pi() {
@@ -228,11 +230,13 @@ inline constexpr T pi() {
 
 RICCATI_ALWAYS_INLINE constexpr double eval(double x) noexcept { return x; }
 template <typename T>
-RICCATI_ALWAYS_INLINE constexpr std::complex<T>& eval(std::complex<T>& x) noexcept {
+RICCATI_ALWAYS_INLINE constexpr std::complex<T>& eval(
+    std::complex<T>& x) noexcept {
   return x;
 }
 template <typename T>
-RICCATI_ALWAYS_INLINE constexpr std::complex<T> eval(std::complex<T>&& x) noexcept {
+RICCATI_ALWAYS_INLINE constexpr std::complex<T> eval(
+    std::complex<T>&& x) noexcept {
   return x;
 }
 
@@ -241,18 +245,22 @@ template <typename T>
 struct is_eigen_matrix_or_array_impl : std::false_type {};
 
 template <typename T, int R, int C>
-struct is_eigen_matrix_or_array_impl<Eigen::Matrix<T, R, C>> : std::true_type {};
+struct is_eigen_matrix_or_array_impl<Eigen::Matrix<T, R, C>> : std::true_type {
+};
 template <typename T, int R, int C>
 struct is_eigen_matrix_or_array_impl<Eigen::Array<T, R, C>> : std::true_type {};
-}
+}  // namespace internal
 template <typename T>
-struct is_eigen_matrix_or_array : internal::is_eigen_matrix_or_array_impl<std::decay_t<T>> {};
+struct is_eigen_matrix_or_array
+    : internal::is_eigen_matrix_or_array_impl<std::decay_t<T>> {};
 
 template <typename T>
-inline constexpr bool is_eigen_matrix_or_array_v = is_eigen_matrix_or_array<T>::value;
+inline constexpr bool is_eigen_matrix_or_array_v
+    = is_eigen_matrix_or_array<T>::value;
 
 template <typename T, require_eigen<T>* = nullptr>
-RICCATI_ALWAYS_INLINE decltype(auto) eval(T&& x) noexcept(is_eigen_matrix_or_array_v<T>){
+RICCATI_ALWAYS_INLINE decltype(auto) eval(T&& x) noexcept(
+    is_eigen_matrix_or_array_v<T>) {
   if constexpr (is_eigen_matrix_or_array_v<T>) {
     return std::forward<T>(x);
   } else {
@@ -261,7 +269,8 @@ RICCATI_ALWAYS_INLINE decltype(auto) eval(T&& x) noexcept(is_eigen_matrix_or_arr
 }
 
 template <typename T, typename Scalar>
-RICCATI_ALWAYS_INLINE auto get_slice(T&& x_eval, Scalar start, Scalar end) noexcept {
+RICCATI_ALWAYS_INLINE auto get_slice(T&& x_eval, Scalar start,
+                                     Scalar end) noexcept {
   Eigen::Index i = 0;
   Eigen::Index dense_start = 0;
   if (start > end) {
@@ -283,7 +292,6 @@ RICCATI_ALWAYS_INLINE auto get_slice(T&& x_eval, Scalar start, Scalar end) noexc
   }
   return std::make_pair(dense_start, dense_size);
 }
-
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
 RICCATI_ALWAYS_INLINE auto sin(T x) {
@@ -336,7 +344,7 @@ RICCATI_ALWAYS_INLINE auto array(T&& x) {
 }
 
 template <typename T, require_floating_point_or_complex<T>* = nullptr>
-RICCATI_ALWAYS_INLINE auto matrix(T x) noexcept{
+RICCATI_ALWAYS_INLINE auto matrix(T x) noexcept {
   return x;
 }
 
@@ -392,7 +400,6 @@ RICCATI_ALWAYS_INLINE auto to_complex(T&& x) {
     return x.template cast<std::complex<value_type_t<T>>>();
   }
 }
-
 
 template <typename T, int R, int C>
 inline void print(const char* name, const Eigen::Matrix<T, R, C>& x) {
@@ -456,7 +463,8 @@ inline void print(const char* name, const std::vector<T>& x) {
   }
 }
 
-RICCATI_ALWAYS_INLINE void local_time(const time_t* timer, struct tm* buf) noexcept {
+RICCATI_ALWAYS_INLINE void local_time(const time_t* timer,
+                                      struct tm* buf) noexcept {
 #ifdef _WIN32
   // Windows switches the order of the arguments?
   localtime_s(buf, timer);
@@ -467,20 +475,21 @@ RICCATI_ALWAYS_INLINE void local_time(const time_t* timer, struct tm* buf) noexc
 
 /* Get the current time with microseconds */
 RICCATI_ALWAYS_INLINE std::string time_mi() noexcept {
-    auto now = std::chrono::system_clock::now();
-    time_t epoch = std::chrono::system_clock::to_time_t(now);
-    struct tm tms{};
-    ::riccati::local_time(&epoch, &tms);
-    auto fractional_seconds = now - std::chrono::system_clock::from_time_t(epoch);
-    int micros = std::chrono::duration_cast<std::chrono::microseconds>(fractional_seconds).count();
-    // Format the time string
-    char buf[sizeof "[9999-12-31 29:59:59.999999]"];
-    size_t nb = strftime(buf, sizeof(buf), "[%Y-%m-%d %H:%M:%S", &tms);
-    nb += snprintf(&buf[nb], sizeof(buf) - nb, ".%06d]", micros);
-    // Return the formatted string
-    return std::string(buf, nb);
+  auto now = std::chrono::system_clock::now();
+  time_t epoch = std::chrono::system_clock::to_time_t(now);
+  struct tm tms {};
+  ::riccati::local_time(&epoch, &tms);
+  auto fractional_seconds = now - std::chrono::system_clock::from_time_t(epoch);
+  int micros = std::chrono::duration_cast<std::chrono::microseconds>(
+                   fractional_seconds)
+                   .count();
+  // Format the time string
+  char buf[sizeof "[9999-12-31 29:59:59.999999]"];
+  size_t nb = strftime(buf, sizeof(buf), "[%Y-%m-%d %H:%M:%S", &tms);
+  nb += snprintf(&buf[nb], sizeof(buf) - nb, ".%06d]", micros);
+  // Return the formatted string
+  return std::string(buf, nb);
 }
-
 
 }  // namespace riccati
 

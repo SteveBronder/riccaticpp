@@ -199,12 +199,12 @@ class PtrLogger : public LoggerBase<PtrLogger<Ptr>> {
   RICCATI_NO_INLINE explicit PtrLogger(const std::shared_ptr<Stream>& output)
       : output_(output) {}
 
-
-
   template <LogLevel Level, typename T, typename... Args>
-  inline auto concat_string(std::stringstream& stream, T&& arg, Args&&... args) {
+  inline auto concat_string(std::stringstream& stream, T&& arg,
+                            Args&&... args) {
     if constexpr (is_pair_v<T>) {
-      if constexpr (std::is_same_v<LogInfo, std::decay_t<decltype(arg.first)>>) {
+      if constexpr (std::is_same_v<LogInfo,
+                                   std::decay_t<decltype(arg.first)>>) {
         stream << to_string(arg.first) << "=";
       } else {
         stream << "[" << arg.first << "=";
@@ -248,7 +248,7 @@ class PtrLogger : public LoggerBase<PtrLogger<Ptr>> {
   }
 
   template <LogLevel Level, typename T, typename... Args,
-   std::enable_if_t<sizeof...(Args) != 0>* = nullptr>
+            std::enable_if_t<sizeof...(Args) != 0>* = nullptr>
   inline void log(LogLevel UserLevel, T&& arg, Args&&... args) {
     if constexpr (!RICCATI_DEBUG_VAL && Level == LogLevel::DEBUG) {
       return;
@@ -258,7 +258,9 @@ class PtrLogger : public LoggerBase<PtrLogger<Ptr>> {
     }
     std::stringstream stream;
     stream << std::setprecision(18);
-    this->log<Level>(UserLevel, concat_string<Level>(stream, std::forward<T>(arg), std::forward<Args>(args)...));
+    this->log<Level>(UserLevel,
+                     concat_string<Level>(stream, std::forward<T>(arg),
+                                          std::forward<Args>(args)...));
   }
 };
 

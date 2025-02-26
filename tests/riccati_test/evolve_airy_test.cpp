@@ -232,13 +232,11 @@ TEST_F(Riccati, evolve_airy_nondense_reverse_hardstop) {
       std::get<1>(res).data(), std::get<1>(res).size());
   auto y_err = ((y_est - ytrue).array() / ytrue.array()).abs().eval();
   for (int i = 0; i < y_err.size(); ++i) {
-    EXPECT_LE(y_err[i], 9e-6) << "i = " << i << " y = " << ytrue[i]
-                              << " y_est = " << y_est[i];
+    EXPECT_LE(y_err[i], 9e-6)
+        << "i = " << i << " y = " << ytrue[i] << " y_est = " << y_est[i];
   }
   EXPECT_LE(y_err.maxCoeff(), 9e-6);
 }
-
-
 
 TEST_F(Riccati, evolve_airy_nondense_fwd_hardstop) {
   using namespace riccati;
@@ -268,4 +266,3 @@ TEST_F(Riccati, evolve_airy_nondense_fwd_hardstop) {
   }
   EXPECT_LE(y_err.maxCoeff(), 9e-6);
 }
-

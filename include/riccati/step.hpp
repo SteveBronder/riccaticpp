@@ -48,8 +48,8 @@ namespace riccati {
  * reached the desired `epsres` residual, `0` otherwise.
  */
 template <typename SolverInfo, typename Scalar, typename YScalar>
-RICCATI_ALWAYS_INLINE auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, YScalar y0,
-                        YScalar dy0, Scalar epsres) {
+RICCATI_ALWAYS_INLINE auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h,
+                                       YScalar y0, YScalar dy0, Scalar epsres) {
   using complex_t = promote_complex_t<Scalar>;
   auto cheby = spectral_chebyshev(info, x0, h, y0, dy0, 0);
   auto yprev = std::get<0>(cheby);
@@ -58,39 +58,44 @@ RICCATI_ALWAYS_INLINE auto nonosc_step(SolverInfo &&info, Scalar x0, Scalar h, Y
   Scalar maxerr = 10 * epsres;
   std::size_t iter = 1;
   const auto max_iter = info.cheby_size();
-  for (; iter < max_iter && std::abs((epsres*yprev(0) + epsres)/maxerr) < 1; iter++) {
+  for (; iter < max_iter && std::abs((epsres * yprev(0) + epsres) / maxerr) < 1;
+       iter++) {
     auto cheby2 = spectral_chebyshev(info, x0, h, y0, dy0, iter);
     auto y = std::get<0>(std::move(cheby2));
     auto dy = std::get<1>(std::move(cheby2));
     auto x = std::get<2>(std::move(cheby2));
     maxerr = std::abs(yprev(0) - y(0));
-    maxerr = std::isnan(std::real(maxerr)) ? std::numeric_limits<Scalar>::infinity() : maxerr;
+    maxerr = std::isnan(std::real(maxerr))
+                 ? std::numeric_limits<Scalar>::infinity()
+                 : maxerr;
     yprev = std::move(y);
     dyprev = std::move(dy);
     xprev = std::move(x);
   }
-  // iter - 1 because the loop always incriments iter before checking the condition
-  if (std::abs((epsres*yprev(0) + epsres)/maxerr) < 1) {
-      return std::make_tuple(false, complex_t(0.0, 0.0), complex_t(0.0, 0.0),
-                             maxerr, yprev, dyprev, iter - 1);
+  // iter - 1 because the loop always incriments iter before checking the
+  // condition
+  if (std::abs((epsres * yprev(0) + epsres) / maxerr) < 1) {
+    return std::make_tuple(false, complex_t(0.0, 0.0), complex_t(0.0, 0.0),
+                           maxerr, yprev, dyprev, iter - 1);
   }
   return std::make_tuple(true, yprev(0), dyprev(0), maxerr, yprev, dyprev,
                          iter - 1);
 }
 
-
-template <bool DenseOut, typename Scalar, typename Complex, typename Matrix, typename Info>
-RICCATI_ALWAYS_INLINE auto constexpr return_failure(Info&& info) {
-    if constexpr (DenseOut) {
-      return std::make_tuple(false, Complex(0.0, 0.0), Complex(0.0, 0.0),
-        Scalar{0.0}, Scalar{0.0},                            arena_matrix<Matrix>(info.alloc_, 0),
-                          arena_matrix<Matrix>(info.alloc_, 0),
-                            std::make_pair(Complex(0.0, 0.0), Complex(0.0, 0.0)));
-    } else {
-      return std::make_tuple(false, Complex(0.0, 0.0), Complex(0.0, 0.0),
-                              Scalar{0.0}, Scalar{0.0});
-    }
+template <bool DenseOut, typename Scalar, typename Complex, typename Matrix,
+          typename Info>
+RICCATI_ALWAYS_INLINE auto constexpr return_failure(Info &&info) {
+  if constexpr (DenseOut) {
+    return std::make_tuple(
+        false, Complex(0.0, 0.0), Complex(0.0, 0.0), Scalar{0.0}, Scalar{0.0},
+        arena_matrix<Matrix>(info.alloc_, 0),
+        arena_matrix<Matrix>(info.alloc_, 0),
+        std::make_pair(Complex(0.0, 0.0), Complex(0.0, 0.0)));
+  } else {
+    return std::make_tuple(false, Complex(0.0, 0.0), Complex(0.0, 0.0),
+                           Scalar{0.0}, Scalar{0.0});
   }
+}
 /**
  * @brief Performs a single Riccati step for solving differential equations with
  * oscillatory behavior.
@@ -143,9 +148,9 @@ RICCATI_ALWAYS_INLINE auto constexpr return_failure(Info&& info) {
  */
 template <bool DenseOut, typename SolverInfo, typename OmegaVec,
           typename GammaVec, typename Scalar, typename YScalar>
-RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, GammaVec &&gamma_s,
-                     Scalar x0, Scalar h, YScalar y0, YScalar dy0,
-                     Scalar epsres) {
+RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s,
+                                    GammaVec &&gamma_s, Scalar x0, Scalar h,
+                                    YScalar y0, YScalar dy0, Scalar epsres) {
   using complex_t = promote_complex_t<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   bool success = true;
@@ -181,7 +186,7 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, Gamma
   Ry = R(deltay);
   maxerr = Ry.array().abs().maxCoeff();
   if (maxerr >= (Scalar{2.0} * prev_err) || std::isnan(maxerr)) {
-      return return_failure<DenseOut, Scalar, complex_t, vectorc_t>(info);
+    return return_failure<DenseOut, Scalar, complex_t, vectorc_t>(info);
   }
   if constexpr (DenseOut) {
     auto u1
@@ -284,10 +289,9 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s, Gamma
  * each step, type of each step, and phase angles where applicable.
  */
 template <typename SolverInfo, typename Scalar, typename Vec, typename YScalar>
-inline auto step(SolverInfo &info, Scalar xi, Scalar xf,
-                 YScalar yi, YScalar dyi, Scalar eps,
-                 Scalar epsilon_h, Scalar init_stepsize, Vec &&x_eval,
-                 bool hard_stop = false) {
+inline auto step(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
+                 YScalar dyi, Scalar eps, Scalar epsilon_h,
+                 Scalar init_stepsize, Vec &&x_eval, bool hard_stop = false) {
   using vectord_t = vector_t<Scalar>;
   using complex_t = promote_complex_t<Scalar>;
   using vectorc_t = vector_t<complex_t>;

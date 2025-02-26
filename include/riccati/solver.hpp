@@ -23,21 +23,23 @@ inline auto gamma(SolverInfo&& info, const Scalar& x) {
   return info.gamma_fun_(x);
 }
 
-template <
-    typename SolverInfo, typename Scalar,
-    require_floating_point<value_type_t<Scalar>>* = nullptr,
-    std::enable_if_t<!std::is_same<typename std::decay_t<SolverInfo>::omega_type,
-                                   pybind11::object>::value>* = nullptr>
+template <typename SolverInfo, typename Scalar,
+          require_floating_point<value_type_t<Scalar>>* = nullptr,
+          std::enable_if_t<
+              !std::is_same<typename std::decay_t<SolverInfo>::omega_type,
+                            pybind11::object>::value>* = nullptr>
 inline auto omega(SolverInfo&& info, const Scalar& x) {
   return info.omega_fun_(x);
 }
 
 /**
  * @brief Class containing information about the solver.
- * @tparam OmegaFun Type of the frequency function. Must have a valid `operator()`
- *  whose input size and type is the same as its output size and type.
- * @tparam GammaFun Type of the friction function. Must have a valid `operator()`
- *  whose input size and type is the same as its output size and type.
+ * @tparam OmegaFun Type of the frequency function. Must have a valid
+ * `operator()` whose input size and type is the same as its output size and
+ * type.
+ * @tparam GammaFun Type of the friction function. Must have a valid
+ * `operator()` whose input size and type is the same as its output size and
+ * type.
  * @tparam Scalar_ Numeric scalar type, typically float or double.
  * @tparam Integral_ Numeric integral type, typically int or long.
  * @tparam Allocator Type of the allocator for the arena memory pool.
@@ -50,8 +52,7 @@ template <typename OmegaFun, typename GammaFun, typename Scalar_,
           typename Integral_,
           typename Allocator = arena_allocator<Scalar_, arena_alloc>,
           typename Logger = ::riccati::EmptyLogger,
-          typename OmegaReturn_ = double,
-          typename GammaReturn_ = double>
+          typename OmegaReturn_ = double, typename GammaReturn_ = double>
 class SolverInfo {
  public:
   using Scalar = Scalar_;
@@ -109,6 +110,7 @@ class SolverInfo {
   // (Number of Chebyshev nodes - 1) to use for estimating Riccati stepsizes.
   Integral p_;
   Logger logger_;
+
  private:
   inline auto build_chebyshev(Integral nini, Integral n_nodes, Integral n,
                               Integral p) {
@@ -159,8 +161,8 @@ class SolverInfo {
    */
   template <typename OmegaFun_, typename GammaFun_, typename Allocator_>
   SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Allocator_&& alloc,
-             Logger&& logger,
-             Integral nini, Integral nmax, Integral n, Integral p)
+             Logger&& logger, Integral nini, Integral nmax, Integral n,
+             Integral p)
       : omega_fun_(std::forward<OmegaFun_>(omega_fun)),
         gamma_fun_(std::forward<GammaFun_>(gamma_fun)),
         alloc_(std::forward<Allocator_>(alloc)),
@@ -187,8 +189,7 @@ class SolverInfo {
         nmax_(nmax),
         n_(n),
         p_(p),
-        logger_(std::move(logger)) {
-        }
+        logger_(std::move(logger)) {}
 
   template <typename OmegaFun_, typename GammaFun_>
   SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Integral nini,
@@ -221,8 +222,8 @@ class SolverInfo {
         p_(p),
         logger_() {}
   template <typename OmegaFun_, typename GammaFun_, typename Allocator_>
-  SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Allocator_&& alloc, Integral nini,
-             Integral nmax, Integral n, Integral p)
+  SolverInfo(OmegaFun_&& omega_fun, GammaFun_&& gamma_fun, Allocator_&& alloc,
+             Integral nini, Integral nmax, Integral n, Integral p)
       : omega_fun_(std::forward<OmegaFun_>(omega_fun)),
         gamma_fun_(std::forward<GammaFun_>(gamma_fun)),
         alloc_(std::forward<Allocator_>(alloc)),
@@ -252,9 +253,10 @@ class SolverInfo {
         logger_() {}
   auto info() const {
     return std::array<std::pair<LogInfo, std::size_t>, 5>{
-      std::make_pair(LogInfo::CHEBNODES, chebyshev_.size()),
-      std::make_pair(LogInfo::CHEBSTEP, 0), std::make_pair(LogInfo::CHEBITS, 0),
-      std::make_pair(LogInfo::LS, 1), std::make_pair(LogInfo::RICCSTEP, 0)};
+        std::make_pair(LogInfo::CHEBNODES, chebyshev_.size()),
+        std::make_pair(LogInfo::CHEBSTEP, 0),
+        std::make_pair(LogInfo::CHEBITS, 0), std::make_pair(LogInfo::LS, 1),
+        std::make_pair(LogInfo::RICCSTEP, 0)};
   }
   void mem_info() {
 #ifdef RICCATI_DEBUG
@@ -278,7 +280,6 @@ class SolverInfo {
   RICCATI_ALWAYS_INLINE const auto cheby_size() const noexcept {
     return chebyshev_.size();
   }
-
 
   /**
    * Values of the independent variable evaluated at (`n` + 1) Chebyshev
@@ -334,7 +335,8 @@ class SolverInfo {
  * steps.
  */
 template <typename Scalar, typename OmegaFun, typename Allocator,
-          typename GammaFun, typename Integral, typename Logger = ::riccati::EmptyLogger>
+          typename GammaFun, typename Integral,
+          typename Logger = ::riccati::EmptyLogger>
 inline auto make_solver(OmegaFun&& omega_fun, GammaFun&& gamma_fun,
                         Allocator&& alloc, Integral nini, Integral nmax,
                         Integral n, Integral p, Logger&& logger = Logger{}) {

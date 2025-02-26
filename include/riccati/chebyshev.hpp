@@ -405,9 +405,11 @@ RICCATI_ALWAYS_INLINE auto spectral_chebyshev(SolverInfo&& info, Scalar x0,
   auto&& D = info.Dn(niter);
   auto ws = omega(info, x_scaled);
   auto gs = gamma(info, x_scaled);
-  auto D2 = eval(info.alloc_,
-                 ((D * D) + h * (gs.asDiagonal() * D)) +
-                 ((ws * h / 2.0).array().square()).matrix().asDiagonal().toDenseMatrix());
+  auto D2 = eval(info.alloc_, ((D * D) + h * (gs.asDiagonal() * D))
+                                  + ((ws * h / 2.0).array().square())
+                                        .matrix()
+                                        .asDiagonal()
+                                        .toDenseMatrix());
   const auto n = std::round(std::get<0>(info.chebyshev_[niter]));
   auto D2ic = eval(info.alloc_, matrix_t<complex_t>::Zero(n + 3, n + 1));
   D2ic.topRows(n + 1) = D2;

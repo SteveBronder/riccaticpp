@@ -26,7 +26,8 @@ TEST(RiccatiLoggerTest, GetIdxFunction) {
   EXPECT_EQ(get_idx(LogInfo::CHEBITS), 2);
   EXPECT_EQ(get_idx(LogInfo::LS), 3);
   EXPECT_EQ(get_idx(LogInfo::RICCSTEP), 4);
-  EXPECT_THROW(get_idx(static_cast<LogInfo>(-1)), std::invalid_argument); // Test for invalid input
+  EXPECT_THROW(get_idx(static_cast<LogInfo>(-1)),
+               std::invalid_argument);  // Test for invalid input
 }
 
 /**
@@ -48,7 +49,8 @@ TEST(RiccatiLoggerTest, EmptyLoggerTest) {
   EmptyLogger logger;
 
   // Test that logging does not throw and does nothing
-  EXPECT_NO_THROW(logger.log<LogLevel::INFO>(LogLevel::DEBUG, "This is a test"));
+  EXPECT_NO_THROW(
+      logger.log<LogLevel::INFO>(LogLevel::DEBUG, "This is a test"));
 }
 
 /**
@@ -80,7 +82,6 @@ TEST(RiccatiLoggerTest, DefaultLoggerLoggingTest) {
   EXPECT_NE(output.find("[ERROR]"), std::string::npos);
   EXPECT_NE(output.find("Error occurred"), std::string::npos);
 }
-
 
 #ifndef RICCATI_DEBUG
 /**
@@ -123,11 +124,9 @@ TEST(RiccatiLoggerTest, DefaultLoggerDebugLoggingEnabled) {
 TEST(RiccatiLoggerTest, DefaultLoggerMoveAssignment) {
   // Use stringstreams to capture outputs
   DefaultLogger<std::stringstream> logger1{
-    std::make_unique<std::stringstream>()
-  };
+      std::make_unique<std::stringstream>()};
   DefaultLogger<std::stringstream> logger2{
-    std::make_unique<std::stringstream>()
-  };
+      std::make_unique<std::stringstream>()};
 
   logger1.log<LogLevel::INFO>(LogLevel::DEBUG, "Logger1 message");
 
@@ -155,6 +154,4 @@ TEST(RiccatiLoggerTest, DefaultLoggerEmptyMessage) {
   EXPECT_NE(output.find("[INFO]"), std::string::npos);
 }
 
-
 }  // namespace
-
