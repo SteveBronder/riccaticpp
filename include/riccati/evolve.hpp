@@ -514,6 +514,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
       success = 0;
     }
     while (!success) {
+      info.alloc_.start_nested();
       std::tie(success, y, dy, err, y_eval, dy_eval, cheb_N)
           = nonosc_step(info, xcurrent, hslo, yprev, dyprev, eps);
       solver_counts[get_idx(LogInfo::CHEBSTEP)].second++;
@@ -535,9 +536,11 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
         hslo *= Scalar{0.5};
       }
       if (direction * hslo < std::numeric_limits<Scalar>::min()) {
+        info.alloc_.recover_nested();
         throw std::domain_error(std::string("Stepsize became to small error: ")
                                 + std::to_string(direction * hslo));
       }
+      info.alloc_.recover_nested();
     }
     auto h = steptype ? hosc : hslo;
     if constexpr (dense_output) {
