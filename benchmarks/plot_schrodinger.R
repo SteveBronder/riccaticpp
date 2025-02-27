@@ -80,7 +80,7 @@ ggsave("./benchmarks/plots/schrodinger_energy.png", bench_per_energy_plot,
 
 bench_sum_dt[eps == 1e-12 & grepl("lb=471100;rb=471110", prob_args)]
 # Error rates
-err_dt = fread("../../../riccaticpp/benchmarks/output/schrod.csv")
+err_dt = fread("./benchmarks/output/schrod.csv")
 err_dt[, algo := strsplit(name, " ")[[1]][1], name]
 err_dt[, algo_args := algo_args(name), .I]
 err_dt[, prob_args := prob_args(name), .I]
@@ -91,8 +91,8 @@ err_dt[grepl("n=20", algo_args), algo_plus := paste0(algo, ":n=20")]
 err_dt[grepl("n=35", algo_args), algo_plus := paste0(algo, ":n=35")]
 err_dt[, rel_energy_err := abs(energy_error / energy_reference)]
 # Just look at a slice
-err_sub_dt = err_dt[energy_reference == 471103.666]
-err_sub_dt[, energy_reference := 471103.777]
+err_sub_dt = err_dt[energy_reference == 471103.777]
+#err_sub_dt[, energy_reference := 471103.777]
 setkey(err_sub_dt, eps, algo_plus)
 knitr::kable(err_sub_dt[, .(algo_plus, algo_args, energy, energy_reference, energy_error, rel_energy_err)])
 
@@ -123,16 +123,17 @@ err_summary_dt[, min(err_val)]
 # We multiply by 1_000_000 and then divide so we can make the y axis logarithmic
 # While still looking nice
 schrod_err_plot = ggplot(err_summary_dt,
-  aes(x = test, y = err_val * 1000000, color = algo, fill = algo)) +
+  aes(x = test, y = err_val, color = algo, fill = algo)) +
   #  scale_y_log10(breaks = c(1, 2, 5, 10, 18, 30, 60)) +
   geom_bar(stat = "identity") +
   facet_wrap(vars(eps), nrow = 2, ncol = 1) +
   ggtitle("Schrodinger: Relative Error of Energy Per ODE") +
   scale_x_continuous(labels = c(50, 100, 1000, 10000)) +
-  scale_y_continuous(transform = "log10", labels = \(x) x / 1000000) +
+  scale_y_continuous(transform = "log1p", labels = \(x) x, breaks = c(1e-12, 5e-4, 1e-3)) +
   xlab("Quantum Number") +
   ylab("") +
   theme_bw() +
   theme(legend.position="bottom", axis.text.y = element_text(size = 12))
+schrod_err_plot
 ggsave("./benchmarks/plots/schrodinger_err.png", schrod_err_plot,
   width = 6, height = 4, units = "in")

@@ -298,7 +298,7 @@ first_write = True
 with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
     for algo, algo_params in algorithm_dict.items():
         algo_evals_pl_lst = []
-        for benchmark_run in range(10):
+        for benchmark_run in range(1):
           print("Algo: ", str(algo))
           if len(algo_params["args"]) > 1:
               algo_args_iter = itertools.product(
