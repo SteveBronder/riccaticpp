@@ -138,7 +138,7 @@ class SolveIVP:
         global_timer.start(self.name)
         res = solve_ivp(**args)
         global_timer.stop(self.name)
-        return res.y[:, 0], res.y[:, 1]
+        return res.y[0, :], res.y[1, :]
 
     def __str__(self):
         return self.name
@@ -282,8 +282,8 @@ bounds = [(416.5, 417.5), (1_035, 1_037), (21_930, 21_940), (471_100, 471_110)]
 algo_solutions = {}
 algo_optim = {}
 algorithm_dict = {
-    Algo.PYRICCATICPP: {"args": [[epss, epshs], [cheby_order]]},
     Algo.DOP853: {"args": [[epss, atol]]},
+    Algo.PYRICCATICPP: {"args": [[epss, epshs], [cheby_order]]},
     Algo.BDF: {"args": [[epss, atol]]},
     Algo.RK45: {"args": [[epss, atol]]},
 }

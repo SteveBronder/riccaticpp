@@ -533,10 +533,10 @@ ns = [35, 20]
 atol = [1e-13, 1e-7]
 # rtol = [1e-3, 1e-6]
 algorithm_dict = {
+    Algo.PYRICCATICPP: {"args": [[epss, epshs], [ns]], "iters": 1000},
     Algo.BDF: {"args": [[epss, atol]], "iters": 1},
     Algo.RK45: {"args": [[epss, atol]], "iters": 1},
     Algo.DOP853: {"args": [[epss, atol]], "iters": 1},
-    Algo.PYRICCATICPP: {"args": [[epss, epshs], [ns]], "iters": 1000},
     # Does not support complex
     #   Algo.Radau: {"args": [[epss, atol]], "iters": 1},
     #   Algo.LSODA: {"args":[epss, atol], "iters": 1}

@@ -2,7 +2,8 @@ library(data.table)
 library(ggplot2)
 library(patchwork)
 
-bench_dt = fread("./benchmarks/output/schrodinger_times.csv")
+bench_dt = fread("./benchmarks/output/schrodinger_times2.csv")
+bench_dt = unique(bench_dt)
 bench_dt[, algo := strsplit(name, " ")[[1]][1], name]
 algo_args = \(x) {
   return(paste0("[", strsplit(x, "\\[",perl = TRUE)[[1]][2]))
@@ -23,7 +24,7 @@ bench_dt[grepl("n=35", algo_args), algo_plus := paste0(algo, ":n=35")]
 bench_dt = bench_dt[!grepl("n=20", algo_args)]
 setkey(bench_dt, eps, algo_plus)
 bench_sum_dt = bench_dt[, .(sum_time = sum(time), sum_count = sum(count)),
-  .(algo, algo_plus, algo_args, eps)]
+  .(algo, algo_plus, algo_args, prob_args, eps)]
 bench_sum_dt[, per_call := sum_time/sum_count]
 setkey(bench_sum_dt, eps, algo_plus)
 schrod_bench_plot = ggplot(bench_sum_dt, aes(x = algo, y = per_call, fill = algo)) +
@@ -122,14 +123,14 @@ err_summary_dt
 err_summary_dt[, min(err_val)]
 # We multiply by 1_000_000 and then divide so we can make the y axis logarithmic
 # While still looking nice
-schrod_err_plot = ggplot(err_summary_dt,
+schrod_err_plot = ggplot(err_summary_dt[algo != "BDF"],
   aes(x = test, y = err_val, color = algo, fill = algo)) +
   #  scale_y_log10(breaks = c(1, 2, 5, 10, 18, 30, 60)) +
   geom_bar(stat = "identity") +
   facet_wrap(vars(eps), nrow = 2, ncol = 1) +
   ggtitle("Schrodinger: Relative Error of Energy Per ODE") +
   scale_x_continuous(labels = c(50, 100, 1000, 10000)) +
-  scale_y_continuous(transform = "log1p", labels = \(x) x, breaks = c(1e-12, 5e-4, 1e-3)) +
+  scale_y_continuous(transform = "log1p", labels = \(x) x)+#, breaks = c(1e-12, 1e-5)) +
   xlab("Quantum Number") +
   ylab("") +
   theme_bw() +
