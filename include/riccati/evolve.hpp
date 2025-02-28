@@ -232,7 +232,6 @@ inline auto nonosc_evolve(SolverInfo &&info, Scalar xi, Scalar xf, YScalar yi,
     nonosc_ret = nonosc_step(info, xi, init_stepsize, yi, dyi, eps);
   }
   if (!std::get<0>(nonosc_ret)) {
-    std::cout << "nonosc line: " << __LINE__ << std::endl;
     return std::make_tuple(false, xi, init_stepsize, nonosc_ret, vectorc_t(0),
                            vectorc_t(0), static_cast<Eigen::Index>(0),
                            static_cast<Eigen::Index>(0));
@@ -449,7 +448,21 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
   auto hslo = choose_nonosc_stepsize(info, xi, hslo_ini, epsilon_h);
   // o and g written here
   auto osc_step_tup = choose_osc_stepsize(info, xi, hosc_ini, epsilon_h);
-  Scalar hosc = is_complex_v<omega_scalar_t> ? 0.0 : std::get<0>(osc_step_tup);
+  Scalar hosc = std::get<0>(osc_step_tup);
+  /**
+   * if omega_i is complex, we need to check that it is only one of real or imaginary
+   * As long as only one part of omega_i is *near* nonzero, we can run the osc step
+   * otherwise we need to only do the nonosc step
+   */
+  bool use_osc_step = true;
+  if constexpr (is_complex_v<omega_scalar_t>) {
+    if (!((std::abs(omega_i.real()) >= std::numeric_limits<Scalar>::epsilon()
+        && std::abs(omega_i.imag()) <= std::numeric_limits<Scalar>::epsilon()) ||
+        (std::abs(omega_i.real()) <= std::numeric_limits<Scalar>::epsilon()
+        && std::abs(omega_i.imag()) >= std::numeric_limits<Scalar>::epsilon()))) {
+      use_osc_step = false;
+    }
+  }
   // NOTE: Calling choose_osc_stepsize will update these values
   auto &&omega_n = std::get<1>(osc_step_tup);
   auto &&gamma_n = std::get<2>(osc_step_tup);
@@ -477,7 +490,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
     int cheb_N = 0;
     arena_matrix<vectorc_t> un(info.alloc_, omega_n.size(), 1);
     arena_matrix<vectorc_t> d_un(info.alloc_, omega_n.size(), 1);
-    if constexpr (!is_complex_v<omega_scalar_t>) {
+    if (use_osc_step) {
       if (direction * hosc > (direction * hslo)) {
         if (hard_stop) {
           if (direction * (xcurrent + hosc) > direction * xf) {
@@ -511,7 +524,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
         }();
       }
     } else {
-      success = 0;
+      success = false;
     }
     while (!success) {
       info.alloc_.start_nested();

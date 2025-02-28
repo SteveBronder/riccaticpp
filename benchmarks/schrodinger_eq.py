@@ -322,8 +322,7 @@ with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
                   schrodinger = SchrodingerProblem(1.0, 0.5, *bound)
                   energy_mismatch = energy_mismatch_functor(algo, algo_iter, schrodinger)
                   res = sci_opt.minimize_scalar(energy_mismatch, bounds=bound, method="bounded",
-                                                tol=algo_iter[0], options = {"maxiter": 1500,
-                                                                             "xatol" : algo_iter[0]})
+                                                options = {"maxiter": 1500, "xatol": algo_iter[0] * 0.1})
                   print("\t\tEigenenergy found: {}".format(res.x))
                   algo_key = to_string(algo, algo_iter, schrodinger)
                   algo_pl_tmp = pl.DataFrame(res)

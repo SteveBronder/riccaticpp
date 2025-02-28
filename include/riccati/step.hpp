@@ -179,7 +179,9 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s,
     if (maxerr >= (Scalar{2.0} * prev_err) || std::isnan(maxerr)) {
       return return_failure<DenseOut, Scalar, complex_t, vectorc_t>(info);
     }
-    prev_err = maxerr;
+    // Note: This differs from the python version, where the error is updated
+    // after the check.
+    prev_err = std::min(maxerr, prev_err);
   }
   deltay = delta(Ry, y);
   y += deltay;

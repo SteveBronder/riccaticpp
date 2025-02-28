@@ -138,3 +138,4 @@ schrod_err_plot = ggplot(err_summary_dt[algo != "BDF"],
 schrod_err_plot
 ggsave("./benchmarks/plots/schrodinger_err.png", schrod_err_plot,
   width = 6, height = 4, units = "in")
+
