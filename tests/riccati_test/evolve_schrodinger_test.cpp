@@ -37,6 +37,7 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_path_optimize) {
     auto x_square = riccati::square(x_arr);
     return eval(x_square + l * riccati::square(x_square));
   };
+  std::cout << std::setprecision(40);
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   // auto cout_ptr = std::unique_ptr<std::ostream, deleter_noop>(&std::cout,
   // deleter_noop{}); DefaultLogger<std::ostream, deleter_noop>
@@ -47,7 +48,9 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_path_optimize) {
   auto dyi = std::complex(1e-3, 0.0);
   Eigen::Matrix<double, 0, 0> x_eval;
   for (long unsigned int iter = 0; iter < energy_target.size(); iter++) {
+    std::cout << "Iter: " << iter << std::endl;
     auto current_energy = energy_arr[iter];
+    std::cout << "Current Energy: " << current_energy << std::endl;
     auto target_energy_diff = energy_target[iter];
     auto omega_fun = [current_energy, potential, m](auto&& x) {
       return eval(matrix(riccati::sqrt(

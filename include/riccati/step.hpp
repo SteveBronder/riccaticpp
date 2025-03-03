@@ -151,6 +151,15 @@ template <bool DenseOut, typename SolverInfo, typename OmegaVec,
 RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s,
                                     GammaVec &&gamma_s, Scalar x0, Scalar h,
                                     YScalar y0, YScalar dy0, Scalar epsres) {
+  std::cout << "osc_step inputs:" << std::endl;
+  std::cout << "omega: " << omega_s << std::endl;
+  std::cout << "gamma: " << gamma_s << std::endl;
+  std::cout << "x0: " << x0 << std::endl;
+  std::cout << "h: " << h << std::endl;
+  std::cout << "y0: {" << y0.real() << ", " << y0.imag() << "}" << std::endl;
+  std::cout << "dy0: {" << dy0.real() << ", " << dy0.imag() << "}" << std::endl;
+  std::cout << "epsres: " << epsres << std::endl;
+
   using complex_t = promote_complex_t<Scalar>;
   using vectorc_t = vector_t<complex_t>;
   bool success = true;
@@ -180,8 +189,8 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s,
       return return_failure<DenseOut, Scalar, complex_t, vectorc_t>(info);
     }
     // Note: This differs from the python version, where the error is updated
-    // after the check.
-    prev_err = std::min(maxerr, prev_err);
+    // after the check with by current error and not the min.
+    prev_err = maxerr;
   }
   deltay = delta(Ry, y);
   y += deltay;
