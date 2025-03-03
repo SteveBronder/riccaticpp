@@ -61,7 +61,8 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_path_optimize) {
     const double left_boundary = -std::pow(current_energy, 0.25) - 2.0;
     const double right_boundary = -left_boundary;
     constexpr double midpoint = 0.5;
-    auto init_step = 0.1;
+    auto init_step = std::get<0>(riccati::choose_osc_stepsize(
+        info, left_boundary, midpoint - left_boundary, epsh));
     auto left_res
         = riccati::evolve(info, left_boundary, midpoint, yi, dyi, eps, epsh,
                           init_step, x_eval, true, LogLevel::WARNING);
@@ -76,7 +77,8 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_path_optimize) {
     resp.col(2) = left_y_est.imag();
     resp.col(3) = left_dy_est.real();
     resp.col(4) = left_dy_est.imag();
-    init_step = -init_step;
+    init_step = std::get<0>(riccati::choose_osc_stepsize(
+        info, right_boundary, -(right_boundary - midpoint), epsh));
     auto right_res
         = riccati::evolve(info, right_boundary, midpoint, yi, dyi, eps, epsh,
                           init_step, x_eval, true, LogLevel::WARNING);
@@ -129,8 +131,8 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_full_optimize) {
     const double left_boundary = -std::pow(current_energy, 0.25) - 2.0;
     const double right_boundary = -left_boundary;
     constexpr double midpoint = 0.5;
-    auto init_step = riccati::choose_nonosc_stepsize(
-        info, left_boundary, midpoint - left_boundary, epsh);
+    auto init_step = std::get<0>(riccati::choose_osc_stepsize(
+        info, left_boundary, midpoint - left_boundary, epsh));
     auto left_res
         = riccati::evolve(info, left_boundary, midpoint, yi, dyi, eps, epsh,
                           init_step, x_eval, true, LogLevel::WARNING);
@@ -138,7 +140,8 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_full_optimize) {
         std::get<1>(left_res).data(), std::get<1>(left_res).size());
     auto left_dy_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
         std::get<2>(left_res).data(), std::get<2>(left_res).size());
-    init_step = -init_step;
+    init_step = std::get<0>(riccati::choose_osc_stepsize(
+        info, right_boundary, -(right_boundary - midpoint), epsh));
     auto right_res
         = riccati::evolve(info, right_boundary, midpoint, yi, dyi, eps, epsh,
                           init_step, x_eval, true, LogLevel::WARNING);

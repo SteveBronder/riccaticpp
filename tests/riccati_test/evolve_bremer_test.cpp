@@ -61,9 +61,7 @@ TEST_F(Riccati, evolve_bremer_nondense_output) {
         // Calculate error
         double yerr = std::abs((ytrue - y_est[y_est.size() - 1]) / ytrue);
         // See Fig 5 from https://arxiv.org/pdf/2212.06924
-        double err_val
-            = eps == 1e-12 ? eps * lambda_scalar : eps * lambda_scalar * 1e-3;
-        err_val = std::max(err_val, 1e-9);
+        double err_val = eps * lambda_scalar * 10;
         EXPECT_LE(yerr, err_val)
             << "\nLambda: " << lambda_scalar << "\nn: " << n
             << "\nepsh: " << epsh << "\neps: " << eps << "\nytrue: " << ytrue

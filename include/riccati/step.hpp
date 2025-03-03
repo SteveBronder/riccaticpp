@@ -168,27 +168,40 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s,
       = (complex_t(0.0, 1.0) * Scalar{2.0}
          * (Scalar{1.0} / h * (Dn * omega_s) + gamma_s.cwiseProduct(omega_s)))
             .eval();
+  auto prev_err = std::numeric_limits<Scalar>::infinity();
   Scalar maxerr = Ry.array().abs().maxCoeff();
   arena_matrix<vectorc_t> deltay(info.alloc_, Ry.size(), 1);
-  Scalar prev_err = std::numeric_limits<Scalar>::infinity();
+  // TODO(Steve): Let users set these?
+  // minimum required relative decrease per iteration
+  constexpr Scalar tol_rel = Scalar(1e-3);
+  // if current error exceeds best error by >10%
+  constexpr Scalar tol_increase = Scalar(1.10);
+  int stagnation_count = 0;
+  Scalar best_err = maxerr;
   while (maxerr > epsres) {
     deltay = delta(Ry, y);
     y += deltay;
     Ry = R(deltay);
     maxerr = Ry.array().abs().maxCoeff();
-    if (maxerr >= (Scalar{2.0} * prev_err) || std::isnan(maxerr)) {
+      // Check relative improvement compared to the previous iteration.
+    if (prev_err > 0 && (prev_err - maxerr) / prev_err < tol_rel) {
+      stagnation_count++;
+    } else {
+      stagnation_count = 0;
+    }
+    /**
+     * Note: This differs from the python version, where
+     * the termination criterion checks if the current error
+     * is twice as bad as the previous error.
+     * If we have stagnated for several iterations or
+     * the error is now significantly worse than the best error,
+     * exit early because we have passed the optimal truncation.
+     */
+    best_err = (maxerr < best_err) ? maxerr : best_err;
+    if (stagnation_count >= 3 || maxerr > best_err * tol_increase) {
       return return_failure<DenseOut, Scalar, complex_t, vectorc_t>(info);
     }
-    // Note: This differs from the python version, where the error is updated
-    // after the check.
-    prev_err = std::min(maxerr, prev_err);
-  }
-  deltay = delta(Ry, y);
-  y += deltay;
-  Ry = R(deltay);
-  maxerr = Ry.array().abs().maxCoeff();
-  if (maxerr >= (Scalar{2.0} * prev_err) || std::isnan(maxerr)) {
-    return return_failure<DenseOut, Scalar, complex_t, vectorc_t>(info);
+    prev_err = maxerr;
   }
   if constexpr (DenseOut) {
     auto u1

@@ -490,19 +490,20 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
     int cheb_N = 0;
     arena_matrix<vectorc_t> un(info.alloc_, omega_n.size(), 1);
     arena_matrix<vectorc_t> d_un(info.alloc_, omega_n.size(), 1);
-    if (use_osc_step) {
-      if (direction * hosc > (direction * hslo)) {
-        if (hard_stop) {
-          if (direction * (xcurrent + hosc) > direction * xf) {
-            hosc = xf - xcurrent;
-            auto xp_scaled = scale(info.xp().array(), xcurrent, hosc).eval();
-            omega_n = omega(info, xp_scaled);
-            gamma_n = gamma(info, xp_scaled);
-          }
-          if (direction * (xcurrent + hslo) > direction * xf) {
-            hslo = xf - xcurrent;
-          }
+    if (direction * hosc > (direction * hslo)) {
+      if (hard_stop) {
+        if (direction * (xcurrent + hosc) > direction * xf) {
+          hosc = xf - xcurrent;
+          auto xp_scaled = scale(info.xp().array(), xcurrent, hosc).eval();
+          omega_n = omega(info, xp_scaled);
+          gamma_n = gamma(info, xp_scaled);
         }
+        if (direction * (xcurrent + hslo) > direction * xf) {
+          hslo = xf - xcurrent;
+        }
+      }
+    }
+    if (use_osc_step) {
         // o and g read here
         if constexpr (dense_output) {
           std::tie(success, y, dy, err, phase, un, d_un, a_pair)
@@ -514,7 +515,6 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
         }
         steptype = 1;
         solver_counts[get_idx(LogInfo::RICCSTEP)].second++;
-      }
       if (unlikely(log_level >= LogLevel::INFO)) {
         [&]() RICCATI_COLD_PATH {
           info.logger().template log<LogLevel::INFO>(
@@ -549,9 +549,12 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
         hslo *= Scalar{0.5};
       }
       if (direction * hslo < std::numeric_limits<Scalar>::min()) {
-        info.alloc_.recover_nested();
-        throw std::domain_error(std::string("Stepsize became to small error: ")
-                                + std::to_string(direction * hslo));
+        [&]() RICCATI_COLD_PATH {
+          info.alloc_.recover_nested();
+          throw std::domain_error(
+            std::string("Stepsize became to small error: ")
+                                  + std::to_string(direction * hslo));
+          }();
       }
       info.alloc_.recover_nested();
     }
