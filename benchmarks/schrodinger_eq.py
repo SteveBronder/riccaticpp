@@ -52,6 +52,8 @@ class GlobalTimer:
         end_time = time.time() - self.start_time
         self.execs[name]["time"] += end_time
         self.execs[name]["count"] += 1
+    def reset(self):
+        self.execs = {}
 
 
 global_timer = GlobalTimer()
@@ -88,13 +90,16 @@ class RiccatiSolver:
         Returns:
           Dict[str, Any]: A dictionary containing the arguments for the solver.
         """
+        if (range[0] < range[1]):
+          init_guess = range[1] - range[0]
+        else:
+          # Going backwards
+          init_guess = -(range[0] - range[1])
         global_timer.start(self.name)
-        init_step = ric.choose_nonosc_stepsize(
-            self.init, range[0], 1e-1, self.solver_args["epsh"]
+        init_step = ric.choose_osc_stepsize(
+            self.init, range[0], init_guess, self.solver_args["epsh"]
         )
         global_timer.stop_nocall(self.name)
-        if range[0] > range[1]:
-            init_step = -init_step
         return {
             "info": self.init,
             "xi": range[0],
@@ -282,8 +287,8 @@ bounds = [(416.5, 417.5), (1_035, 1_037), (21_930, 21_940), (471_100, 471_110)]
 algo_solutions = {}
 algo_optim = {}
 algorithm_dict = {
-    Algo.DOP853: {"args": [[epss, atol]]},
     Algo.PYRICCATICPP: {"args": [[epss, epshs], [cheby_order]]},
+    Algo.DOP853: {"args": [[epss, atol]]},
     Algo.BDF: {"args": [[epss, atol]]},
     Algo.RK45: {"args": [[epss, atol]]},
 }
@@ -298,7 +303,7 @@ first_write = True
 with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
     for algo, algo_params in algorithm_dict.items():
         algo_evals_pl_lst = []
-        for benchmark_run in range(1):
+        for benchmark_run in range(10):
           print("Algo: ", str(algo))
           if len(algo_params["args"]) > 1:
               algo_args_iter = itertools.product(
@@ -333,42 +338,30 @@ with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
                   algo_pl_tmp = algo_pl_tmp.with_columns((pl.col("energy") - pl.col("energy_reference")).abs().alias("energy_error"))
                   print("BenchMark: ", algo_pl_tmp)
                   algo_evals_pl_lst.append(algo_pl_tmp)
+          time_pl_lst = []
+          for algo_key, time_st in global_timer.execs.items():
+              time_pl_lst.append(
+                  pl.DataFrame(
+                      {
+                          "name": [algo_key],
+                          "iter": [benchmark_run],
+                          "time": [time_st["time"]],
+                          "count": [time_st["count"]],
+                      }
+                  )
+              )
+          time_pl = pl.concat(time_pl_lst)
+          print(time_pl)
+          if first_write:
+              time_pl.write_csv(time_file)
+              first_write = False
+          else:
+              time_pl.write_csv(time_file, include_header=False)
+          global_timer.reset()
         algo_pl = pl.concat(algo_evals_pl_lst)
         print(algo_pl)
         algo_pl.write_csv(base_output_path + f"schrod_{str(algo)}.csv")
         all_algo_pl_lst.append(algo_pl)
-        time_pl_lst = []
-        for algo_key, time_st in global_timer.execs.items():
-            time_pl_lst.append(
-                pl.DataFrame(
-                    {
-                        "name": [algo_key],
-                        "time": [time_st["time"]],
-                        "count": [time_st["count"]],
-                    }
-                )
-            )
-        time_pl = pl.concat(time_pl_lst)
-        print(time_pl)
-        if first_write:
-            time_pl.write_csv(time_file)
-            first_write = False
-        else:
-            time_pl.write_csv(time_file, include_header=False)
 
 all_algo_pl = pl.concat(all_algo_pl_lst)
 all_algo_pl.write_csv(f"{base_output_path}schrod.csv")
-# %%
-# %%
-time_pl_lst = []
-for algo_key, time_st in global_timer.execs.items():
-    print(algo_key)
-    time_pl_lst.append(
-        pl.DataFrame(
-            {"name": [algo_key], "time": [time_st["time"]], "count": [time_st["count"]]}
-        )
-    )
-time_pl = pl.concat(time_pl_lst)
-time_pl.write_csv(base_output_path + "schrodinger_times2.csv")
-
-
