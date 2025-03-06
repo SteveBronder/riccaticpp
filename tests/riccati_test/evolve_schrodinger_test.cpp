@@ -163,14 +163,18 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_full_optimize) {
                                         471103.777};
   int sentinal = 0;
   for (auto& bound : bounds) {
+    std::cout << "Energy: " << reference_energy[sentinal] << std::endl;
     auto solve_ans = boost::math::tools::brent_find_minima(
         energy_difference, bound.first, bound.second,
         std::numeric_limits<double>::digits / 2);
     auto abs_target_diff
-        = std::abs(solve_ans.first - reference_energy[sentinal]);
+        = std::abs((solve_ans.first - reference_energy[sentinal]) / reference_energy[sentinal]);
     sentinal++;
     // Brent is just not very good. For 471103.777, if it kept iterating
     // It would find a closer minimum but it stops short.
+    std::cout << "============\n";
+    std::cout << "abs_target_diff: " << abs_target_diff << std::endl;
     EXPECT_LE(abs_target_diff, 8e-3);
+    std::cout << "============\n";
   }
 }

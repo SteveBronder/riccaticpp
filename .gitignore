@@ -4,3 +4,4 @@ riccati/__pycache__/*
 .vscode/*
 .venv/*
 tests/python/__pycache__/test*
+nohup.out

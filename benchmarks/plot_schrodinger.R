@@ -23,13 +23,17 @@ bench_dt[grepl("n=20", algo_args), algo_plus := paste0(algo, ":n=20")]
 bench_dt[grepl("n=35", algo_args), algo_plus := paste0(algo, ":n=35")]
 bench_dt = bench_dt[!grepl("n=20", algo_args)]
 setkey(bench_dt, eps, algo_plus)
-bench_sum_dt = bench_dt[, .(sum_time = sum(time), sum_count = sum(count)),
+bench_sum_dt = bench_dt[, .(
+  sum_time = sum(time),
+  sum_count = sum(count),
+  sd_time = sd(time),
+  sd_count = sd(count)),
   .(algo, algo_plus, algo_args, prob_args, eps)]
 bench_sum_dt[, per_call := sum_time/sum_count]
 setkey(bench_sum_dt, eps, algo_plus)
 schrod_bench_plot = ggplot(bench_sum_dt, aes(x = algo, y = per_call, fill = algo)) +
   geom_bar(stat = "identity") +
-  scale_y_continuous(transform = "log1p", breaks = c(0, 0.25, .5, 1, 2, 4, 8, 13)) +
+  scale_y_continuous(transform = "log1p", breaks = c(0, 1, 2, 4, 8, 20, 200)) +
   facet_wrap(vars(eps)) +
   ggtitle("Schrodinger: Average Seconds For ODE Solver Calls",
     "Average Time is over all optimizations for each quantum number") +
@@ -42,7 +46,15 @@ schrod_bench_plot
 ggsave("./benchmarks/plots/schrodinger.png", schrod_bench_plot,
   width = 6, height = 4, units = "in")
 
-bench_sum_dt = bench_dt[, .(sum_time = sum(time), sum_count = sum(count)),
+bench_sum_dt = bench_dt[, .(
+  sum_time = sum(time),
+  sum_count = sum(count),
+  mean_time = mean(time),
+  mean_count = mean(count),
+  mean_per_time = mean(time / count),
+  sd_per_time = sd(time / count),
+  sd_time = sd(time),
+  sd_count = sd(count)),
   .(algo, algo_plus, algo_args, eps, prob_args)]
 bench_sum_dt[, per_call := sum_time / sum_count]
 bench_sum_dt[, lb := as.numeric(sub(".*\\blb=([0-9]+).*", "\\1", prob_args)), .I]
@@ -63,12 +75,13 @@ bench_sum_table_dt = bench_sum_table_dt[, lapply(.SD, \(x) format(x, digits = 4)
 knitr::kable(bench_sum_table_dt)
 bench_sum_x_scale_dt = bench_sum_dt[1:4]
 bench_sum_x_scale_dt[, quantum_number := c(50, 100, 1000, 10000)]
-bench_per_energy_plot = ggplot(bench_sum_dt, aes(x = lb, y = per_call, group = algo, color = algo)) +
-  geom_line() +
-  geom_point() +
+bench_per_energy_plot = ggplot(bench_sum_dt, aes(x = lb, y = mean_per_time, group = algo)) +
+  geom_ribbon(aes(ymin = mean_per_time - 2 * sd_per_time, ymax = mean_per_time + 2 * sd_per_time), fill = "grey70") +
+  geom_line(aes(color = algo)) +
+  geom_point(aes(color = algo)) +
   ggtitle("Schrodinger: Average Seconds For ODE Solver Calls By",
     "By Quantum Number") +
-  scale_y_log10(breaks = c(0.01, 0.05, 0.1, 1, 10, 50)) +
+  scale_y_log10(breaks = c(0.01, 0.03, 0.1, 0.3, 1, 3, 10, 50)) +
   scale_x_log10(breaks = bench_sum_x_scale_dt[, lb], labels = bench_sum_x_scale_dt[, quantum_number]) +
   xlab("") +
   ylab("") +
@@ -81,7 +94,7 @@ ggsave("./benchmarks/plots/schrodinger_energy.png", bench_per_energy_plot,
 
 bench_sum_dt[eps == 1e-12 & grepl("lb=471100;rb=471110", prob_args)]
 # Error rates
-err_dt = fread("./benchmarks/output/schrod.csv")
+err_dt = fread("./benchmarks/output/schrod2.csv")
 err_dt[, algo := strsplit(name, " ")[[1]][1], name]
 err_dt[, algo_args := algo_args(name), .I]
 err_dt[, prob_args := prob_args(name), .I]
@@ -128,9 +141,10 @@ schrod_err_plot = ggplot(err_summary_dt[algo != "BDF"],
   #  scale_y_log10(breaks = c(1, 2, 5, 10, 18, 30, 60)) +
   geom_bar(stat = "identity") +
   facet_wrap(vars(eps), nrow = 2, ncol = 1) +
-  ggtitle("Schrodinger: Relative Error of Energy Per ODE") +
+  ggtitle("Schrodinger: Relative Error of Energy Per ODE",
+    "BDF excluded due to too large of a relative error") +
   scale_x_continuous(labels = c(50, 100, 1000, 10000)) +
-  scale_y_continuous(transform = "log1p", labels = \(x) x)+#, breaks = c(1e-12, 1e-5)) +
+  scale_y_continuous(breaks = c(1e-8, 1.5e-7, 4e-7, 6e-7)) +
   xlab("Quantum Number") +
   ylab("") +
   theme_bw() +
