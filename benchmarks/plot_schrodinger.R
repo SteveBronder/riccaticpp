@@ -33,7 +33,7 @@ bench_sum_dt[, per_call := sum_time/sum_count]
 setkey(bench_sum_dt, eps, algo_plus)
 schrod_bench_plot = ggplot(bench_sum_dt, aes(x = algo, y = per_call, fill = algo)) +
   geom_bar(stat = "identity") +
-  scale_y_continuous(transform = "log1p", breaks = c(0, 1, 2, 4, 8, 20, 200)) +
+  scale_y_continuous(transform = "log1p", breaks = c(0.1, 2, 8, 30, 128, 500, 2000)) +
   facet_wrap(vars(eps)) +
   ggtitle("Schrodinger: Average Seconds For ODE Solver Calls",
     "Average Time is over all optimizations for each quantum number") +
