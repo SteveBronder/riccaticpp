@@ -100,6 +100,8 @@ Below is a representative plot (`ivp_bench.png`) of the average runtime (in seco
 |  1e+06|     **6.76**| 10986166.85| 10986166.85|
 |  1e+07|     **5.87**| 11123022.23| 11123022.23|
 
+Each value can be interpreted as "In the Bremer Eq 237 benchmark, pyriccaticpp is `x` times faster than {method}."
+
 
 - **Airy**:
   The Airy benchmark is integrated out to a relatively large domain $[0,100]$. The specialized approach in `pyriccaticpp` is, in the most competitive case when the relative error is `1e-6`, 37 times faster than it's closest competitor `DOP853`.
