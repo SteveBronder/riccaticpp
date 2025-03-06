@@ -157,12 +157,14 @@ Below (`schrodinger.png`) we plot the average time spent in these ODE solves for
 
 ### Timing Relative to pyriccaticpp for Schrodinger's Equation for Relative Error 1e-6
 
-|quantum_number |BDF   |DOP853 |RK45  |
-|:--------------|:-----|:------|:-----|
-|50             |18.73 |2.019  |5.165 |
-|100            |19.47 |2.181  |5.581 |
-|1000           |16.11 |1.980  |4.920 |
-|10000          |14.00 |1.858  |4.451 |
+|quantum_number |BDF    |DOP853 |RK45   |
+|:--------------|:------|:------|:------|
+|50             |17.98  |**1.628**  |4.772  |
+|100            |24.64  |**2.190**  |6.721  |
+|1000           |75.10  |**6.528**  |21.093 |
+|10000          |222.91 |**19.163** |65.156 |
+
+Each value can be interpreted as "In the Schrodinger benchmark, pyriccaticpp is `x` times faster than {method}."
 
 ### Relative Error Results
 
