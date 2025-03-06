@@ -175,7 +175,7 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s,
   // minimum required relative decrease per iteration
   constexpr Scalar tol_rel = Scalar(1);
   // if current error exceeds best error by >10%
-  constexpr Scalar tol_increase = Scalar(1.05);
+  constexpr Scalar tol_increase = Scalar(1.20);
   int stagnation_count = 0;
   Scalar best_err = maxerr;
   while (maxerr > epsres) {
@@ -197,7 +197,7 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s,
      * the error is now significantly worse than the best error,
      * exit early because we have passed the optimal truncation.
      */
-    if (stagnation_count >= 3 && maxerr > best_err * tol_increase) {
+    if (stagnation_count >= 3 || maxerr > best_err * tol_increase) {
       return return_failure<DenseOut, Scalar, complex_t, vectorc_t>(info);
     }
     best_err = (maxerr < best_err) ? maxerr : best_err;

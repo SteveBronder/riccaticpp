@@ -11,28 +11,28 @@
 
 TEST_F(Riccati, evolve_burst_dense_output) {
   using namespace riccati;
-  constexpr int m = 1e6;
+  constexpr double m = 1e6;
   auto omega_fun = [m](auto&& x) {
     return eval(matrix(riccati::sqrt(static_cast<double>(std::pow(m, 2)) - 1.0)
                        / (1 + riccati::pow(array(x), 2.0))));
   };
   auto gamma_fun = [](auto&& x) { return zero_like(x); };
   auto info = riccati::make_solver<double>(omega_fun, gamma_fun, allocator, 16,
-                                           32, 32, 32);
+                                           35, 32, 32);
   constexpr double xi = -m;
   constexpr double xf = m;
-  auto burst_y = [m = static_cast<double>(m)](auto&& x) {
+  auto burst_y = [m](auto&& x) {
     return std::sqrt(1 + x * x) / m
            * (std::cos(m * std::atan(x))
               + std::complex<double>(0.0, 1.0) * std::sin(m * std::atan(x)));
   };
   auto yi = burst_y(xi);
-  auto burst_dy = [mm = static_cast<double>(m)](auto&& x) {
-    return (1.0 / std::sqrt(1.0 + x * x) / mm
-            * ((x + std::complex<double>(0.0, 1.0) * mm)
-                   * std::cos(mm * std::atan(x))
-               + (-mm + std::complex<double>(0.0, 1.0) * x)
-                     * std::sin(mm * std::atan(x))));
+  auto burst_dy = [m](auto&& x) {
+    return (1.0 / std::sqrt(1.0 + x * x) / m
+            * ((x + std::complex<double>(0.0, 1.0) * m)
+                   * std::cos(m * std::atan(x))
+               + (-m + std::complex<double>(0.0, 1.0) * x)
+                     * std::sin(m * std::atan(x))));
   };
   auto dyi = burst_dy(xi);
   constexpr auto eps = 1e-12;

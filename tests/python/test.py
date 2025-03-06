@@ -116,23 +116,22 @@ def test_schrodinger_nondense_fwd_full_optimize():
 
         # omega_fun returns sqrt(2*m*(current_energy - potential(x)))
         def omega_fun(x):
-            return (2.0 * m * (complex(current_energy) - potential(x)))**0.5
+            return np.sqrt(2.0 * m * (complex(current_energy) - potential(x)))
 
 
         # Note: use slightly different solver parameters: 16, 35, 32, 32.
         info = ric.Init(omega_fun, gamma_fun, 16, 35, 32, 32)
         print("Current energy: ", current_energy)
-        print("Solver Type: " , type(info))
         left_boundary = - (current_energy**0.25) - 2.0
         right_boundary = -left_boundary
         midpoint = 0.5
         # Choose a nonoscillatory stepsize between left_boundary and midpoint.
-        init_step = ric.choose_nonosc_stepsize(info, left_boundary, midpoint - left_boundary, epsh)
-
+        init_step = ric.choose_osc_stepsize(info, left_boundary, midpoint - left_boundary, epsh)
         left_res = ric.evolve(info=info, xi=left_boundary, xf=midpoint, yi=yi, dyi=dyi, eps = eps, init_stepsize=init_step, epsilon_h = 1e-6, hard_stop = True)
         xs_left, ys_left, dys_left, *_ = left_res
         psi_l = ys_left[-1]
         dpsi_l = dys_left[-1]
+        init_step = ric.choose_osc_stepsize(info, right_boundary, right_boundary - midpoint, epsh)
         right_res = ric.evolve(info=info, xi=right_boundary, xf=midpoint, yi=yi, dyi=dyi, eps=eps, init_stepsize=-init_step, epsilon_h=epsh, hard_stop=True)
         xs_right, ys_right, dys_right, *_ = right_res
         psi_r = ys_right[-1]
@@ -150,7 +149,7 @@ def test_schrodinger_nondense_fwd_full_optimize():
             energy_difference,
             bounds=(a, b),
             method='bounded',
-            options={'xatol': 1e-8}
+            options = {"maxiter": 1500, "xatol": epsh}
         )
         found_energy = res.x
         assert abs(found_energy - ref) <= 8e-3, (
@@ -412,7 +411,7 @@ def test_denseoutput_backwards_xback():
 
 
 def test_solve_burst():
-    m = int(1e6)  # Frequency parameter
+    m = float(1e6)  # Frequency parameter
     w = lambda x: np.sqrt(m**2 - 1) / (1 + x**2)
     g = lambda x: np.zeros_like(x)
     bursty = (
@@ -433,9 +432,9 @@ def test_solve_burst():
     xf = m
     yi = bursty(xi)
     dyi = burstdy(xi)
-    eps = 1e-10
-    epsh = 1e-12
-    info = ric.Init(w, g, 16, 32, 32, 32)
+    eps = 1e-12
+    epsh = 1e-13
+    info = ric.Init(w, g, 16, 35, 32, 32)
     xs, ys, dys, ss, ps, types, yeval, dyeval,_ = ric.evolve(
         info, xi, xf, yi, dyi, eps=eps, epsilon_h=epsh
     )
