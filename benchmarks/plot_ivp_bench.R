@@ -46,7 +46,7 @@ bremer_plots = ggplot(bremer_dt,
     breaks = c(0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000)
   ) +
   facet_wrap(vars(eps)) +
-#  ggtitle("Bremer eq 237 Wall Time in Seconds") +
+  ggtitle("Bremer eq 237 Wall Time in Seconds") +
   ylab("") +
   xlab("Bremer Eq 237: Lambda") +
   theme_bw() +
@@ -62,7 +62,7 @@ stiff_plot = ggplot(stiff_dt, aes(x = method, y = walltime, fill = method)) +
   geom_bar(stat = "identity") +
   facet_wrap(vars(eps)) +
 #  ggtitle("Stiff Equation Wall Time In Seconds") +
-  scale_y_continuous(transform = "log1p", breaks = c(0, 0.1, 0.25, 0.5, 0.6)) +
+  scale_y_continuous(transform = "log1p", breaks = c(0, 0.05, 0.1, 0.25, 0.5, 0.6)) +
   ylab("") +
   xlab("Stiff") +
   theme_bw() +
@@ -126,7 +126,7 @@ stiff_err_plot = ggplot(stiff_dt, aes(x = method, y = relerr * (1.0e21), fill = 
     axis.text.y = element_text(size = 12))
 stiff_err_plot
 
-# airy_err_plot = ggplot(airy_dt, aes(x = method, y = relerr * 1e12, fill = method)) +
+ airy_err_plot = ggplot(airy_dt, aes(x = method, y = relerr * 1e12, fill = method)) +
   geom_bar(stat = "identity") +
   facet_wrap(vars(eps)) +
   geom_text(aes(label = format(relerr, scientific = TRUE, digits = 3)), vjust = -0.4) +
