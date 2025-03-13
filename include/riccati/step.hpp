@@ -304,7 +304,7 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s,
  * each step, type of each step, and phase angles where applicable.
  */
 template <typename SolverInfo, typename Scalar, typename Vec, typename YScalar>
-inline auto step(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
+RICCATI_ALWAYS_INLINE auto step(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
                  YScalar dyi, Scalar eps, Scalar epsilon_h,
                  Scalar init_stepsize, Vec &&x_eval, bool hard_stop = false) {
   using vectord_t = vector_t<Scalar>;
