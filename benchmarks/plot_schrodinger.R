@@ -75,8 +75,9 @@ bench_sum_table_dt = bench_sum_table_dt[, lapply(.SD, \(x) format(x, digits = 4)
 knitr::kable(bench_sum_table_dt)
 bench_sum_x_scale_dt = bench_sum_dt[1:4]
 bench_sum_x_scale_dt[, quantum_number := c(50, 100, 1000, 10000)]
-bench_per_energy_plot = ggplot(bench_sum_dt, aes(x = lb, y = mean_per_time, group = algo)) +
-  geom_ribbon(aes(ymin = mean_per_time - 2 * sd_per_time, ymax = mean_per_time + 2 * sd_per_time), fill = "grey70") +
+bench_sum_dt[, total_time_per_count := sum_time / sum_count]
+bench_per_energy_plot = ggplot(bench_sum_dt, aes(x = lb, y = total_time_per_count, group = algo)) +
+#  geom_ribbon(aes(ymin = mean_per_time - 2 * sd_per_time, ymax = mean_per_time + 2 * sd_per_time), fill = "grey70") +
   geom_line(aes(color = algo)) +
   geom_point(aes(color = algo)) +
   ggtitle("Schrodinger: Average Seconds For ODE Solver Calls By",
