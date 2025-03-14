@@ -173,7 +173,7 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s,
   arena_matrix<vectorc_t> deltay(info.alloc_, Ry.size(), 1);
   // TODO(Steve): Let users set these?
   // minimum required relative decrease per iteration
-  constexpr Scalar tol_rel = Scalar(1);
+  constexpr Scalar tol_abs = Scalar(1.0);
   // if current error exceeds best error by >10%
   constexpr Scalar tol_increase = Scalar(1.05);
   int stagnation_count = 0;
@@ -184,11 +184,6 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s,
     Ry = R(deltay);
     maxerr = Ry.array().abs().maxCoeff();
       // Check relative improvement compared to the previous iteration.
-    if (maxerr > prev_err && std::abs((best_err - maxerr) / best_err) > tol_rel) {
-      stagnation_count++;
-    } else {
-      stagnation_count = 0;
-    }
     /**
      * Note: This differs from the python version, where
      * the termination criterion checks if the current error
@@ -197,6 +192,13 @@ RICCATI_ALWAYS_INLINE auto osc_step(SolverInfo &&info, OmegaVec &&omega_s,
      * the error is now significantly worse than the best error,
      * exit early because we have passed the optimal truncation.
      */
+    if (maxerr > 2.0 * prev_err) {
+      return return_failure<DenseOut, Scalar, complex_t, vectorc_t>(info);
+    } else if (maxerr > prev_err && std::abs((best_err - maxerr) / best_err) > tol_abs) {
+      stagnation_count++;
+    } else {
+      stagnation_count = 0;
+    }
     if (stagnation_count >= 3 && maxerr > best_err * tol_increase) {
       return return_failure<DenseOut, Scalar, complex_t, vectorc_t>(info);
     }
