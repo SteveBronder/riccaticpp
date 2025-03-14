@@ -456,10 +456,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
    */
   bool use_osc_step = true;
   if constexpr (is_complex_v<omega_scalar_t>) {
-    if (!((std::abs(omega_i.real()) >= std::numeric_limits<Scalar>::epsilon()
-        && std::abs(omega_i.imag()) <= std::numeric_limits<Scalar>::epsilon()) ||
-        (std::abs(omega_i.real()) <= std::numeric_limits<Scalar>::epsilon()
-        && std::abs(omega_i.imag()) >= std::numeric_limits<Scalar>::epsilon()))) {
+    if (std::abs(omega_i.imag()) > std::abs(omega_i.real()) ) {
       use_osc_step = false;
     }
   }
@@ -652,6 +649,12 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
       // o and g written here
       osc_step_tup = choose_osc_stepsize(info, xcurrent, hosc_ini, epsilon_h);
       hosc = std::get<0>(osc_step_tup);
+      if constexpr (is_complex_v<omega_scalar_t>) {
+        use_osc_step = true;
+        if (std::abs(wnext.imag()) > std::abs(wnext.real()) ) {
+          use_osc_step = false;
+        }
+      }    
       hslo = choose_nonosc_stepsize(info, xcurrent, hslo_ini, epsilon_h);
       yprev = y;
       dyprev = dy;

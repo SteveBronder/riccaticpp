@@ -287,10 +287,10 @@ bounds = [(416.5, 417.5), (1_035, 1_037), (21_930, 21_940), (471_100, 471_110)]
 algo_solutions = {}
 algo_optim = {}
 algorithm_dict = {
-    Algo.PYRICCATICPP: {"args": [[epss, epshs], [cheby_order]]}
-#    Algo.DOP853: {"args": [[epss, atol]]},
-#    Algo.BDF: {"args": [[epss, atol]]},
-#    Algo.RK45: {"args": [[epss, atol]]},
+    Algo.PYRICCATICPP: {"args": [[epss, epshs], [cheby_order]]},
+    Algo.DOP853: {"args": [[epss, atol]]},
+    Algo.BDF: {"args": [[epss, atol]]},
+    Algo.RK45: {"args": [[epss, atol]]},
 }
 algo_pl_lst: List[pl.DataFrame] = []
 dir_path = os.getcwd()

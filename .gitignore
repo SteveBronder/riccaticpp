@@ -5,3 +5,4 @@ riccati/__pycache__/*
 .venv/*
 tests/python/__pycache__/test*
 nohup.out
+src/pyriccaticpp/__pycache__/*.pyc

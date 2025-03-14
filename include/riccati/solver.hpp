@@ -19,7 +19,7 @@ template <typename SolverInfo, typename Scalar,
           require_floating_point<value_type_t<Scalar>>* = nullptr,
           require_not_same<typename std::decay_t<SolverInfo>::gamma_type,
                            pybind11::object>* = nullptr>
-inline auto gamma(SolverInfo&& info, const Scalar& x) {
+RICCATI_ALWAYS_INLINE auto gamma(SolverInfo&& info, const Scalar& x) {
   return info.gamma_fun_(x);
 }
 
@@ -28,7 +28,7 @@ template <typename SolverInfo, typename Scalar,
           std::enable_if_t<
               !std::is_same<typename std::decay_t<SolverInfo>::omega_type,
                             pybind11::object>::value>* = nullptr>
-inline auto omega(SolverInfo&& info, const Scalar& x) {
+RICCATI_ALWAYS_INLINE auto omega(SolverInfo&& info, const Scalar& x) {
   return info.omega_fun_(x);
 }
 
@@ -337,7 +337,7 @@ class SolverInfo {
 template <typename Scalar, typename OmegaFun, typename Allocator,
           typename GammaFun, typename Integral,
           typename Logger = ::riccati::EmptyLogger>
-inline auto make_solver(OmegaFun&& omega_fun, GammaFun&& gamma_fun,
+RICCATI_ALWAYS_INLINE auto make_solver(OmegaFun&& omega_fun, GammaFun&& gamma_fun,
                         Allocator&& alloc, Integral nini, Integral nmax,
                         Integral n, Integral p, Logger&& logger = Logger{}) {
   return SolverInfo<std::decay_t<OmegaFun>, std::decay_t<GammaFun>, Scalar,
