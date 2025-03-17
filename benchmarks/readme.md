@@ -31,7 +31,8 @@ Rscript ./benchmarks/plot_schrodinger.R
 We consider three ODE problems for direct time-domain integration with `solve_ivp` or `pyriccaticpp`:
 
 1. **Bremer Eq. 237**
-  Taken from Bremer (2018), Eq. (237) for $x \in [-1,\,1]$.
+
+Taken from Bremer (2018), Eq. (237) for $x \in [-1,\,1]$.
 
 ```math
        y''(x) + \lambda^2\bigl[1 - x^2 \cos(3x)\bigr]\,y(x) \;=\; 0,
@@ -44,16 +45,18 @@ The initial conditions are chosen as
      \quad
      y'(-1) = \lambda,
 ```
-   so that the problem depends strongly on $\lambda$. As $\lambda$ grows, the equation becomes increasingly oscillatory (high-frequency), which can be challenging for general-purpose ODE solvers.
+
+so that the problem depends strongly on $\lambda$. As $\lambda$ grows, the equation becomes increasingly oscillatory (high-frequency), which can be challenging for general-purpose ODE solvers.
 
 2. **Airy Equation**
+
    The classical Airy equation can be written as the following.
 
 ```math
        y''(x) - x \, y(x) \;=\; 0,
 ```
 
-   for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form the fundamental solutions; however, here we pose initial conditions in terms of these functions at $x = 0$ and integrate out to $x = 100$. Numerically, one can write this as
+for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form the fundamental solutions; however, here we pose initial conditions in terms of these functions at $x = 0$ and integrate out to $x = 100$. Numerically, one can write this as
 
 ```math
        y'(x) = \begin{bmatrix} y_1'(x) \\ y_2'(x) \end{bmatrix}
@@ -64,7 +67,8 @@ The initial conditions are chosen as
 ```
 
 3. **Stiff Problem**
-   We label this “Stiff” because it includes large and rapidly changing coefficients. The following equation is integrated on $[0,\,200]$.
+
+We label this “Stiff” because it includes large and rapidly changing coefficients. The following equation is integrated on $[0,\,200]$.
 
 ```math
        y''(t) \;+\; (t + 21)\,y'(t) \;+\; 21\,t\,y(t) \;=\; 0,
@@ -102,16 +106,16 @@ Below is a representative plot (`ivp_bench.png`) of the average runtime (in seco
 
 | lambda|      BDF|      DOP853|        RK45|
 |------:|--------:|-----------:|-----------:|
-|  1e+01|    59.93|        **7.34**|       30.82|
-|  1e+02| 17210.72|     **1157.02**|     9266.64|
-|  1e+03|   **544.62**|    13526.04|   107989.51|
-|  1e+04|   **571.25**|   137184.64|  1098741.66|
-|  1e+05|    **11.49**|  1418527.56| 11034312.32|
-|  1e+06|     **6.76**| 10986166.85| 10986166.85|
-|  1e+07|     **5.87**| 11123022.23| 11123022.23|
+|  1e+01|    58.81|        **3.91**|       26.66|
+|  1e+02| 17299.58|     **1172.55**|     8977.71|
+|  1e+03|   **551.49**|    13632.90|   104830.64|
+|  1e+04|   **600.00**|   143353.08|  1108936.18|
+|  1e+05|    **12.04**|  1447427.56| 11306510.13|
+|  1e+06|     **6.56**| 10962325.93| 10962325.93|
+|  1e+07|     **5.49**| 11138993.87| 11138993.87|
 
 Each value can be interpreted as "In the Bremer Eq 237 benchmark, pyriccaticpp is `x` times faster than {method}."
-
+The bold numbers are the benchmarks that had the minimum time difference between pyriccaticpp for each value of lambda.
 
 - **Airy**:
   The Airy benchmark is integrated out to a relatively large domain $[0,100]$. The specialized approach in `pyriccaticpp` is, in the most competitive case when the relative error is `1e-6`, 37 times faster than it's closest competitor `DOP853`.
@@ -119,11 +123,9 @@ Each value can be interpreted as "In the Bremer Eq 237 benchmark, pyriccaticpp i
 - **Stiff**:
   As the name suggests, the presence of a rapidly varying coefficient makes this ODE a good test of stiff integrators. While `BDF` is able to compete with `pyriccaticpp` for a relative tolerance of `1e-6`, when asking for a relative tolerance of `1e-12` the graph shows that `pyriccaticpp` is 3 orders of magnitude faster than `BDF`.
 
-
 [Talk about solve_ivp benchmark results here]
 
 ![ivp_bench](/benchmarks/plots/ivp_bench.png)
-
 
 ## Relative Error Results
 
@@ -153,6 +155,7 @@ with some mass parameter $m$ (here $m=0.5$), seeking the bound-state energies fo
 ```
 
 2. For each guess $E$ of the energy, we integrate from a left boundary to the midpoint and from a right boundary to the midpoint.
+
 3. We then minimize the mismatch in derivatives at the midpoint to find an accurate bound-state energy.
 
 We compare the same four solvers `BDF`, `DOP853`, `RK45`, and `pyriccaticpp`. But in this scenario each integration is part of a root-finding (optimization) loop.
@@ -183,9 +186,7 @@ Each value can be interpreted as "In the Schrodinger benchmark, pyriccaticpp is 
 
 The figure below (`schrodinger_err.png`) shows the relative error in the computed energy level compared to [1](http://doi.org/10.1098/rspa.1978.0086). All methods are capable of producing accurate energy eigenvalues given a tight enough tolerance.
 
-
 ![sch_bench_err](/benchmarks/plots/schrodinger_err.png)
-
 
 ## Summary
 

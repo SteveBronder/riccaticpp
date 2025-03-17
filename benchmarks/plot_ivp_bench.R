@@ -92,7 +92,11 @@ patched_plot = (bremer_plots / (stiff_plot + airy_plot)) + plot_annotation(
 patched_plot
 ggsave("./benchmarks/plots/ivp_bench.png", patched_plot,
   width = 8, height = 6, units = "in")
-
+lseq <- function(from=1, to=100000, length.out=6) {
+  # logarithmic spaced sequence
+  # blatantly stolen from library("emdbook"), because need only this
+  exp(seq(log(from), log(to), length.out = length.out))
+}
 bremer_err_plot = ggplot(bremer_dt, aes(x = lambda, y = relerr, color = method, group = method)) +
   facet_wrap(vars(eps), ncol = 1) +
   geom_point() +
@@ -100,7 +104,7 @@ bremer_err_plot = ggplot(bremer_dt, aes(x = lambda, y = relerr, color = method, 
   ylab("") +
   xlab("Bremer: lambda") +
   scale_x_log10() +
-  scale_y_log10(breaks = c(1e-12, 1e-10, 1e-06, 1e-2, 1)) +
+  scale_y_log10(breaks = signif(lseq(1e-13, 1, length.out=7),digits = 2)) +
   theme_bw() +
   theme(legend.position="bottom",
     axis.text.y = element_text(size = 12))

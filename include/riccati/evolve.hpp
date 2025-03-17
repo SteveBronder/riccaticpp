@@ -655,7 +655,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
     }
     if constexpr (is_complex_v<omega_scalar_t>) {
       use_osc_step = true;
-      if (std::abs(wnext.imag()) > std::abs(wnext.real()) ) {
+      if (std::abs(wnext.imag()) > std::abs(wnext.real())) {
         use_osc_step = false;
       }
     }
