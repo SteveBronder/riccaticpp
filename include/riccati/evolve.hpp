@@ -654,7 +654,7 @@ inline auto evolve(SolverInfo &info, Scalar xi, Scalar xf, YScalar yi,
         if (std::abs(wnext.imag()) > std::abs(wnext.real()) ) {
           use_osc_step = false;
         }
-      }    
+      }
       hslo = choose_nonosc_stepsize(info, xcurrent, hslo_ini, epsilon_h);
       yprev = y;
       dyprev = dy;

@@ -114,7 +114,8 @@ class RiccatiSolver:
 
     def solve(self, args):
         global_timer.start(self.name)
-        _, left_wavefunction, left_derivative, *unused = ric.evolve(**args)
+        _, left_wavefunction, left_derivative, unused = ric.evolve(**args)
+        import pdb; pdb.set_trace()
         global_timer.stop(self.name)
         return left_wavefunction, left_derivative
 
@@ -277,13 +278,13 @@ def flatten_tuple(x):
 
 
 # %%
-epss = [1e-12, 1e-6]
+epss = [1e-12]#, 1e-6]
 epshs = [0.1 * x for x in epss]
-cheby_order = [35, 20]
+cheby_order = [35]#, 20]
 atol = [1e-13, 1e-7]
-quantum_number = [50, 100, 1_000, 10_000]
-energy_reference = [417.056, 1_035.544, 21_932.783, 471_103.777]
-bounds = [(416.5, 417.5), (1_035, 1_037), (21_930, 21_940), (471_100, 471_110)]
+quantum_number = [1_000, 10_000]
+energy_reference = [21_932.783, 471_103.777]
+bounds = [(21_930.0, 21_940.0), (471_100.0, 471_110.0)]
 algo_solutions = {}
 algo_optim = {}
 algorithm_dict = {

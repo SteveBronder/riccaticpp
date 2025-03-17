@@ -31,11 +31,14 @@ Rscript ./benchmarks/plot_schrodinger.R
 We consider three ODE problems for direct time-domain integration with `solve_ivp` or `pyriccaticpp`:
 
 1. **Bremer Eq. 237**
-   Taken from Bremer (2018), Eq. (237).
+  Taken from Bremer (2018), Eq. (237) for $x \in [-1,\,1]$.
+
 ```math
        y''(x) + \lambda^2\bigl[1 - x^2 \cos(3x)\bigr]\,y(x) \;=\; 0,
 ```
-   for $x \in [-1,\,1]$. The initial conditions are chosen as
+
+The initial conditions are chosen as
+
 ```math
      y(-1) = 0,
      \quad
@@ -44,11 +47,14 @@ We consider three ODE problems for direct time-domain integration with `solve_iv
    so that the problem depends strongly on $\lambda$. As $\lambda$ grows, the equation becomes increasingly oscillatory (high-frequency), which can be challenging for general-purpose ODE solvers.
 
 2. **Airy Equation**
-   The classical Airy equation can be written as
+   The classical Airy equation can be written as the following.
+
 ```math
        y''(x) - x \, y(x) \;=\; 0,
 ```
+
    for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form the fundamental solutions; however, here we pose initial conditions in terms of these functions at $x = 0$ and integrate out to $x = 100$. Numerically, one can write this as
+
 ```math
        y'(x) = \begin{bmatrix} y_1'(x) \\ y_2'(x) \end{bmatrix}
                = \begin{bmatrix}
@@ -58,17 +64,21 @@ We consider three ODE problems for direct time-domain integration with `solve_iv
 ```
 
 3. **Stiff Problem**
-   We label this “Stiff” because it includes large and rapidly changing coefficients. The equation is
+   We label this “Stiff” because it includes large and rapidly changing coefficients. The following equation is integrated on $[0,\,200]$.
+
 ```math
        y''(t) \;+\; (t + 21)\,y'(t) \;+\; 21\,t\,y(t) \;=\; 0,
 ```
-   integrated on $[0,\,200]$ with initial conditions
+
+ The ODE has initial conditions the following initial conditions.
+
 ```math
        y(0) = 0,
        \quad
        y'(0) = 1.
 ```
-   The combination of the $t\,y'(t)$ and $t\,y(t)$ terms can produce stiffness as $t$ grows large.
+
+The combination of the $t\,y'(t)$ and $t\,y(t)$ terms can produce stiffness as $t$ grows large.
 
 In each case, we compare several solvers:
 
@@ -129,16 +139,19 @@ Below is a plot (`ivp_bench_errs.png`) illustrating the relative error of the fi
 ### Problem Setup
 
 In the Schrödinger equation benchmark, we consider a one-dimensional potential
+
 ```math
    V(x) \;=\; x^2 \;+\; l\,x^4,
 ```
+
 with some mass parameter $m$ (here $m=0.5$), seeking the bound-state energies for large quantum numbers. We do so by implementing a **shooting method**:
 
-1. We define the ODE
+1. We define the ODE which is a form of the time-independent Schrödinger equation.
+
 ```math
        \psi''(x) \;=\; -\,2m\;\bigl[E - V(x)\bigr]\;\psi(x),
 ```
-   which is a form of the time-independent Schrödinger equation.
+
 2. For each guess $E$ of the energy, we integrate from a left boundary to the midpoint and from a right boundary to the midpoint.
 3. We then minimize the mismatch in derivatives at the midpoint to find an accurate bound-state energy.
 
@@ -159,10 +172,10 @@ Below (`schrodinger.png`) we plot the average time spent in these ODE solves for
 
 |quantum_number |BDF    |DOP853 |RK45   |
 |:--------------|:------|:------|:------|
-|50             |17.98  |**1.628**  |4.772  |
-|100            |24.64  |**2.190**  |6.721  |
-|1000           |75.10  |**6.528**  |21.093 |
-|10000          |222.91 |**19.163** |65.156 |
+|50             |18.94  |**1.660**  |4.940  |
+|100            |26.34  |**2.260**  |7.024  |
+|1000           |78.51  |**6.708**  |21.901 |
+|10000          |237.36 |**20.145** |66.802 |
 
 Each value can be interpreted as "In the Schrodinger benchmark, pyriccaticpp is `x` times faster than {method}."
 

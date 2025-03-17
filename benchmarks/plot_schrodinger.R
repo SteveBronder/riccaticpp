@@ -95,7 +95,7 @@ ggsave("./benchmarks/plots/schrodinger_energy.png", bench_per_energy_plot,
 
 bench_sum_dt[eps == 1e-12 & grepl("lb=471100;rb=471110", prob_args)]
 # Error rates
-err_dt = fread("./benchmarks/output/schrod2.csv")
+err_dt = fread("./benchmarks/output/schrod.csv")
 err_dt[, algo := strsplit(name, " ")[[1]][1], name]
 err_dt[, algo_args := algo_args(name), .I]
 err_dt[, prob_args := prob_args(name), .I]
