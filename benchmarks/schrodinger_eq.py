@@ -282,16 +282,16 @@ epss = [1e-12]#, 1e-6]
 epshs = [0.1 * x for x in epss]
 cheby_order = [35]#, 20]
 atol = [1e-13, 1e-7]
-quantum_number = [1_000, 10_000]
-energy_reference = [21_932.783, 471_103.777]
-bounds = [(21_930.0, 21_940.0), (471_100.0, 471_110.0)]
+quantum_number = [1_000]#[50, 100, 1_000, 10_000]
+energy_reference = [21_932.783]#[417.056, 1_035.544, 21_932.783, 471_103.777]
+bounds =[(21_930, 21_940)]# [(416.5, 417.5), (1_035, 1_037), (21_930, 21_940), (471_100, 471_110)]
 algo_solutions = {}
 algo_optim = {}
 algorithm_dict = {
     Algo.PYRICCATICPP: {"args": [[epss, epshs], [cheby_order]]},
-    Algo.DOP853: {"args": [[epss, atol]]},
-    Algo.BDF: {"args": [[epss, atol]]},
-    Algo.RK45: {"args": [[epss, atol]]},
+#    Algo.DOP853: {"args": [[epss, atol]]},
+#    Algo.BDF: {"args": [[epss, atol]]},
+#    Algo.RK45: {"args": [[epss, atol]]},
 }
 algo_pl_lst: List[pl.DataFrame] = []
 dir_path = os.getcwd()
