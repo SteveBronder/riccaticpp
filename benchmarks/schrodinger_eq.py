@@ -114,9 +114,9 @@ class RiccatiSolver:
 
     def solve(self, args):
         global_timer.start(self.name)
-        _, left_wavefunction, left_derivative, *unused = ric.evolve(**args)
+        _, left_wavefunction, left_derivative, successes, phases, steptypes, yeval, dyeval, *unused = ric.evolve(**args)
         global_timer.stop(self.name)
-        return left_wavefunction, left_derivative
+        return left_wavefunction, left_derivative, steptypes
 
     def __str__(self):
         return self.name
@@ -239,10 +239,10 @@ def energy_mismatch_functor(
         left_range, right_range = (left_boundary, midpoint), (right_boundary, midpoint)
 
         # Evolve (integrate) from left to midpoint
-        left_wavefunction, left_derivative = problem.solve(
+        left_wavefunction, left_derivative, left_steptypes = problem.solve(
             left_range, current_energy, solver
         )
-        right_wavefunction, right_derivative = problem.solve(
+        right_wavefunction, right_derivative, right_steptypes = problem.solve(
             right_range, current_energy, solver
         )
         # Final values at the midpoint
@@ -250,6 +250,7 @@ def energy_mismatch_functor(
         psi_right = right_wavefunction[-1]
         dpsi_left = left_derivative[-1]
         dpsi_right = right_derivative[-1]
+        print("osc steps", left_steptypes.count(1), "nonosc steps", left_steptypes.count(0))
         try:
             mismatch = np.abs((dpsi_left / psi_left) - (dpsi_right / psi_right))
         except ZeroDivisionError:
@@ -277,20 +278,20 @@ def flatten_tuple(x):
 
 
 # %%
-epss = [1e-12, 1e-6]
+epss = [1e-12]#, 1e-6]
 epshs = [0.1 * x for x in epss]
-cheby_order = [35, 20]
+cheby_order = [35]#, 20]
 atol = [1e-13, 1e-7]
-quantum_number = [50, 100, 1_000, 10_000]
-energy_reference = [417.056, 1_035.544, 21_932.783, 471_103.777]
-bounds = [(416.5, 417.5), (1_035, 1_037), (21_930, 21_940), (471_100, 471_110)]
+quantum_number = [1_000]#[50, 100, 1_000, 10_000]
+energy_reference = [21_932.783]#[417.056, 1_035.544, 21_932.783, 471_103.777]
+bounds =[(21_930, 21_940)]# [(416.5, 417.5), (1_035, 1_037), (21_930, 21_940), (471_100, 471_110)]
 algo_solutions = {}
 algo_optim = {}
 algorithm_dict = {
-    Algo.PYRICCATICPP: {"args": [[epss, epshs], [cheby_order]]},
-    Algo.DOP853: {"args": [[epss, atol]]},
-    Algo.BDF: {"args": [[epss, atol]]},
-    Algo.RK45: {"args": [[epss, atol]]},
+    Algo.PYRICCATICPP: {"args": [[epss, epshs], [cheby_order]]}#,
+#    Algo.DOP853: {"args": [[epss, atol]]},
+#    Algo.BDF: {"args": [[epss, atol]]},
+#    Algo.RK45: {"args": [[epss, atol]]},
 }
 algo_pl_lst: List[pl.DataFrame] = []
 dir_path = os.getcwd()
@@ -303,7 +304,7 @@ first_write = True
 with open(base_output_path + "schrodinger_times.csv", mode="a") as time_file:
     for algo, algo_params in algorithm_dict.items():
         algo_evals_pl_lst = []
-        for benchmark_run in range(10):
+        for benchmark_run in range(1):#range(10):
           print("Algo: ", str(algo))
           if len(algo_params["args"]) > 1:
               algo_args_iter = itertools.product(
