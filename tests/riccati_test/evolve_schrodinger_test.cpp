@@ -67,12 +67,11 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_path_optimize) {
         = riccati::evolve(info, left_boundary, midpoint, yi, dyi, eps, epsh,
                           init_step, x_eval, true, LogLevel::WARNING);
     auto left_steptype = std::get<5>(left_res);
-    std::cout << "Checking left steptype" << std::endl;
+    bool any_osc = false;
     for (int i = 0; i < left_steptype.size(); i++) {
-      if (left_steptype[i] == 1) {
-        std::cout << "(" << i << "): Step type: " << left_steptype[i] << std::endl;
-      }
+      any_osc |= left_steptype[i] == 1;
     }
+    EXPECT_TRUE(any_osc);
     auto left_y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
         std::get<1>(left_res).data(), std::get<1>(left_res).size());
     auto left_dy_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
@@ -90,12 +89,11 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_path_optimize) {
         = riccati::evolve(info, right_boundary, midpoint, yi, dyi, eps, epsh,
                           init_step, x_eval, true, LogLevel::WARNING);
     auto right_steptype = std::get<5>(right_res);
-    std::cout << "Checking right steptype" << std::endl;
+    any_osc = false;
     for (int i = 0; i < right_steptype.size(); i++) {
-      if (right_steptype[i] == 1) {
-        std::cout << "(" << i << "): Step type: " << right_steptype[i] << std::endl;
-      }
+      any_osc |= right_steptype[i] == 1;
     }
+    EXPECT_TRUE(any_osc);
     auto right_y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
         std::get<1>(right_res).data(), std::get<1>(right_res).size());
     auto right_dy_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
@@ -151,12 +149,11 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_full_optimize) {
         = riccati::evolve(info, left_boundary, midpoint, yi, dyi, eps, epsh,
                           init_step, x_eval, true, LogLevel::WARNING);
     auto left_steptype = std::get<5>(left_res);
-    std::cout << "Checking left steptype" << std::endl;
+    bool any_osc = false;
     for (int i = 0; i < left_steptype.size(); i++) {
-      if (left_steptype[i] == 1) {
-        std::cout << "(" << i << "): Step type: " << left_steptype[i] << std::endl;
-      }
+      any_osc |= left_steptype[i] == 1;
     }
+    EXPECT_TRUE(any_osc);
     auto left_y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
         std::get<1>(left_res).data(), std::get<1>(left_res).size());
     auto left_dy_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
@@ -167,12 +164,11 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_full_optimize) {
         = riccati::evolve(info, right_boundary, midpoint, yi, dyi, eps, epsh,
                           init_step, x_eval, true, LogLevel::WARNING);
     auto right_steptype = std::get<5>(right_res);
-    std::cout << "Checking right steptype" << std::endl;
+    any_osc = false;
     for (int i = 0; i < right_steptype.size(); i++) {
-      if (right_steptype[i] == 1) {
-        std::cout << "(" << i << "): Step type: " << right_steptype[i] << std::endl;
-      }
+      any_osc |= right_steptype[i] == 1;
     }
+    EXPECT_TRUE(any_osc);
     auto right_y_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
         std::get<1>(right_res).data(), std::get<1>(right_res).size());
     auto right_dy_est = Eigen::Map<Eigen::Matrix<std::complex<double>, -1, 1>>(
@@ -191,7 +187,6 @@ TEST_F(Riccati, evolve_schrodinger_nondense_fwd_full_optimize) {
                                         471103.777};
   int sentinal = 0;
   for (auto& bound : bounds) {
-    std::cout << "Checking bounds: " << bound.first << " " << bound.second << std::endl;
     auto solve_ans = boost::math::tools::brent_find_minima(
         energy_difference, bound.first, bound.second,
         std::numeric_limits<double>::digits / 2);
