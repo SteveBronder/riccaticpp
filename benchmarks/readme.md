@@ -2,7 +2,7 @@
 
 ## Running Benchmarks
 
-Runrun the following from the top level folder to create the timing and performance output files
+Run the following from the top level folder to create the timing and performance output files:
 
 ```bash
 # Only run these two lines if you do not already have a virtual environment
@@ -30,15 +30,15 @@ Rscript ./benchmarks/plot_schrodinger.R
 
 We consider three ODE problems for direct time-domain integration with `solve_ivp` or `pyriccaticpp`:
 
-1. **Bremer Eq. 237**
+1. **Bremer eq. 237**
 
-Taken from Bremer (2018), Eq. (237) for $x \in [-1,\,1]$.
+Our first example is taken from Bremer (2018), Eq. (237) for $x \in [-1,\,1]$:
 
 ```math
        y''(x) + \lambda^2\bigl[1 - x^2 \cos(3x)\bigr]\,y(x) \;=\; 0,
 ```
 
-The initial conditions are chosen as
+with initial conditions
 
 ```math
      y(-1) = 0,
@@ -46,18 +46,17 @@ The initial conditions are chosen as
      y'(-1) = \lambda,
 ```
 
-so that the problem depends strongly on $\lambda$. As $\lambda$ grows, the equation becomes increasingly oscillatory (high-frequency), which can be challenging for general-purpose ODE solvers.
+so that the problem depends strongly on $\lambda$. As $\lambda$ grows, the equation becomes increasingly oscillatory (high-frequency), which is challenging for general-purpose ODE solvers.
 
-2. **Airy Equation**
+2. **Airy equation**
 
-   The classical Airy equation can be written as the following.
+   The Airy equation, used in optics, is an oscillator if the dependent variable is transformed as $x \to -x$, yielding 
 
 ```math
        y''(x) - x \, y(x) \;=\; 0,
 ```
 
-for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form the fundamental solutions; however, here we pose initial conditions in terms of these functions at $x = 0$ and integrate out to $x = 100$. Numerically, one can write this as
-
+for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form a basis for the solution space. We pose initial conditions 
 ```math
        y'(x) = \begin{bmatrix} y_1'(x) \\ y_2'(x) \end{bmatrix}
                = \begin{bmatrix}
@@ -66,15 +65,15 @@ for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form t
                  \end{bmatrix}.
 ```
 
-3. **Stiff Problem**
+3. **Stiff problem**
 
-We label this “Stiff” because it includes large and rapidly changing coefficients. The following equation is integrated on $[0,\,200]$.
+Stiffness is notoriously difficult to define, but all stiff problems have the common property that explicit solvers do not perform well on them. The following equation is stiff because there are two extremely different timescales present in the solution; explicit integrators are forced to follow the faster timescale (take smaller steps), even though this component of the solution is exponentially small. Vastly different scales arise in many multi-physics problems, and this example illustrates that `pyriccaticpp` will not perform worse than the implicit methods available in `scipy.solve_ivp` on this category of equations. We solve 
 
 ```math
-       y''(t) \;+\; (t + 21)\,y'(t) \;+\; 21\,t\,y(t) \;=\; 0,
+       y''(x) \;+\; (x + 21)\,y'(x) \;+\; 21\,x\,y(x) \;=\; 0.
 ```
 
- The ODE has initial conditions the following initial conditions.
+on  $[0,\,200]$ with initial conditions
 
 ```math
        y(0) = 0,
@@ -82,25 +81,25 @@ We label this “Stiff” because it includes large and rapidly changing coeffic
        y'(0) = 1.
 ```
 
-The combination of the $t\,y'(t)$ and $t\,y(t)$ terms can produce stiffness as $t$ grows large.
+In each case, we compare the runtime and accuracy of the following solvers (the first three being method options in `scipy.solve_ivp`):
 
-In each case, we compare several solvers:
-
-- **BDF**: A stiff, implicit solver.
+- **BDF**: An implicit solver formulated for stiff equations.
 - **DOP853**: An explicit Runge–Kutta method of order 8(5,3).
-- **RK45**: A classic explicit Runge–Kutta 4(5) method.
-- **PYRICCATICPP**: Our specialized solver using a Riccati transform for second-order ODEs.
+- **RK45**: An explicit Runge–Kutta 4(5) method.
+- **PYRICCATICPP**: Our specialized solver for second-order (oscillatory) ODEs.
 
-Times for each graph below are on a logarithmic scale to accommodate the rapid growth in runtime for certain methods at higher frequencies or stiffer regimes.
+Note that both runtimes and accuracies are plotted on a logarithmic scale.
 
 ## Timing Results
 
-Below is a representative plot (`ivp_bench.png`) of the average runtime (in seconds) each solver takes for the Bremer, Airy, and Stiff equations across two different tolerances ($10^{-12}$ and $10^{-6}$). As $\lambda$ or problem stiffness increases, one observes that standard Runge–Kutta-based solvers can become extremely slow, whereas `pyriccaticpp` remains comparatively fast.
+The figures below (`ivp_bench.png`) show the average runtime (in seconds, averaged over $10$ solves) each solver takes for the Bremer, Airy, and Stiff equations across two different tolerances ($10^{-12}$ and $10^{-6}$). As the solution becomes more oscillatory ($\lambda$ increases), the runtime of standard polynomial-based solvers (Runge--Kutta and BDF) grows linearly ($\mathcal{O}(\lambda)$), whereas that of `pyriccaticpp` remains constant ($\mathcal{O}(1)$). On the stiff problem, `pyriccaticpp` outperforms `BDF` at the tighter tolerance and is comparative at the looser tolerance, with all explicit solvers being significantly slower, as expected. 
 
 - **Bremer (Eq. 237)**:
-  For $\lambda = 10$, the ODE solver times are the closest, but `pyriccaticpp` is still faster than all others by more than 4 orders of magnitude. As $\lambda$ increases to $10^4, 10^5, 10^6$, `pyriccaticpp` retains a very low wall time, while `BDF`, `RK45`, and `DOP853` grow by orders of magnitude.
 
-  The table below shows `wall time method / wall time pyriccaticpp` for each lambda value of the Bremer equation benchmarked. The highlighted values in each row show the fastest method relative to pyriccaticpp. Even in the most favorable scenario for the classical methods (the smallest $\lambda = 10$) DOP853 is still 4.7× slower than pyriccaticpp; for large $\lambda$, the classical solvers are orders of magnitude slower.
+  The table below shows `wall time method / wall time pyriccaticpp` for each $\lambda$ value of the Bremer equation benchmarked. The highlighted values in each row show the relative runtime of the second fastest method relative to pyriccaticpp. Even in the most favorable scenario for the classical methods (the smallest $\lambda = 10$) DOP853 is still 4.7$\times$ slower than pyriccaticpp; for large $\lambda$, the classical solvers are orders of magnitude slower.
+
+** Steve: Which tolerance is this for? **  
+** TODO for Fruzsina: add note about accuracy of BDF -- it looks deceivingly fast here, but it produces garbage **
 
 ### Table For Bremer Eq 237 Relative Wall Time To Pyriccaticpp
 
@@ -114,24 +113,23 @@ Below is a representative plot (`ivp_bench.png`) of the average runtime (in seco
 |  1e+06|     **6.56**| 10962325.93| 10962325.93|
 |  1e+07|     **5.49**| 11138993.87| 11138993.87|
 
-Each value can be interpreted as "In the Bremer Eq 237 benchmark, pyriccaticpp is `x` times faster than {method}."
-The bold numbers are the benchmarks that had the minimum time difference between pyriccaticpp for each value of lambda.
 
 - **Airy**:
-  The Airy benchmark is integrated out to a relatively large domain $[0,100]$. The specialized approach in `pyriccaticpp` is, in the most competitive case when the relative error is `1e-6`, 37 times faster than it's closest competitor `DOP853`.
+ At the end of the solution interval, $x = 100$, the characteristic frequency of oscillations in the solution of the Airy equation is $\sqrt{x} = 10$. The specialized approach in `pyriccaticpp` is, in the most competitive case when the relative error is `1e-6`, 37 times faster than its closest competitor, `DOP853`. If the solution is continued to larger values of $x$, this gap further grows, since the Airy solution gets progressively more oscillatory.
 
 - **Stiff**:
-  As the name suggests, the presence of a rapidly varying coefficient makes this ODE a good test of stiff integrators. While `BDF` is able to compete with `pyriccaticpp` for a relative tolerance of `1e-6`, when asking for a relative tolerance of `1e-12` the graph shows that `pyriccaticpp` is 3 orders of magnitude faster than `BDF`.
+  While `BDF` is able to compete with `pyriccaticpp` for a relative tolerance of `1e-6`, when asking for a relative tolerance of `1e-12` the graph shows that `pyriccaticpp` is 3 orders of magnitude faster than `BDF`.
 
 [Talk about solve_ivp benchmark results here]
+** Steve: what does this above note mean? **
 
 ![ivp_bench](/benchmarks/plots/ivp_bench.png)
 
 ## Relative Error Results
 
-Below is a plot (`ivp_bench_errs.png`) illustrating the relative error of the final solution for each method against a reference “high-precision” solution. We highlight the following:
+The figure below (`ivp_bench_errs.png`) plots the relative error of the solution at the end of the solution interval for each method against a reference value, computed to high accuracy via ** TODO: how is it computed? ** . We highlight the following:
 
-- **Bremer**: With smaller $\lambda$, all methods achieve very good accuracy. At large $\lambda$, some methods degrade or appear to clamp at an error near $10^{-3}$ for the less stringent tolerance setting. `pyriccaticpp` generally holds a very small error even as $\lambda$ increases.
+- **Bremer**: With smaller $\lambda$, all methods achieve a global accuracy consistent with the user-defined local tolerance. At large $\lambda$, we note that the large condition number of the problem does not allow for a global accuracy of $10^{-12}$ to be achieved. ** TODO: Fruzsina to insert citation here re condition number. ** `pyriccaticpp` produces the smallest error that one could realistically expect for a problem with this condition number (and working in double precision arithmetic). Classical methods are forced to take more and smaller steps, which accummulates local error, resulting in a global error that is a few orders of magnitue larger than the tolerance setting, except for BDF, which fails catastrophically and produces $\mathcal{O}(1)$ error. ** TODO: may need to change this after Steve's check. ** 
 - **Airy**: Most standard solvers maintain good accuracy here. The specialized approach also works very well, typically matching or outperforming BDF and DOP853.
 - **Stiff**: All methods can reach very low errors if allowed a sufficiently tight tolerance. However, once again, `pyriccaticpp` can achieve extremely small relative error in the same or less time than standard solvers, illustrating its suitability for stiff or high-frequency problems alike.
 ![ivp_bench_err](/benchmarks/plots/ivp_bench_errs.png)
