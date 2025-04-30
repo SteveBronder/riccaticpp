@@ -50,13 +50,13 @@ so that the problem depends strongly on $\lambda$. As $\lambda$ grows, the equat
 
 2. **Airy equation**
 
-   The Airy equation, used in optics, is an oscillator if the dependent variable is transformed as $x \to -x$, yielding 
+   The Airy equation, used in optics, is an oscillator if the dependent variable is transformed as $x \to -x$, yielding
 
 ```math
        y''(x) - x \, y(x) \;=\; 0,
 ```
 
-for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form a basis for the solution space. We pose initial conditions 
+for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form a basis for the solution space. We pose initial conditions
 ```math
        y'(x) = \begin{bmatrix} y_1'(x) \\ y_2'(x) \end{bmatrix}
                = \begin{bmatrix}
@@ -67,7 +67,7 @@ for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form a
 
 3. **Stiff problem**
 
-Stiffness is notoriously difficult to define, but all stiff problems have the common property that explicit solvers do not perform well on them. The following equation is stiff because there are two extremely different timescales present in the solution; explicit integrators are forced to follow the faster timescale (take smaller steps), even though this component of the solution is exponentially small. Vastly different scales arise in many multi-physics problems, and this example illustrates that `pyriccaticpp` will not perform worse than the implicit methods available in `scipy.integrate.solve_ivp` on this category of equations. We solve 
+Stiffness is notoriously difficult to define, but all stiff problems have the common property that explicit solvers do not perform well on them. The following equation is stiff because there are two extremely different timescales present in the solution; explicit integrators are forced to follow the faster timescale (take smaller steps), even though this component of the solution is exponentially small. Vastly different scales arise in many multi-physics problems, and this example illustrates that `pyriccaticpp` will not perform worse than the implicit methods available in `scipy.integrate.solve_ivp` on this category of equations. We solve
 
 ```math
        y''(x) \;+\; (x + 21)\,y'(x) \;+\; 21\,x\,y(x) \;=\; 0.
@@ -92,16 +92,15 @@ Note that both runtimes and accuracies are plotted on a logarithmic scale.
 
 ## Timing Results
 
-The figures below (`ivp_bench.png`) show the average runtime (in seconds, averaged over $10$ solves) each solver takes for the Bremer, Airy, and Stiff equations across two different tolerances ($10^{-12}$ and $10^{-6}$). As the solution becomes more oscillatory ($\lambda$ increases), the runtime of standard polynomial-based solvers (Runge--Kutta and BDF) grows linearly ($\mathcal{O}(\lambda)$), whereas that of `pyriccaticpp` remains constant ($\mathcal{O}(1)$). On the stiff problem, `pyriccaticpp` outperforms `BDF` at the tighter tolerance and is comparative at the looser tolerance, with all explicit solvers being significantly slower, as expected. 
+The figures below (`ivp_bench.png`) show the average runtime (in seconds, averaged over $10$ solves) each solver takes for the Bremer, Airy, and Stiff equations across two different tolerances ($10^{-12}$ and $10^{-6}$). As the solution becomes more oscillatory ($\lambda$ increases), the runtime of standard polynomial-based solvers (Runge--Kutta and BDF) grows linearly ($\mathcal{O}(\lambda)$), whereas that of `pyriccaticpp` remains constant ($\mathcal{O}(1)$). On the stiff problem, `pyriccaticpp` outperforms `BDF` at the tighter tolerance and is comparative at the looser tolerance, with all explicit solvers being significantly slower, as expected.
 
 - **Bremer (Eq. 237)**:
 
-  The table below shows `wall time method / wall time pyriccaticpp` for each $\lambda$ value of the Bremer equation benchmarked. The highlighted values in each row show the relative runtime of the second fastest method relative to pyriccaticpp. Even in the most favorable scenario for the classical methods (the smallest $\lambda = 10$) DOP853 is still 4.7$\times$ slower than pyriccaticpp; for large $\lambda$, the classical solvers are orders of magnitude slower.
+  The table below shows `wall time method / wall time pyriccaticpp` for each $\lambda$ value of the Bremer equation benchmarked.
+  The highlighted values in each row show the relative runtime of the second fastest method relative to pyriccaticpp.
+  Even in the most favorable scenario for the classical methods (the smallest $\lambda = 10$) DOP853 is still 3.9$\times$ slower than pyriccaticpp; for large $\lambda$, the classical solvers are orders of magnitude slower.
 
-** Steve: Which tolerance is this for? **  
-** TODO for Fruzsina: add note about accuracy of BDF -- it looks deceivingly fast here, but it produces garbage **
-
-### Table For Bremer Eq 237 Relative Wall Time To Pyriccaticpp
+### Table For Bremer Eq 237 with eps=1e-12 Relative Wall Time To Pyriccaticpp
 
 | lambda|      BDF|      DOP853|        RK45|
 |------:|--------:|-----------:|-----------:|
@@ -120,20 +119,15 @@ The figures below (`ivp_bench.png`) show the average runtime (in seconds, averag
 - **Stiff**:
   While `BDF` is able to compete with `pyriccaticpp` for a relative tolerance of `1e-6`, when asking for a relative tolerance of `1e-12` the graph shows that `pyriccaticpp` is 3 orders of magnitude faster than `BDF`.
 
-[Talk about solve_ivp benchmark results here]
-** Steve: what does this above note mean? **
-
 ![ivp_bench](/benchmarks/plots/ivp_bench.png)
 
 ## Relative Error Results
 
 The figure below (`ivp_bench_errs.png`) plots the relative error of the solution at the end of the solution interval for each method against an analytic reference value (which is available for all examples). We highlight the following:
 
-- **Bremer**: With smaller $\lambda$, all methods achieve a global accuracy consistent with the user-defined local tolerance. At large $\lambda$, we note that the large condition number of the problem does not allow for a global accuracy of $10^{-12}$ to be achieved (see section 4 of @agocs2024adaptive ). `pyriccaticpp` produces the smallest error that one could realistically expect for a problem with this condition number (and working in double precision arithmetic). Classical methods are forced to take more and smaller steps, which accummulates local error, resulting in a global error that is a few orders of magnitue larger than the tolerance setting, except for BDF, which fails catastrophically and produces $\mathcal{O}(1)$ error. ** TODO: may need to change this after Steve's check. ** 
-- **Airy**: Apart from the high-order `DOP853` method and `pyriccaticpp`, none produced an error within one order of magnitude of the tolerance setting, with the latter being a factor of 10 more accurate than the former. 
+- **Bremer**: With smaller $\lambda$, all methods achieve a global accuracy consistent with the user-defined local tolerance. At large $\lambda$, we note that the large condition number of the problem does not allow for a global accuracy of $10^{-12}$ to be achieved (see section 4 of @agocs2024adaptive ). `pyriccaticpp` produces the smallest error that one could realistically expect for a problem with this condition number (and working in double precision arithmetic). Classical methods are forced to take more and smaller steps, which accummulates local error, resulting in a global error that is a few orders of magnitue larger than the tolerance setting, except for BDF, which fails catastrophically and produces $\mathcal{O}(1)$ error.
+- **Airy**: Apart from the high-order `DOP853` method and `pyriccaticpp`, none produced an error within one order of magnitude of the tolerance setting, with the latter being a factor of 10 more accurate than the former.
 - **Stiff**: The analytic solution at the end of the solution interval in this example zero (to more than 100 digits). Therefore, computing a relative accuracy is meaningless; we plot the _absolute_ error, computed simply as the output of the given method at the end of the solution interval, instead. Due to a strong damping term in the equation, all solvers achieve low errors, but over extremely different runtimes.
-** TODO Actually, computing the relative error in this case makes no sense, since it just gives a 0 / 0 expression. The absolute error is basically the answer that each solver produces, which is what we should plot. **  
-
 
 ![ivp_bench_err](/benchmarks/plots/ivp_bench_errs.png)
 
@@ -141,7 +135,7 @@ The figure below (`ivp_bench_errs.png`) plots the relative error of the solution
 
 ### Problem Setup
 
-In this physically motivated benchmark, we compute the allowed energies of a particle in a one-dimensional potential. This type of problem arises in molecular physics, e.g. in the calibration of lasers. We consider an anharmonic perturbation of the harmonic potential, 
+In this physically motivated benchmark, we compute the allowed energies of a particle in a one-dimensional potential. This type of problem arises in molecular physics, e.g. in the calibration of lasers. We consider an anharmonic perturbation of the harmonic potential,
 
 ```math
    V(x) \;=\; x^2 \;+\; l\,x^4,
@@ -158,7 +152,7 @@ at energy $E$.
 Since $E$ is not known a priori, we compute it via a **shooting method**:
 
 1. For the given energy level, we obtain an upper and lower bound via asymptotic approximations so that $E \in [E_{\mathrm{min}}, E_{\mathrm{max}}]$. We will search for the correct energy within this bracket.
- 
+
 2. For each guess $E$ of the energy, we integrate \autoref{eq:schrodinger} from a point far outside the potential well (so that $E \gg V(\pm x_0)$) on either side, $x = \pm x_0$, towards the middle of the potential well, starting from the initial cconditions $\psi(\pm x_0) = 0$, $\psi'(\pm x_0) = 1$. The two numerical solutions, $\psi_L$ and $\psi_R$, meet at an intermediate point $x_1$, where the solution and its derivative is continuous if and only if $E$ is an eigenvalue. To quantify the "mismatch", we define
 
 $$ f(E) = \frac{\psi'_L}{\psi_L} - \frac{\psi'_R}{\psi_R}.  $$
@@ -172,7 +166,7 @@ We compare the same four solvers `BDF`, `DOP853`, `RK45`, and `pyriccaticpp`,in 
 Below (`schrodinger.png`) we plot the average time spent in these ODE solves for each method, combined over different energy levels, which we index with nonnegative integer quantum numbers $n$, with $n=0$ being the ground state. Two relative tolerances were used, $10^{-12}$ and $10^{-6}$.
 
 - As the quantum number grows, the wavefunction $\psi(x)$ oscillates more in the classically allowed region (inside the potential well), and decays exponentially outside of it. Standard ODE solvers require more and smaller steps as $n$ grows.
-- `pyriccaticpp`'s runtime also scales with the quantum number, which is due to a growing number of steps taken outside of the potential well. The runtime, however, scales more gently than that of other methods, yielding a factor of $\approx 20$ speedup at the highest quantum number and moderate tolerance setting, and an $\approx 70$-fold speedup at the tight tolerance. 
+- `pyriccaticpp`'s runtime also scales with the quantum number, which is due to a growing number of steps taken outside of the potential well. The runtime, however, scales more gently than that of other methods, yielding a factor of $\approx 20$ speedup at the highest quantum number and moderate tolerance setting, and an $\approx 70$-fold speedup at the tight tolerance.
 
 
 ![sch_bench_err_qn](/benchmarks/plots/schrodinger_energy.png)
@@ -192,7 +186,6 @@ Each value can be interpreted as "in the Schrodinger benchmark, pyriccaticpp is 
 ### Relative error results
 
 The figure below (`schrodinger_err.png`) shows the relative error in the computed energy level compared to the reference values in @banerjee1978anharmonic. All methods achieve an error within roughly an order of magnitude of the local tolerance, with the higher-order methods (`DOP853` and `pyriccaticpp`) performing better.
-
 
 ![sch_bench_err](/benchmarks/plots/schrodinger_err.png)
 
