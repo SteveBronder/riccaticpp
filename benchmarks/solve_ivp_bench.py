@@ -542,6 +542,18 @@ algorithm_dict = {
     #   Algo.LSODA: {"args":[epss, atol], "iters": 1}
 }
 
+def real(x : complex | float) -> float:
+    if isinstance(x, complex):
+        return x.real
+    else:
+        return x
+
+def imag(x : complex | float) -> float:
+    if isinstance(x, complex):
+        return x.imag
+    else:
+        return 0.0
+
 
 def benchmark(
     problem_info: BaseProblem, algo_args: Dict[str, Any], N: int = 1000
@@ -591,7 +603,12 @@ def benchmark(
                     "relerr": yerr,
                     "walltime": runtime,
                     "errlessref": bool(yerr < problem_info.relative_error),
+                    "est_solution_real": real(ys[-1]),
+                    "est_solution_imag": imag(ys[-1]),
+                    "true_ans_real" : real(problem_info.y1),
+                    "true_ans_imag" : imag(problem_info.y1),
                     "problem_params": problem_info.print_params(),
+                    "success": True,
                     "params": f"n={print_args['n']};p={print_args['n']};epsh={print_args['epsh']}",
                 }
             )
@@ -618,7 +635,12 @@ def benchmark(
                         "relerr": yerr,
                         "walltime": runtime,
                         "errlessref": bool(yerr < problem_info.relative_error),
+                        "est_solution_real": real(sol.y[0, -1]),
+                        "est_solution_imag": imag(sol.y[0, -1]),
+                        "true_ans_real" : real(problem_info.y1),
+                        "true_ans_imag" : imag(problem_info.y1),
                         "problem_params": problem_info.print_params(),
+                        "success": sol.success,
                         "params": f"rtol={algo_args['method_args']['rtol']};atol={algo_args['method_args']['atol']}",
                     }
                 )
@@ -634,7 +656,12 @@ def benchmark(
                         "relerr": None,
                         "walltime": None,
                         "errlessref": False,
+                        "est_solution_real": None,
+                        "est_solution_imag": None,
+                        "true_ans_real" : real(problem_info.y1),
+                        "true_ans_imag" : imag(problem_info.y1),
                         "problem_params": problem_info.print_params(),
+                        "success": False,
                         "params": f"rtol={algo_args['method_args']['rtol']};atol={algo_args['method_args']['atol']}",
                     }
                 )
@@ -689,85 +716,102 @@ class timeout:
     def __exit__(self, type, value, traceback):
         signal.alarm(0)
 
-
 max_time = 1200
-for algo, algo_params in algorithm_dict.items():
-    if len(algo_params["args"]) > 1:
-        algo_args_iter = itertools.product(
-            zip(*algo_params["args"][0]), *algo_params["args"][1]
-        )
-    else:
-        algo_args_iter = zip(*algo_params["args"][0])
-    algo_timing_pl_lst = []
-    for algo_iter_ in algo_args_iter:
-        for problem_key, problem_item in problem_dictionary.items():
-            print("=====================================")
-            algo_iter = flatten_tuple(algo_iter_)
-            # If the previous run did not timeout, continue
-            prev_timeout = False
-            for problem_info in gen_problem(
-                problem_item["class"], problem_item["data"]
-            ):
-                algo_args = {
-                    "method": algo,
-                    "function_name": str(problem_key),
-                    # Eps must always be first arg of tuple
-                    "eps": algo_iter[0],
-                    "method_args": construct_algo_args(algo, problem_info, algo_iter),
-                }
-                match algo_args["method"]:
-                    case Algo.PYRICCATICPP:
-                        print_args = algo_args["method_args"]["print_args"]
-                        args_str = f"n={print_args['n']};p={print_args['n']};epsh={print_args['epsh']}"
-                    case _:
-                        args_str = f"rtol={algo_args['method_args']['rtol']};atol={algo_args['method_args']['atol']}"
-                print("\tArgs: ", args_str)
-                timeout_df = pl.DataFrame(
-                    {
-                        "eq_name": algo_args["function_name"],
-                        "method": str(algo_args["method"]),
-                        "eps": algo_args["eps"],
-                        "relerr": None,
-                        "walltime": max_time,
-                        "errlessref": False,
-                        "problem_params": problem_info.print_params(),
-                        "params": args_str,
+include_header = {
+    Algo.PYRICCATICPP: True,
+    Algo.BDF: True,
+    Algo.RK45: True,
+    Algo.DOP853: True
+}
+for iter in range(20):
+  print("=====================================")
+  print("Iteration: ", iter)
+  for algo, algo_params in algorithm_dict.items():
+      algo_problem_file_name = base_output_path + "_" + str(algo) + ".csv"
+      with open(algo_problem_file_name, 'w' if include_header[algo] else 'a') as algo_file:
+        if len(algo_params["args"]) > 1:
+            algo_args_iter = itertools.product(
+                zip(*algo_params["args"][0]), *algo_params["args"][1]
+            )
+        else:
+            algo_args_iter = zip(*algo_params["args"][0])
+        algo_timing_pl_lst = []
+        for algo_iter_ in algo_args_iter:
+            for problem_key, problem_item in problem_dictionary.items():
+                print("_________________________________")
+                algo_iter = flatten_tuple(algo_iter_)
+                # If the previous run did not timeout, continue
+                prev_timeout = False
+                for problem_info in gen_problem(
+                    problem_item["class"], problem_item["data"]
+                ):
+                    algo_args = {
+                        "method": algo,
+                        "function_name": str(problem_key),
+                        # Eps must always be first arg of tuple
+                        "eps": algo_iter[0],
+                        "method_args": construct_algo_args(algo, problem_info, algo_iter),
                     }
-                )
-                if prev_timeout:
-                    print("Skipping ", str(algo), "on", str(problem_key))
-                    algo_timing_pl_lst.append(timeout_df)
-                    continue
-                print("Running ", str(algo), "on", str(problem_key))
-                print("\tProblem Info: ", problem_info)
-                # Assuming each problem set is linear in complexity parameters
-                # Allows a max time of max_time seconds per problem
-                try:
-                    with timeout(seconds=max_time):
-                        bench_time = benchmark(
-                            problem_info, algo_args, N=algo_params["iters"]
-                        )
-                        algo_timing_pl_lst.append(bench_time)
-                        prev_time = algo_timing_pl_lst[-1]["walltime"][0]
-                        print("Time: ", algo_timing_pl_lst[-1]["walltime"][0])
-                except TimeoutError:
-                    algo_timing_pl_lst.append(timeout_df)
-                    prev_timeout = True
-                    print(
-                        "Program took longer than ",
-                        max_time,
-                        "seconds (",
-                        max_time / 60,
-                        "minutes) to run",
+                    match algo_args["method"]:
+                        case Algo.PYRICCATICPP:
+                            print_args = algo_args["method_args"]["print_args"]
+                            args_str = f"n={print_args['n']};p={print_args['n']};epsh={print_args['epsh']}"
+                        case _:
+                            args_str = f"rtol={algo_args['method_args']['rtol']};atol={algo_args['method_args']['atol']}"
+                    print("\tArgs: ", args_str)
+                    timeout_df = pl.DataFrame(
+                        {
+                            "eq_name": algo_args["function_name"],
+                            "method": str(algo_args["method"]),
+                            "eps": algo_args["eps"],
+                            "relerr": None,
+                            "walltime": max_time,
+                            "errlessref": False,
+                            "est_solution_real": None,
+                            "est_solution_imag": None,
+                            "true_ans_real" : real(problem_info.y1),
+                            "true_ans_imag" : imag(problem_info.y1),
+                            "problem_params": problem_info.print_params(),
+                            "success": False,
+                            "params": args_str,
+                            "iter" : iter
+                        }
                     )
-                    pass
-                print("=====================================")
-    algo_timing_pl = pl.concat(algo_timing_pl_lst, rechunk=True, how="vertical_relaxed")
-    algo_problem_file_name = base_output_path + "_" + str(algo) + ".csv"
-    algo_timing_pl.write_csv(algo_problem_file_name, float_precision=24)
-    print(algo_problem_file_name)
-    print(algo_timing_pl)
-    all_timing_pl_lst.append(algo_timing_pl)
+                    if prev_timeout:
+                        print("Skipping ", str(algo), "on", str(problem_key))
+                        algo_timing_pl_lst.append(timeout_df)
+                        continue
+                    print("Running ", str(algo), "on", str(problem_key))
+                    print("\tProblem Info: ", problem_info)
+                    # Assuming each problem set is linear in complexity parameters
+                    # Allows a max time of max_time seconds per problem
+                    try:
+                        with timeout(seconds=max_time):
+                            bench_time = benchmark(
+                                problem_info, algo_args, N=algo_params["iters"]
+                            )
+                            bench_time = bench_time.with_columns(pl.lit(iter).alias("iter"))
+                            algo_timing_pl_lst.append(bench_time)
+                            prev_time = algo_timing_pl_lst[-1]["walltime"][0]
+                            print("Time: ", algo_timing_pl_lst[-1]["walltime"][0])
+                    except TimeoutError:
+                        algo_timing_pl_lst.append(timeout_df)
+                        prev_timeout = True
+                        print(
+                            "Program took longer than ",
+                            max_time,
+                            "seconds (",
+                            max_time / 60,
+                            "minutes) to run",
+                        )
+                        pass
+                    print("++++++++++++++++++++++++++++++++++++")
+        algo_timing_pl = pl.concat(algo_timing_pl_lst, rechunk=True, how="vertical_relaxed")
+        algo_timing_pl.write_csv(algo_file, float_precision=24, include_header=include_header[algo])
+        include_header[algo] = False
+        print(algo_problem_file_name)
+        print(algo_timing_pl)
+        all_timing_pl_lst.append(algo_timing_pl)
 algo_times = pl.concat(all_timing_pl_lst, rechunk=True, how="vertical_relaxed")
 print("Algo Times: ", algo_times)
 algo_times.write_csv(base_output_path + ".csv", float_precision=24)
