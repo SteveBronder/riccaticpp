@@ -85,7 +85,10 @@ class arena_alloc {
   byte_t* cur_block_end_;        // ptr to cur_block_ptr_ + sizes_[cur_block_]
   byte_t* next_loc_;             // ptr to next available spot in cur
                                  // block
-
+  // next three for keeping track of nested allocations on top of stack:
+  std::vector<size_t> nested_cur_blocks_;
+  std::vector<byte_t*> nested_next_locs_;
+  std::vector<byte_t*> nested_cur_block_ends_;
   /**
    * Moves us to the next block of memory, allocating that block
    * if necessary, and allocates len bytes of memory within that
@@ -187,6 +190,9 @@ class arena_alloc {
    * @return A pointer to the allocated memory.
    */
   RICCATI_ALWAYS_INLINE void* alloc(size_t len) {
+    if (unlikely(len == size_t{0})) {
+      return nullptr;
+    }
     size_t pad = len % 8 == 0 ? 0 : 8 - len % 8;
 
     // Typically, just return and increment the next location.
@@ -291,6 +297,43 @@ class arena_alloc {
     }
     return false;
   }
+
+  /**
+   * Store current positions before doing nested operation so can
+   * recover back to start.
+   */
+  inline void start_nested() {
+    nested_cur_blocks_.push_back(cur_block_);
+    nested_next_locs_.push_back(next_loc_);
+    nested_cur_block_ends_.push_back(cur_block_end_);
+  }
+    /**
+   * recover memory back to the last start_nested call.
+   */
+  inline void recover_nested() {
+    if (unlikely(nested_cur_blocks_.empty())) {
+      recover_all();
+    }
+
+    cur_block_ = nested_cur_blocks_.back();
+    nested_cur_blocks_.pop_back();
+
+    next_loc_ = nested_next_locs_.back();
+    nested_next_locs_.pop_back();
+
+    cur_block_end_ = nested_cur_block_ends_.back();
+    nested_cur_block_ends_.pop_back();
+  }
+};
+
+template <typename Allocator>
+struct scoped_allocator {
+  std::reference_wrapper<Allocator> alloc_;
+  explicit scoped_allocator(Allocator& alloc) : alloc_(alloc) {
+    alloc_.get().start_nested();
+  }
+
+  ~scoped_allocator() { alloc_.get().recover_nested(); }
 };
 
 /**
@@ -318,16 +361,16 @@ struct arena_allocator {
       : alloc_(new ArenaType{}), owns_alloc_(true) {}
 
   RICCATI_NO_INLINE arena_allocator(const arena_allocator& rhs)
-      : alloc_(rhs.alloc_), owns_alloc_(false) {};
+      : alloc_(rhs.alloc_), owns_alloc_(false){};
   template <typename U, typename UArena>
   RICCATI_NO_INLINE arena_allocator(const arena_allocator<U, UArena>& rhs)
       : alloc_(rhs.alloc_), owns_alloc_(false) {}
   template <typename U, typename UArena>
   RICCATI_NO_INLINE arena_allocator(arena_allocator&& rhs)
       : alloc_(rhs.alloc_), owns_alloc_(rhs.owns_alloc_ ? true : false) {
-        rhs.alloc_ = nullptr;
-        rhs.owns_alloc_ = false;
-      }
+    rhs.alloc_ = nullptr;
+    rhs.owns_alloc_ = false;
+  }
 
   ~arena_allocator() {
     if (owns_alloc_) {
@@ -372,6 +415,8 @@ struct arena_allocator {
   constexpr bool operator!=(const arena_allocator&) const noexcept {
     return false;
   }
+  void start_nested() { alloc_->start_nested(); }
+  void recover_nested() { alloc_->recover_nested(); }
 };
 
 struct dummy_allocator {
@@ -396,6 +441,9 @@ struct dummy_allocator {
       std::free(ptr);
     }
   }
+  void start_nested() {}
+  void recover_nested() {}
+
 };
 
 template <typename Expr>

@@ -1,0 +1,9 @@
+matplotlib
+matplotlib-inline
+mpmath
+numpy
+polars
+pyparsing
+pytest
+riccati
+scipy

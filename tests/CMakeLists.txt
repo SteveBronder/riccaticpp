@@ -7,7 +7,7 @@ set(Boost_USE_STATIC_RUNTIME ON)
 set(BOOST_ENABLE_CMAKE ON)
 FetchContent_Declare(
   boost
-  URL https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz
+  URL https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.gz
 )
 FetchContent_Declare(googletest
 GIT_REPOSITORY https://github.com/google/googletest.git
@@ -27,7 +27,7 @@ function(add_gtest_grouped_test test_directory)
     # Add an executable for the grouped tests
     add_executable(${TEST_TARGET_NAME} ${TEST_SOURCES})
     if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-      target_compile_options(${TEST_TARGET_NAME} PRIVATE -Wno-deprecated-declarations)
+      target_compile_options(${TEST_TARGET_NAME} PRIVATE -Wno-deprecated-declarations -Wno-maybe-uninitialized)
     endif()
     # Add include directories, link libraries, and register tests as before
     target_include_directories(${TEST_TARGET_NAME} PRIVATE
@@ -43,7 +43,7 @@ function(add_gtest_grouped_test test_directory)
     # Add an executable for the individual test
     add_executable(${INDIVIDUAL_TEST_TARGET_NAME} ${TEST_SOURCE})
     if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-      target_compile_options(${INDIVIDUAL_TEST_TARGET_NAME} PRIVATE -Wno-deprecated-declarations)
+      target_compile_options(${INDIVIDUAL_TEST_TARGET_NAME} PRIVATE -Wno-deprecated-declarations -Wno-maybe-uninitialized)
     endif()
     # Add include directories, link libraries, and register the individual test
     target_include_directories(${INDIVIDUAL_TEST_TARGET_NAME} PRIVATE

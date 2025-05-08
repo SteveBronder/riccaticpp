@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string>
 
-TEST_F(Riccati, osc_step_test) {
+TEST_F(Riccati, step_osc_test) {
   using namespace riccati::test;
   using riccati::array;
   using riccati::eval;
@@ -36,7 +36,7 @@ TEST_F(Riccati, osc_step_test) {
   EXPECT_NEAR(dy_err, 0, 1e-10);
 }
 
-TEST_F(Riccati, nonosc_step_test) {
+TEST_F(Riccati, step_nonosc_test) {
   using namespace riccati::test;
   using riccati::array;
   using riccati::eval;

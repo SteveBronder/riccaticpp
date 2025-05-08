@@ -27,13 +27,19 @@ template <typename SolverInfo, typename FloatingPoint>
 inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                             FloatingPoint h,
                                             FloatingPoint epsilon_h) {
-  auto ws = omega(info, riccati::scale(info.xp(), x0, h));
-  if (ws.maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
-    return choose_nonosc_stepsize(info, x0, static_cast<FloatingPoint>(h / 2.0),
-                                  epsilon_h);
+  auto ws = omega(info, (x0 + (std::abs(h) * 0.5) * (1.0 + info.xp().array())).matrix().eval()).eval();
+  if constexpr (is_complex_v<value_type_t<decltype(ws)>>) {
+    while (ws.array().abs().maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
+      h *= 0.5;
+      ws = omega(info, (x0 + (h * 0.5) * (1.0 + info.xp().array())).matrix().eval());
+    }
   } else {
-    return h;
+    while (ws.array().maxCoeff() > (1.0 + epsilon_h) / std::abs(h)) {
+      h *= 0.5;
+      ws = omega(info, (x0 + (h * 0.5) * (1.0 + info.xp().array())).matrix().eval());
+    }
   }
+  return h;
 }
 
 /**
@@ -63,38 +69,62 @@ inline FloatingPoint choose_nonosc_stepsize(SolverInfo&& info, FloatingPoint x0,
 template <typename SolverInfo, typename FloatingPoint>
 inline auto choose_osc_stepsize(SolverInfo&& info, FloatingPoint x0,
                                 FloatingPoint h, FloatingPoint epsilon_h) {
-  auto t = eval(info.alloc_,
-                (x0 + (h / 2.0) * (1.0 + info.xp_interp().array())).matrix());
-  auto s = eval(info.alloc_,
-                (x0 + (h / 2.0) * (1.0 + info.xp().array())).matrix());
-  // TODO: Use a memory arena for these
-  auto ws = omega(info, s).eval();
-  auto gs = gamma(info, s).eval();
-  auto omega_analytic = eval(info.alloc_, omega(info, t));
-  auto omega_estimate = info.L() * ws;
-  auto gamma_analytic = eval(info.alloc_, gamma(info, t));
-  auto gamma_estimate = info.L() * gs;
-  FloatingPoint max_omega_err
-      = (((omega_estimate - omega_analytic).array() / omega_analytic.array())
-             .abs())
-            .maxCoeff();
-  FloatingPoint max_gamma_err
-      = (((gamma_estimate - gamma_analytic).array() / gamma_analytic.array())
-             .abs())
-            .maxCoeff();
-  FloatingPoint max_err = std::max(max_omega_err, max_gamma_err);
-  if (max_err <= epsilon_h) {
-    if (info.p_ != info.n_) {
-      auto xn_scaled = eval(info.alloc_, riccati::scale(info.xn(), x0, h));
-      ws = omega(info, xn_scaled);
-      gs = gamma(info, xn_scaled);
+  FloatingPoint max_err = std::numeric_limits<FloatingPoint>::infinity();
+  auto t = empty_arena_matrix(info.alloc_, info.xp_interp());
+  auto s = empty_arena_matrix(info.alloc_, info.xp());
+  using omega_vec_ret_t
+      = std::decay_t<decltype(eval(omega(info, info.xp_interp())))>;
+  using gamma_vec_ret_t = std::decay_t<decltype(eval(gamma(info, info.xp())))>;
+  auto omega_analytic
+      = empty_arena_matrix<omega_vec_ret_t>(info.alloc_, t.rows(), t.cols());
+  auto omega_estimate
+      = empty_arena_matrix<omega_vec_ret_t>(info.alloc_, t.rows(), t.cols());
+  auto gamma_analytic
+      = empty_arena_matrix<gamma_vec_ret_t>(info.alloc_, t.rows(), t.cols());
+  auto gamma_estimate
+      = empty_arena_matrix<gamma_vec_ret_t>(info.alloc_, t.rows(), t.cols());
+  omega_vec_ret_t ws(t.size());
+  gamma_vec_ret_t gs(t.size());
+  do {
+    t = scale(info.xp_interp(), x0, h);
+    s = scale(info.xp(), x0, h);
+    ws = omega(info, s);
+    gs = gamma(info, s);
+    omega_analytic = omega(info, t);
+    omega_estimate = info.L() * ws;
+    gamma_analytic = gamma(info, t);
+    gamma_estimate = info.L() * gs;
+    const bool is_all_omega_zero = omega_analytic.isZero();
+    FloatingPoint max_omega_err = 0.0;
+    if (is_all_omega_zero) {
+      max_omega_err = 0;
+    } else {
+      max_omega_err = (((omega_estimate - omega_analytic).array()
+                        / omega_analytic.array())
+                           .abs())
+                          .maxCoeff();
     }
-    return std::make_tuple(h, ws, gs);
-  } else {
+    const bool is_all_gamma_zero = gamma_analytic.isZero();
+    FloatingPoint max_gamma_err = 0.0;
+    if (is_all_gamma_zero) {
+      max_gamma_err = 0;
+    } else {
+      max_gamma_err = (((gamma_estimate - gamma_analytic).array()
+                        / gamma_analytic.array())
+                           .abs())
+                          .maxCoeff();
+    }
+    max_err = std::max(std::abs(max_omega_err), std::abs(max_gamma_err));
     auto h_scaling = static_cast<FloatingPoint>(std::min(
         0.7, 0.9 * std::pow(epsilon_h / max_err, (1.0 / (info.p_ - 1.0)))));
-    return choose_osc_stepsize(info, x0, h * h_scaling, epsilon_h);
+    h *= (max_err <= epsilon_h) ? 1 : h_scaling;
+  } while (max_err > epsilon_h);
+  if (info.p_ != info.n_) {
+    auto xn_scaled = eval(info.alloc_, riccati::scale(info.xn(), x0, h));
+    ws = omega(info, xn_scaled);
+    gs = gamma(info, xn_scaled);
   }
+  return std::make_tuple(h, std::move(ws), std::move(gs));
 }
 
 }  // namespace riccati

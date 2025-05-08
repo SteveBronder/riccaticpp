@@ -44,8 +44,8 @@ $$
 
 ![bench1](./imgs/bremer_together1.png)
 
-The blue area in the graph of errors is the best possible lower bound for error calculated by Bremer. 
-Because the results of each algorithm are compared relative to Bremer's values, the algorithms may report 
+The blue area in the graph of errors is the best possible lower bound for error calculated by Bremer.
+Because the results of each algorithm are compared relative to Bremer's values, the algorithms may report
 smaller values than the actual possible error, but should be considered bounded by the blue area.
 
 ## Documentation
@@ -93,6 +93,19 @@ cd build/tests
 make -j4 riccati_test && ctest
 ```
 
+For the python tests and benchmarks it is recommended to setup a virtual environment
+
+```bash
+# From the top level of this directory
+python -m venv ./.venv
+source ./.venv/bin/activate
+pip install -r requirements.txt
+# Install pyriccaticpp
+pip install .
+# Now run benchmarks
+python3 ./benchmarks/solve_ivp_bench.py
+```
+
 ## Example
 
 As an example we will solve Bremer's Eq. 237 where the omega and gamma functions are given by the following.
@@ -103,8 +116,8 @@ l = 10
 \gamma(x) = 0
 $$
 
-In the code we use the `riccati::vectorize` function to convert the scalar functions to vector functions. 
-We then use the `riccati::make_solver` function to create the solver object. 
+In the code we use the `riccati::vectorize` function to convert the scalar functions to vector functions.
+We then use the `riccati::make_solver` function to create the solver object.
 Finally we use the `riccati::evolve` function to solve the ODE.
 
 ```cpp
