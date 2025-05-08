@@ -59,8 +59,10 @@ so that the problem depends strongly on $\lambda$. As $\lambda$ grows, the equat
 ```
 
 for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form a basis for the solution space. We pose initial conditions
+
 ```math
-       y'(x) = \begin{bmatrix} y_1'(x) \\ y_2'(x) \end{bmatrix}
+       y'(x) = \begin{bmatrix}
+       y_1'(x) \\ y_2'(x) \end{bmatrix}
                = \begin{bmatrix}
                    y_2(x) \\
                    -\,x\,y_1(x)
@@ -146,9 +148,11 @@ In this physically motivated benchmark, we compute the allowed energies of a par
 
 with $l = 1$. The allowed energies (eigenvalues) of this potential are not known analytically. The particle has mass $m = 0.5$, and obeys the one-dimensional, time-independent Schrödinger equation,
 
-\begin{equation}\label{eq:schrodinger}
+```math
+\begin{equation}
        \psi''(x) \;=\; -\,2m\;\bigl[E - V(x)\bigr]\;\psi(x),
 \end{equation}
+```
 
 at energy $E$.
 
