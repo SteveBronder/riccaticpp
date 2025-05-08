@@ -23,6 +23,10 @@ bench_dt[grepl("n=20", algo_args), algo_plus := paste0(algo, ":n=20")]
 bench_dt[grepl("n=35", algo_args), algo_plus := paste0(algo, ":n=35")]
 bench_dt = bench_dt[!grepl("n=20", algo_args)]
 setkey(bench_dt, eps, algo_plus)
+bench_dt[, algo := factor(algo,
+  levels = c("PYRICCATICPP", "DOP853", "BDF", "RK45"),
+  ordered=TRUE)]
+
 bench_sum_dt = bench_dt[, .(
   sum_time = sum(time),
   sum_count = sum(count),
@@ -33,10 +37,12 @@ bench_sum_dt[, per_call := sum_time/sum_count]
 setkey(bench_sum_dt, eps, algo_plus)
 schrod_bench_plot = ggplot(bench_sum_dt, aes(x = algo, y = per_call, fill = algo)) +
   geom_bar(stat = "identity") +
-  scale_y_continuous(transform = "log1p", breaks = c(0.01, 0.5, 2, 8, 20, 128, 500, 2000)) +
+  geom_text(aes(label = as.character(round(per_call, 2))), nudge_y = 0.25) +
+  scale_y_continuous(transform = "log1p",
+    breaks = c(0.01, 0.5, 2, 8, 20, 128, 500, 2000)) +
   facet_wrap(vars(eps)) +
   ggtitle("Schrodinger: Average Seconds For ODE Solver Calls",
-    "Average Time is the sum of total time over total solver calls for all quantum numbers") +
+    "Average Time is the sum of total time over\n total solver calls for all quantum numbers") +
   xlab("") +
   ylab("") +
   theme_bw() +
@@ -105,6 +111,9 @@ err_dt[, algo_plus := algo]
 err_dt[grepl("n=20", algo_args), algo_plus := paste0(algo, ":n=20")]
 err_dt[grepl("n=35", algo_args), algo_plus := paste0(algo, ":n=35")]
 err_dt[, rel_energy_err := abs(energy_error / energy_reference)]
+err_dt[, algo := factor(algo,
+  levels = c("PYRICCATICPP", "DOP853", "BDF", "RK45"),
+  ordered=TRUE)]
 # Just look at a slice
 err_sub_dt = err_dt[energy_reference == 471103.777]
 #err_sub_dt[, energy_reference := 471103.777]
