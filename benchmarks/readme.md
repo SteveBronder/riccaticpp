@@ -53,7 +53,7 @@ so that the problem depends strongly on $\lambda$. As $\lambda$ grows, the equat
    The Airy equation, used in optics, is an oscillator if the dependent variable is transformed as $x \to -x$, yielding
 
 ```math
-       y''(x) - x \, y(x) \;=\; 0,
+       y''(x) + x \, y(x) \;=\; 0,
 ```
 
 for $x \in [0,\,100]$. The Airy functions $\mathrm{Ai}$ and $\mathrm{Bi}$ form a basis for the solution space. We pose initial conditions
